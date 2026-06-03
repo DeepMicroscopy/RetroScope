@@ -75,14 +75,6 @@ class MeasurementBridge(QObject):
     def toolType(self, active_tool: str) -> str:
         return measurement.tool_type(active_tool)
 
-    @Slot(str, result=int)
-    def pointsRequired(self, measurement_type: str) -> int:
-        return measurement.points_required(measurement_type)
-
-    @Slot("QVariant", "QVariant", result=float)
-    def distancePx(self, p1: object, p2: object) -> float:
-        return measurement.distance_px(p1, p2)
-
     @Slot("QVariant", "QVariant", float, result=float)
     def distanceUm(self, p1: object, p2: object, um_per_pixel: float) -> float:
         return measurement.distance_um(p1, p2, um_per_pixel)
@@ -94,10 +86,6 @@ class MeasurementBridge(QObject):
     @Slot(float, str, float, result=str)
     def formatLength(self, um: float, unit: str, um_per_pixel: float) -> str:
         return measurement.format_length(um, unit, um_per_pixel)
-
-    @Slot(float, str, float, result=str)
-    def formatArea(self, um2: float, unit: str, um_per_pixel: float) -> str:
-        return measurement.format_area(um2, unit, um_per_pixel)
 
     @Slot("QVariant", str, float, result=str)
     def formatValue(self, item: object, unit: str, um_per_pixel: float) -> str:
@@ -111,43 +99,8 @@ class MeasurementBridge(QObject):
     def formatAux(self, item: object, unit: str, um_per_pixel: float) -> str:
         return measurement.format_aux(self._mapping(item), unit, um_per_pixel)
 
-    @Slot(int, str, "QVariant", str, result="QVariant")
-    def createMeasurement(
-        self,
-        measurement_id: int,
-        measurement_type: str,
-        points: object,
-        label: str,
-    ) -> dict[str, Any]:
-        return measurement.create_measurement(
-            measurement_id,
-            measurement_type,
-            self._sequence(points),
-            label,
-        )
-
-    @Slot("QVariant", float, float, float, result=int)
-    def nearestMeasurementId(
-        self,
-        measurements: object,
-        x: float,
-        y: float,
-        hit_radius: float = 20.0,
-    ) -> int:
-        return measurement.nearest_measurement_id(
-            [self._mapping(item) for item in self._sequence(measurements)],
-            {"x": x, "y": y},
-            hit_radius,
-        )
-
     @staticmethod
     def _mapping(value: object) -> Mapping[str, Any]:
         if hasattr(value, "toVariant"):
             value = value.toVariant()
         return value if isinstance(value, Mapping) else {}
-
-    @staticmethod
-    def _sequence(value: object) -> list[Any]:
-        if hasattr(value, "toVariant"):
-            value = value.toVariant()
-        return list(value) if isinstance(value, (list, tuple)) else []

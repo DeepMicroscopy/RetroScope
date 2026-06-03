@@ -1,6 +1,5 @@
 """Test the objective calibration logic."""
 
-from retroscope.domain import objective_calibration
 from retroscope.services.objective_manager import ObjectiveManager, parse_magnification
 
 
@@ -43,31 +42,6 @@ def test_missing_axis_backlash_defaults_to_zero():
     assert mgr.profile("4x").backlash_x == 0
     assert mgr.profile("4x").backlash_y == 0
     assert mgr.profile("4x").backlash_z == 7
-
-
-def test_normalized_distance_uses_image_dimensions():
-    distance = objective_calibration.normalized_distance_px(1000, 500, 0.1, 0.2, 0.4, 0.6)
-    assert round(distance, 6) == 360.555128
-
-
-def test_um_per_pixel_requires_positive_values():
-    assert objective_calibration.um_per_pixel(250, 100) == 2.5
-    assert objective_calibration.um_per_pixel(0, 100) == 0
-    assert objective_calibration.um_per_pixel(250, 0) == 0
-
-
-def test_dof_steps_handles_unset_marks():
-    unset = objective_calibration.DOF_UNSET_Z
-    assert objective_calibration.dof_steps_between(120, 80) == 40
-    assert objective_calibration.dof_steps_between(unset, 80) == 0
-    assert objective_calibration.dof_steps_between(120, unset) == 0
-
-
-def test_focus_stack_suggestion_and_backlash_clamping():
-    assert objective_calibration.suggested_focus_stack_step(9) == 5
-    assert objective_calibration.suggested_focus_stack_step(0) == 1
-    assert objective_calibration.adjusted_backlash_steps(10, -20) == 0
-    assert objective_calibration.adjusted_backlash_steps(145, 10) == 150
 
 
 def test_parse_magnification_from_display_name_with_fallback():

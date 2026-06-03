@@ -121,84 +121,9 @@ Rectangle {
     RowLayout {
         anchors.fill: parent; spacing: 0
 
-        // Left nav sidebar
-        Rectangle {
-            Layout.preferredWidth: 176; Layout.fillHeight: true; color: root.colorSurfaceLight
-            Rectangle { width: 1; height: parent.height; anchors.right: parent.right; color: root.colorBorder }
-
-            ColumnLayout {
-                anchors.fill: parent; spacing: 0
-                Item { Layout.preferredHeight: 6 }
-
-                Repeater {
-                    model: [
-                        { label: "Objectives",    page: 0, faCode: "\uf610" },
-                        { label: "Input",         page: 1, faCode: "\uf276" },
-                        { label: "Motors",        page: 2, faCode: "\ue0b7" },
-                        { label: "GPIO Buttons",  page: 3, faCode: "\uf58d" },
-                        { label: "Camera",        page: 4, faCode: "\uf030" },
-                        { label: "Storage",       page: 5, faCode: "\uf0a0" }
-                    ]
-                    delegate: Rectangle {
-                        id: primaryNavDelegate
-                        required property var modelData
-
-                        Layout.fillWidth: true; height: 30
-                        property bool active: root.currentPage === primaryNavDelegate.modelData.page
-                        color: active ? Qt.rgba(root.colorAccent.r,root.colorAccent.g,root.colorAccent.b,0.08)
-                                      : (_nh.hovered ? Qt.rgba(0,0,0,root.dark?0.0:0.03) : "transparent")
-                        Rectangle { width: 2; height: parent.height; color: parent.active ? root.colorAccent : "transparent" }
-                        Row {
-                            anchors.left: parent.left; anchors.leftMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 7
-                            Icon { code: primaryNavDelegate.modelData.faCode; iconSize: 12; width: 14; color: root.currentPage===primaryNavDelegate.modelData.page ? root.colorAccent : root.colorTextSub; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: primaryNavDelegate.modelData.label; font.pixelSize: 12; color: root.currentPage===primaryNavDelegate.modelData.page ? root.colorAccent : root.colorTextSub; font.weight: root.currentPage===primaryNavDelegate.modelData.page ? Font.Medium : Font.Normal; anchors.verticalCenter: parent.verticalCenter }
-                        }
-                        HoverHandler { id: _nh }
-                        TapHandler { onTapped: root.currentPage = primaryNavDelegate.modelData.page }
-                    }
-                }
-
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: root.colorBorder; Layout.topMargin: 4; Layout.bottomMargin: 4; Layout.leftMargin: 8; Layout.rightMargin: 8 }
-
-                Repeater {
-                    model: [
-                        { label: "System",  page: 6, faCode: "\uf013" }
-                    ]
-                    delegate: Rectangle {
-                        id: systemNavDelegate
-                        required property var modelData
-
-                        Layout.fillWidth: true; Layout.preferredHeight: 30
-                        property bool active: root.currentPage === systemNavDelegate.modelData.page
-                        color: active ? Qt.rgba(root.colorAccent.r,root.colorAccent.g,root.colorAccent.b,0.08)
-                                      : (_nh2.hovered ? Qt.rgba(0,0,0,root.dark?0.0:0.03) : "transparent")
-                        Rectangle { width: 2; height: parent.height; color: parent.active ? root.colorAccent : "transparent" }
-                        Row {
-                            anchors.left: parent.left; anchors.leftMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 7
-                            Icon { code: systemNavDelegate.modelData.faCode; iconSize: 12; width: 14; color: root.currentPage===systemNavDelegate.modelData.page ? root.colorAccent : root.colorTextSub; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: systemNavDelegate.modelData.label; font.pixelSize: 12; color: root.currentPage===systemNavDelegate.modelData.page ? root.colorAccent : root.colorTextSub; font.weight: root.currentPage===systemNavDelegate.modelData.page ? Font.Medium : Font.Normal; anchors.verticalCenter: parent.verticalCenter }
-                        }
-                        HoverHandler { id: _nh2 }
-                        TapHandler { onTapped: root.currentPage = systemNavDelegate.modelData.page }
-                    }
-                }
-
-                Item { Layout.fillHeight: true }
-
-                Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 30
-                    property bool active: root.currentPage === 7
-                    color: active ? Qt.rgba(root.colorAccent.r,root.colorAccent.g,root.colorAccent.b,0.08) : "transparent"
-                    Rectangle { width: 2; height: parent.height; color: parent.active ? root.colorAccent : "transparent" }
-                    Row {
-                        anchors.left: parent.left; anchors.leftMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 7
-                        Icon { code: "\uf05a"; iconSize: 12; width: 14; color: root.currentPage===7 ? root.colorAccent : root.colorTextSub; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: "About"; font.pixelSize: 12; color: root.currentPage===7 ? root.colorAccent : root.colorTextSub; font.weight: root.currentPage===7 ? Font.Medium : Font.Normal; anchors.verticalCenter: parent.verticalCenter }
-                    }
-                    TapHandler { onTapped: root.currentPage = 7 }
-                }
-                Item { Layout.preferredHeight: 6 }
-            }
+        SettingsNavigation {
+            currentPage: root.currentPage
+            onPageSelected: function(page) { root.currentPage = page }
         }
 
         // Pages 

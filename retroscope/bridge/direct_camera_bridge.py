@@ -577,10 +577,6 @@ class DirectCameraBridge(QObject):
         self.frame_tap_changed.emit()
         self._camera_service.on_frame_ready(arr)
 
-    def _frame_to_rgb_array(self, frame: object) -> np.ndarray | None:
-        arr, _focus_score = self._frame_to_rgb_array_and_focus(frame)
-        return arr
-
     def _frame_to_rgb_array_and_focus(self, frame: object) -> tuple[np.ndarray | None, float | None]:
         mapped = self._map_frame_to_rgb_array(frame)
         if mapped is not None:

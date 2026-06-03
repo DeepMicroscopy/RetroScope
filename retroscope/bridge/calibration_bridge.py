@@ -33,15 +33,6 @@ class CalibrationBridge(QObject):
     def stageUmPerStepY(self) -> float:
         return float(self._config.get("motor.stage_um_per_step_y", 0.0))
 
-    @Slot(str, int, float, result=bool)
-    def setStageAxisCalibration(self, axis: str, motor_steps: int, observed_pixels: float) -> bool:
-        return self.setStageAxisCalibrationWithScale(
-            axis,
-            motor_steps,
-            observed_pixels,
-            self._obj.current_profile().um_per_pixel,
-        )
-
     @Slot(str, int, float, float, result=bool)
     def setStageAxisCalibrationWithScale(
         self,

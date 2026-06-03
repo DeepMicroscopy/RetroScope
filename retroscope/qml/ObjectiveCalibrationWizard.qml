@@ -15,6 +15,7 @@ Dialog {
 
     property string _wizTs: "0"
     property real _wizFocusQuality: 0.0
+    property real _wizFocusPeakScore: 0.0
 
     FrameTapBoost {
         id: wizardFrameTapBoost
@@ -30,8 +31,15 @@ Dialog {
             if (calibWizard.visible && (calibWizard.step === 1 || calibWizard.step === 3 || calibWizard.step === 4 || calibWizard.step === 5 || calibWizard.step === 6))
                 calibWizard._wizTs = Date.now().toString()
         }
-        function onFocus_quality_updated(pct) {
-            if (calibWizard.visible) calibWizard._wizFocusQuality = pct
+        function onFocus_score_updated(score) {
+            if (!calibWizard.visible)
+                return
+            var cleanScore = Math.max(0, Number(score))
+            if (cleanScore > calibWizard._wizFocusPeakScore)
+                calibWizard._wizFocusPeakScore = cleanScore
+            calibWizard._wizFocusQuality = calibWizard._wizFocusPeakScore > 0
+                    ? Math.max(0, Math.min(100, cleanScore / calibWizard._wizFocusPeakScore * 100))
+                    : 0
         }
     }
     modal: true
@@ -78,6 +86,8 @@ Dialog {
         step = 0; pointsSet = 0
         px1x = 0; px1y = 0; px2x = 0; px2y = 0
         realUm = 0; calibResult = 0; pixelDist = 0
+        _wizFocusQuality = 0
+        _wizFocusPeakScore = 0
         _realInput.text = ""
         // load current values so wizard reflects actual calibration
         wizDofSteps   = App.objective.activeDofSteps

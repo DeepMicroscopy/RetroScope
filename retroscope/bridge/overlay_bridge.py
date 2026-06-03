@@ -10,8 +10,6 @@ class OverlayBridge(ConfigBackedBridgeMixin, QObject):
     crosshair_changed         = Signal(bool)
     grid_changed              = Signal(bool)
     theme_changed             = Signal(bool)
-    scale_bar_changed         = Signal(bool)
-    histogram_changed         = Signal(bool)
 
     def __init__(self, config: ConfigStore, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -20,8 +18,6 @@ class OverlayBridge(ConfigBackedBridgeMixin, QObject):
         self._config.set("ui.crosshair_visible", True)
         self._grid = bool(config.get("ui.grid_visible", False))
         self._dark = bool(config.get("ui.dark_theme", True))
-        self._scale_bar    = bool(config.get("ui.scale_bar_visible", True))
-        self._histogram    = bool(config.get("ui.histogram_visible", False))
 
     @Property(bool, notify=crosshair_changed)
     def crosshairVisible(self) -> bool:
@@ -46,19 +42,3 @@ class OverlayBridge(ConfigBackedBridgeMixin, QObject):
     @Slot(bool)
     def setDarkTheme(self, v: bool) -> None:
         self._set_setting("_dark", "ui.dark_theme", v, self.theme_changed)
-
-    @Property(bool, notify=scale_bar_changed)
-    def scaleBarVisible(self) -> bool:
-        return self._scale_bar
-
-    @Slot(bool)
-    def setScaleBarVisible(self, v: bool) -> None:
-        self._set_setting("_scale_bar", "ui.scale_bar_visible", v, self.scale_bar_changed)
-
-    @Property(bool, notify=histogram_changed)
-    def histogramVisible(self) -> bool:
-        return self._histogram
-
-    @Slot(bool)
-    def setHistogramVisible(self, v: bool) -> None:
-        self._set_setting("_histogram", "ui.histogram_visible", v, self.histogram_changed)

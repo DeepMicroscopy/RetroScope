@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from retroscope.services.button_manager import ButtonManager, NUM_BUTTONS
+from retroscope.services.button_manager import ButtonManager
 
 
 class ButtonBridge(QObject):
@@ -14,10 +14,6 @@ class ButtonBridge(QObject):
         super().__init__(parent)
         self._mgr = manager
         manager.action_executed.connect(lambda idx, _: self.button_pressed.emit(idx))
-
-    @Property(int, constant=True)
-    def buttonCount(self) -> int:
-        return NUM_BUTTONS
 
     @Property(list, notify=mapping_changed)
     def mappingModel(self) -> list:
@@ -36,7 +32,3 @@ class ButtonBridge(QObject):
     def setAction(self, button_index: int, action_id: str) -> None:
         self._mgr.set_action(button_index, action_id)
         self.mapping_changed.emit()
-
-    def refresh_actions(self) -> None:
-        """Call after registering new actions."""
-        self.actions_changed.emit()

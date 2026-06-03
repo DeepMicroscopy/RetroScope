@@ -211,30 +211,6 @@ class CameraService(QObject):
             frame = self._latest_frame
         return frame.copy() if frame is not None else None
 
-    def native_capture_frame_size(self) -> tuple[int, int]:
-        """Return the expected native still-capture frame size, if known."""
-        backend = self._native_capture_backend
-        if backend is not None:
-            for method_name in ("native_capture_size", "recording_dimensions"):
-                method = getattr(backend, method_name, None)
-                if method is None:
-                    continue
-                try:
-                    width, height = method()
-                except Exception:
-                    continue
-                width = int(width)
-                height = int(height)
-                if width > 0 and height > 0:
-                    return width, height
-        with self._lock:
-            frame = self._latest_frame
-        if frame is not None:
-            h, w = frame.shape[:2]
-            if w > 0 and h > 0:
-                return int(w), int(h)
-        return 0, 0
-
     # Frame analysis (histogram + focus quality)
     def _compute_histogram(self, frame: np.ndarray) -> list[float]:
         """Return luminance histogram counts with light neighbor-bin smoothing."""
@@ -267,13 +243,6 @@ class CameraService(QObject):
         self._raw_focus_seq += 1
         self._frame_cond.notify_all()
         return raw_score
-
-    @Slot()
-    def reset_focus_reference(self) -> None:
-        self._focus_score_ema = None
-        with self._frame_cond:
-            self._stable_source_focus_score = None
-            self._pending_source_focus_score = None
 
     def _stable_focus_score(self, score: float) -> float:
         """Reject focus spikes while staying realtime."""
@@ -616,10 +585,6 @@ class CameraService(QObject):
         with self._lock:
             return self._latest_frame
 
-    def frame_sequence(self) -> int:
-        with self._lock:
-            return self._frame_seq
-
     def wait_for_next_frame(
         self,
         after_sequence: int | None = None,
@@ -716,26 +681,6 @@ class CameraService(QObject):
             self._do_hires_snapshot(filename, captured_at)
         finally:
             self.capture_busy_changed.emit(False)
-
-    @Slot(str, result=bool)
-    def capture_tile(self, path: str) -> bool:
-        """Save the current frame to a specific path (used by tile scanner)."""
-        try:
-            import cv2
-        except ImportError:
-            return False
-        frame = self.capture_native_frame()
-        if frame is None:
-            return False
-        try:
-            out = Path(path)
-            out.parent.mkdir(parents=True, exist_ok=True)
-            bgr = frame[:, :, ::-1]
-            cv2.imwrite(str(out), bgr)
-            return True
-        except Exception as e:
-            print(f"[tile] save failed: {e}")
-            return False
 
     def _do_hires_snapshot(self, filename: Path, captured_at: datetime) -> None:
         frame = self.capture_native_frame()

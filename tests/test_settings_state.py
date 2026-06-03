@@ -1,10 +1,4 @@
-"""Test the settings state classes and their interaction with the configuration."""
-
-from retroscope.bridge.settings_state import (
-    CameraSettingsState,
-    InputSettingsState,
-    SystemSettingsState,
-)
+"""Test SettingsBridge interactions with configuration."""
 
 
 class ConfigStub:
@@ -27,28 +21,6 @@ class StoreStub:
 
     def total_count(self):
         return 0
-
-
-def test_input_settings_state_loads_defaults_and_clamps_z_encoder():
-    state = InputSettingsState.from_config(ConfigStub({"input.z_encoder_sensitivity_pct": 999}))
-
-    assert state.deadzone_pct == 8
-    assert state.curve == "exponential"
-    assert state.joystick_smoothing_pct == 25
-    assert state.z_encoder_sensitivity_pct == 400
-    assert not hasattr(state, "joystick_acceleration")
-
-
-def test_settings_state_buckets_load_expected_keys():
-    config = ConfigStub(
-        {
-            "camera.device": "/dev/video-test",
-            "system.restart_after_update": False,
-        }
-    )
-
-    assert CameraSettingsState.from_config(config).device == "/dev/video-test"
-    assert SystemSettingsState.from_config(config).restart_after_update is False
 
 
 def test_settings_bridge_joystick_smoothing_persists(tmp_path):

@@ -42,10 +42,6 @@ class AutofocusBridge(QObject):
         self._svc.start_autofocus()
 
     @Slot()
-    def cancelAutofocus(self) -> None:
-        self._svc.cancel()
-
-    @Slot()
     def toggleAutofocus(self) -> None:
         """Start AF or cancel it if already running (toggle)."""
         self._svc.toggle()

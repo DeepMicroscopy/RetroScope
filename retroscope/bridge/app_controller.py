@@ -253,14 +253,6 @@ class AppController(QObject):
         self._direct_camera_bridge.stop()
         self._camera_svc.shutdown()
 
-    @Slot(bool)
-    def setCrosshair(self, enabled: bool) -> None:
-        self._overlay.setCrosshairVisible(enabled)
-
-    @Slot(str)
-    def selectObjective(self, name: str) -> None:
-        self._objective.select(name)
-
     @Slot("QVariant", result=str)
     def saveMeasurementImage(self, image: object) -> str:
         """Save a grabbed QML measurement image as OME-TIFF."""

@@ -57,17 +57,6 @@ class ObjectiveBridge(QObject):
     def umPerPixel(self) -> float:
         return self._mgr.current_profile().um_per_pixel
 
-    @Property(float, notify=objective_changed)
-    def scaleBarUm(self) -> float:
-        # Returns a "round" scale bar length in µm for the default 100px bar
-        px = 100
-        raw_um = px * self._mgr.current_profile().um_per_pixel
-        # Snap to nearest "round" value
-        for nice in [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]:
-            if nice >= raw_um * 0.5:
-                return float(nice)
-        return float(raw_um)
-
     @Slot(str)
     def select(self, name: str) -> None:
         self._mgr.set_active(name)
@@ -123,31 +112,6 @@ class ObjectiveBridge(QObject):
     @Slot(int)
     def setFocusStackStep(self, v: int) -> None:
         self._mgr.apply_scaled_focus_stack_step(self._mgr.active_objective, max(1, v))
-
-    @Property(int, notify=params_changed)
-    def activeAutofocusRangeSteps(self) -> int:
-        profile = self._mgr.current_profile()
-        return int(getattr(profile, "autofocus_range_steps", max(200, profile.dof_steps * 10)))
-
-    @Slot(int)
-    def setAutofocusRangeSteps(self, v: int) -> None:
-        self._mgr.set_param(self._mgr.active_objective, "autofocus_range_steps", max(50, int(v)))
-
-
-    # Stage
-    @Property(float, notify=params_changed)
-    def stageUmPerStepX(self) -> float:
-        return float(self._mgr._config.get("motor.stage_um_per_step_x", 0.0))
-
-    @Property(float, notify=params_changed)
-    def stageUmPerStepY(self) -> float:
-        return float(self._mgr._config.get("motor.stage_um_per_step_y", 0.0))
-
-    @Slot(float, float)
-    def setStageUmPerStep(self, x: float, y: float) -> None:
-        self._mgr._config.set("motor.stage_um_per_step_x", max(0.0, float(x)))
-        self._mgr._config.set("motor.stage_um_per_step_y", max(0.0, float(y)))
-        self.params_changed.emit()
 
     @Slot()
     def resetActiveToDefaults(self) -> None:

@@ -1,7 +1,6 @@
 """Platform detection real vs mock"""
 
 import functools
-import os
 import sys
 from typing import Literal
 
@@ -19,10 +18,3 @@ def get_platform() -> Literal["pi", "mac"]:
 
 def is_pi() -> bool:
     return get_platform() == "pi"
-
-def is_wayland() -> bool:
-    """True on a Wayland session (env set by retroscope.service)."""
-    qpa = os.environ.get("QT_QPA_PLATFORM", "").lower()
-    if qpa:
-        return "wayland" in qpa
-    return bool(os.environ.get("WAYLAND_DISPLAY"))

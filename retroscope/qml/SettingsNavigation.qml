@@ -92,7 +92,7 @@ Rectangle {
         Repeater {
             model: [
                 { label: "Objectives", page: 0, faCode: "\uf610" },
-                { label: "Joystick", page: 1, faCode: "\uf276" },
+                { label: "Input", page: 1, faCode: "\uf276" },
                 { label: "Motors", page: 2, faCode: "\ue0b7" },
                 { label: "GPIO Buttons", page: 3, faCode: "\uf58d" },
                 { label: "Camera", page: 4, faCode: "\uf030" },

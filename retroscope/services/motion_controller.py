@@ -408,15 +408,6 @@ class MotionController(QObject):
             self._emit_motion_blocked(self._soft_limit_reason(source))
         return inside
 
-    def can_move_rel(self, dx: int, dy: int, dz: int = 0, source: str = "manual", emit_block: bool = True) -> bool:
-        del dz
-        return self.can_move_to_xy(
-            self._expected_x + int(dx),
-            self._expected_y + int(dy),
-            source=source,
-            emit_block=emit_block,
-        )
-
     def _load_soft_limits(self) -> None:
         if self._config is None:
             return
@@ -970,11 +961,3 @@ class MotionController(QObject):
         self._deadzone = max(0.01, min(0.5, value))
         self._clear_joystick_motion_state(clear_sample=True)
         self.deadzone_changed.emit()
-
-    def _finish_calibration_if_ready(self) -> None:
-        if self._calibration_samples >= _CALIBRATION_SAMPLES and self._center_x is None:
-            self._set_joystick_center(
-                self._calibration_sum_x / self._calibration_samples,
-                self._calibration_sum_y / self._calibration_samples,
-            )
-            self.joystick_cal_done.emit()

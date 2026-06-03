@@ -17,16 +17,11 @@ class UpdateBridge(QObject):
         self._applying = False
         self._status = ""
         self._version = service.get_version()
-        self._git_available = service.git_available
 
         service.update_found.connect(self._on_update_found)
         service.update_complete.connect(self._on_update_complete)
         service.update_failed.connect(self._on_update_failed)
         service.progress.connect(self._on_progress)
-
-    @Property(bool, constant=True)
-    def gitAvailable(self) -> bool:
-        return self._git_available
 
     @Property(str, notify=version_changed)
     def currentVersion(self) -> str:

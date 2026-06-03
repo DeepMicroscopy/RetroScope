@@ -43,7 +43,6 @@ class SettingsBridge(QObject):
     camera_fps_changed         = Signal(int)
     camera_format_changed      = Signal(str)
     camera_naming_changed      = Signal(str)
-    camera_metadata_changed    = Signal(bool)
     # Storage signals
     capture_root_changed       = Signal(str)
     storage_changed            = Signal()
@@ -105,7 +104,6 @@ class SettingsBridge(QObject):
         self._cam_fps    = self._clamp_analysis_fps(int(config.get("camera.fps", 8)))
         self._cam_fmt    = str(config.get("camera.image_format", "OME-TIFF"))
         self._cam_name   = str(config.get("camera.naming_pattern", "{date}_{time}_{obj}"))
-        self._cam_meta   = bool(config.get("camera.embed_metadata", True))
         # System
         self._restart_after_update = bool(config.get("system.restart_after_update", True))
         # Disk stats (refresh via refreshStorage())
@@ -507,18 +505,6 @@ class SettingsBridge(QObject):
         self._cam_name = v
         self._config.set("camera.naming_pattern", v)
         self.camera_naming_changed.emit(v)
-
-    @Property(bool, notify=camera_metadata_changed)
-    def cameraEmbedMetadata(self) -> bool:
-        return self._cam_meta
-
-    @Slot(bool)
-    def setCameraEmbedMetadata(self, v: bool) -> None:
-        if v == self._cam_meta:
-            return
-        self._cam_meta = v
-        self._config.set("camera.embed_metadata", v)
-        self.camera_metadata_changed.emit(v)
 
     # Storage (read-only, refreshed on demand)
     @Property(str, notify=capture_root_changed)

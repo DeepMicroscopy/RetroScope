@@ -58,8 +58,6 @@
     "dark_theme": false,
     "crosshair_visible": true,
     "active_objective": "10x",
-    "scale_bar_visible": true,
-    "histogram_visible": false,
     "grid_visible": false,
     "bookmarks": []
   },
@@ -98,8 +96,7 @@
     "resolution": "640x360",
     "fps": 30,
     "image_format": "OME-TIFF",
-    "naming_pattern": "{date}_{time}_{obj}",
-    "embed_metadata": true
+    "naming_pattern": "{date}_{time}_{obj}"
   },
   "system": {
     "restart_after_update": true

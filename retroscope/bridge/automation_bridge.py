@@ -23,7 +23,6 @@ class AutomationBridge(QObject):
     progress_changed      = Signal(float)
     frame_info_changed    = Signal()
     completed_changed     = Signal()
-    stitch_enabled_changed = Signal(bool)
 
     def __init__(
         self,
@@ -45,7 +44,6 @@ class AutomationBridge(QObject):
         self._frame_total = 0
         self._time_left   = ""
         self._completed: list[dict] = []
-        self._stitch_enabled   = True
         self._stitch_pending   = False
         self._tile_record_video = False
 
@@ -107,16 +105,6 @@ class AutomationBridge(QObject):
     def completedTasks(self) -> list:
         return list(reversed(self._completed))
 
-    @Property(bool, notify=stitch_enabled_changed)
-    def stitchEnabled(self) -> bool:
-        return self._stitch_enabled
-
-    @Slot(bool)
-    def setStitchEnabled(self, v: bool) -> None:
-        if self._stitch_enabled != v:
-            self._stitch_enabled = v
-            self.stitch_enabled_changed.emit(v)
-
     @Slot(int, int, result=int)
     def focusStackTotalSteps(self, z_start: int, z_end: int) -> int:
         return automation_plan.focus_stack_total_steps(z_start, z_end)
@@ -160,20 +148,6 @@ class AutomationBridge(QObject):
         ]
 
     # Slots
-    @Slot(int, int, int, str)
-    def startFocusStack(
-        self,
-        z_half_range: int = 50,
-        step_size: int = 5,
-        settle_ms: int = 150,
-        blending: str = "laplacian",
-    ) -> None:
-        if self._busy:
-            return
-        n_frames = automation_plan.focus_stack_frame_count(-z_half_range, z_half_range, step_size)
-        self._start_task("Focus stack", total_steps=n_frames)
-        self._fs.start(z_half_range, step_size, settle_ms, blending)
-
     @Slot(int, int, int, int, str)
     def startFocusStackAbsolute(
         self,
