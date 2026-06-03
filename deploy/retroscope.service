@@ -1,0 +1,29 @@
+[Unit]
+Description=RetroScope Control Application
+After=graphical.target network.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/retroscope
+ExecStart=/home/pi/retroscope/deploy/start.sh --scale 1.5
+Restart=on-failure
+RestartSec=3
+
+Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-1
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=QT_QPA_PLATFORM=xcb
+Environment=PYTHONUNBUFFERED=1
+
+# Workaround: Give Wayland time to start after graphical.target
+ExecStartPre=/bin/sleep 6
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=retroscope
+
+[Install]
+WantedBy=graphical.target

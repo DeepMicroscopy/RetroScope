@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=RetroScope
+Comment=RetroScope Control Application
+Exec=/home/pi/retroscope/deploy/start.sh --scale 1.5
+Path=/home/pi/retroscope
+Icon=/home/pi/retroscope/retroscope/qml/icons/app_icon.png
+Terminal=false
+Hidden=false
+X-GNOME-Autostart-enabled=true

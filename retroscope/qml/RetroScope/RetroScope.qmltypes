@@ -1,0 +1,1023 @@
+import QtQuick.tooling 1.2
+
+Module {
+    Component {
+        name: "AppController"
+        prototype: "QObject"
+        exports: ["RetroScope/AppController 1.0"]
+        Property { name: "automation"; type: "AutomationBridge"; isReadonly: true }
+        Property { name: "calibration"; type: "CalibrationBridge"; isReadonly: true }
+        Property { name: "settings"; type: "SettingsBridge"; isReadonly: true }
+        Property { name: "motion"; type: "MotionBridge"; isReadonly: true }
+        Property { name: "objective"; type: "ObjectiveBridge"; isReadonly: true }
+        Property { name: "overlay"; type: "OverlayBridge"; isReadonly: true }
+        Property { name: "status"; type: "StatusBridge"; isReadonly: true }
+        Property { name: "gallery"; type: "GalleryBridge"; isReadonly: true }
+        Property { name: "update"; type: "UpdateBridge"; isReadonly: true }
+        Property { name: "system"; type: "SystemBridge"; isReadonly: true }
+        Property { name: "buttons"; type: "ButtonBridge"; isReadonly: true }
+        Property { name: "autofocus"; type: "AutofocusBridge"; isReadonly: true }
+        Property { name: "objDetector"; type: "ObjectiveDetectorBridge"; isReadonly: true }
+        Property { name: "bookmarks"; type: "BookmarkBridge"; isReadonly: true }
+        Property { name: "measurement"; type: "MeasurementBridge"; isReadonly: true }
+        Property { name: "isMockMode"; type: "bool"; isReadonly: true }
+        Property { name: "cameraFrameTap"; type: "DirectCameraBridge"; isReadonly: true }
+        Property { name: "isRecording"; type: "bool"; isReadonly: true }
+        Property { name: "captureBusy"; type: "bool"; isReadonly: true }
+        Property { name: "cameraFps"; type: "double"; isReadonly: true }
+        Property { name: "cameraResolution"; type: "QString"; isReadonly: true }
+        Property { name: "cameraResolutionOptions"; type: "QVariantList"; isReadonly: true }
+        Property { name: "cameraFpsOptions"; type: "QVariantList"; isReadonly: true }
+        Signal { name: "frameAvailable"
+        }
+        Signal { name: "snapshot_saved"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "snapshot_failed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "capture_busy_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "recording_saved"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "histogram_updated"
+            Parameter { name: "arg0"; type: "QVariantList" }
+        }
+        Signal { name: "focus_score_updated"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "focus_source_updated"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "fps_updated"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "camera_resolution_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "camera_capabilities_changed"
+        }
+        Signal { name: "recording_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "takeSnapshot"
+        }
+        Method { name: "toggleRecording"
+        }
+        Method { name: "shutdown"
+        }
+        Method { name: "setCrosshair"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "selectObjective"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "saveMeasurementImage"; type: "QString"
+            Parameter { name: "arg0"; type: "QVariant" }
+        }
+    }
+    Component {
+        name: "AutofocusBridge"
+        prototype: "QObject"
+        Property { name: "busy"; type: "bool"; isReadonly: true }
+        Property { name: "progress"; type: "double"; isReadonly: true }
+        Signal { name: "busy_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "progress_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "autofocus_failed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "startAutofocus"
+        }
+        Method { name: "cancelAutofocus"
+        }
+        Method { name: "toggleAutofocus"
+        }
+    }
+    Component {
+        name: "AutomationBridge"
+        prototype: "QObject"
+        Property { name: "busy"; type: "bool"; isReadonly: true }
+        Property { name: "paused"; type: "bool"; isReadonly: true }
+        Property { name: "cancelling"; type: "bool"; isReadonly: true }
+        Property { name: "taskName"; type: "QString"; isReadonly: true }
+        Property { name: "taskProgress"; type: "double"; isReadonly: true }
+        Property { name: "taskFrameCurrent"; type: "int"; isReadonly: true }
+        Property { name: "taskFrameTotal"; type: "int"; isReadonly: true }
+        Property { name: "taskTimeLeft"; type: "QString"; isReadonly: true }
+        Property { name: "completedTasks"; type: "QVariantList"; isReadonly: true }
+        Property { name: "stitchEnabled"; type: "bool"; isReadonly: true }
+        Signal { name: "busy_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "paused_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "cancelling_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "task_name_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "progress_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "frame_info_changed"
+        }
+        Signal { name: "completed_changed"
+        }
+        Signal { name: "stitch_enabled_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setStitchEnabled"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "focusStackTotalSteps"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "focusStackFrameCount"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "focusStackPreviewLines"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "estimateFocusStackSeconds"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+            Parameter { name: "arg3"; type: "int" }
+        }
+        Method { name: "tileCount"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "estimateTileScanSeconds"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "tileOrder"; type: "QVariantList"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "QString" }
+        }
+        Method { name: "startFocusStack"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+            Parameter { name: "arg3"; type: "QString" }
+        }
+        Method { name: "startFocusStackAbsolute"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+            Parameter { name: "arg3"; type: "int" }
+            Parameter { name: "arg4"; type: "QString" }
+        }
+        Method { name: "startTileScan"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "double" }
+            Parameter { name: "arg3"; type: "QString" }
+            Parameter { name: "arg4"; type: "bool" }
+            Parameter { name: "arg5"; type: "bool" }
+            Parameter { name: "arg6"; type: "bool" }
+            Parameter { name: "arg7"; type: "int" }
+        }
+        Method { name: "cancelTask"
+        }
+        Method { name: "pauseTask"
+        }
+        Method { name: "resumeTask"
+        }
+    }
+    Component {
+        name: "BookmarkBridge"
+        prototype: "QObject"
+        Property { name: "bookmarkList"; type: "QVariantList"; isReadonly: true }
+        Signal { name: "bookmarks_changed"
+            Parameter { name: "arg0"; type: "QVariantList" }
+        }
+        Method { name: "saveCurrent"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "deleteBM"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "navigateTo"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+    }
+    Component {
+        name: "ButtonBridge"
+        prototype: "QObject"
+        Property { name: "buttonCount"; type: "int"; isReadonly: true }
+        Property { name: "mappingModel"; type: "QVariantList"; isReadonly: true }
+        Property { name: "availableActionIds"; type: "QVariantList"; isReadonly: true }
+        Property { name: "availableActionLabels"; type: "QVariantList"; isReadonly: true }
+        Signal { name: "mapping_changed"
+        }
+        Signal { name: "actions_changed"
+        }
+        Signal { name: "button_pressed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAction"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "QString" }
+        }
+    }
+    Component {
+        name: "DirectCameraBridge"
+        prototype: "QObject"
+        Property { name: "frameTapCount"; type: "int"; isReadonly: true }
+        Property { name: "activeResolution"; type: "QString"; isReadonly: true }
+        Property { name: "activeFps"; type: "double"; isReadonly: true }
+        Property { name: "availableResolutions"; type: "QVariantList"; isReadonly: true }
+        Property { name: "availableFps"; type: "QVariantList"; isReadonly: true }
+        Signal { name: "frame_tap_changed"
+        }
+        Signal { name: "camera_format_changed"
+        }
+        Signal { name: "camera_capabilities_changed"
+        }
+        Method { name: "configureCamera"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "setCameraDevice"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraResolution"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraFps"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setVideoSink"
+            Parameter { name: "arg0"; type: "QObject" }
+        }
+        Method { name: "stop"
+        }
+    }
+    Component {
+        name: "GalleryBridge"
+        prototype: "QObject"
+        Property { name: "items"; type: "QVariantList"; isReadonly: true }
+        Property { name: "groupedItems"; type: "QVariantList"; isReadonly: true }
+        Property { name: "selectedIndex"; type: "int"; isReadonly: true }
+        Property { name: "selectedId"; type: "QString"; isReadonly: true }
+        Property { name: "selectedItem"; type: "QVariantMap"; isReadonly: true }
+        Property { name: "filterOptions"; type: "QVariantList"; isReadonly: true }
+        Property { name: "filterType"; type: "QString"; isReadonly: true }
+        Property { name: "sortOrder"; type: "QString"; isReadonly: true }
+        Property { name: "viewMode"; type: "QString"; isReadonly: true }
+        Property { name: "captureCount"; type: "int"; isReadonly: true }
+        Property { name: "totalSizeLabel"; type: "QString"; isReadonly: true }
+        Signal { name: "items_changed"
+        }
+        Signal { name: "grouped_changed"
+        }
+        Signal { name: "selected_changed"
+        }
+        Signal { name: "filter_changed"
+        }
+        Signal { name: "sort_changed"
+        }
+        Signal { name: "view_changed"
+        }
+        Signal { name: "summary_changed"
+        }
+        Signal { name: "action_message"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "refresh"
+        }
+        Method { name: "on_capture_saved"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setFilterType"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setSortOrder"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setViewMode"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "selectIndex"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "selectByIndex"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "selectItem"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "addTag"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "removeTag"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "deleteSelected"
+        }
+        Method { name: "goToSelectedPosition"
+        }
+    }
+    Component {
+        name: "MeasurementBridge"
+        prototype: "QObject"
+        Property { name: "measurements"; type: "QVariantList"; isReadonly: true }
+        Property { name: "pendingPoints"; type: "QVariantList"; isReadonly: true }
+        Property { name: "selectedId"; type: "int"; isReadonly: true }
+        Signal { name: "measurementsChanged"
+        }
+        Signal { name: "pendingPointsChanged"
+        }
+        Signal { name: "selectedIdChanged"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "clearMeasurements"
+        }
+        Method { name: "resetPending"
+        }
+        Method { name: "selectMeasurement"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "deleteMeasurement"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "handleClick"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "double" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "colorForType"; type: "QString"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "toolType"; type: "QString"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "pointsRequired"; type: "int"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "distancePx"; type: "double"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "QVariant" }
+        }
+        Method { name: "distanceUm"; type: "double"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "QVariant" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "angleDeg"; type: "double"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "QVariant" }
+            Parameter { name: "arg2"; type: "QVariant" }
+        }
+        Method { name: "formatLength"; type: "QString"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "formatArea"; type: "QString"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "formatValue"; type: "QString"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "formatSub"; type: "QString"
+            Parameter { name: "arg0"; type: "QVariant" }
+        }
+        Method { name: "formatAux"; type: "QString"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "createMeasurement"; type: "QVariant"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "QString" }
+            Parameter { name: "arg2"; type: "QVariant" }
+            Parameter { name: "arg3"; type: "QString" }
+        }
+        Method { name: "nearestMeasurementId"; type: "int"
+            Parameter { name: "arg0"; type: "QVariant" }
+            Parameter { name: "arg1"; type: "double" }
+            Parameter { name: "arg2"; type: "double" }
+            Parameter { name: "arg3"; type: "double" }
+        }
+    }
+    Component {
+        name: "MotionBridge"
+        prototype: "QObject"
+        Property { name: "posX"; type: "int"; isReadonly: true }
+        Property { name: "posY"; type: "int"; isReadonly: true }
+        Property { name: "posZ"; type: "int"; isReadonly: true }
+        Property { name: "softLimitsEnabled"; type: "bool"; isReadonly: true }
+        Property { name: "softLimitsCalibrated"; type: "bool"; isReadonly: true }
+        Property { name: "softLimitXMin"; type: "int"; isReadonly: true }
+        Property { name: "softLimitXMax"; type: "int"; isReadonly: true }
+        Property { name: "softLimitYMin"; type: "int"; isReadonly: true }
+        Property { name: "softLimitYMax"; type: "int"; isReadonly: true }
+        Property { name: "stageLimitWizardActive"; type: "bool"; isReadonly: true }
+        Property { name: "stageLimitWizardStep"; type: "int"; isReadonly: true }
+        Property { name: "joystickCenterX"; type: "double"; isReadonly: true }
+        Property { name: "joystickCenterY"; type: "double"; isReadonly: true }
+        Property { name: "joystickNormX"; type: "double"; isReadonly: true }
+        Property { name: "joystickNormY"; type: "double"; isReadonly: true }
+        Property { name: "deadzone"; type: "double"; isReadonly: true }
+        Signal { name: "position_changed"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Signal { name: "motion_blocked"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "softLimitsChanged"
+        }
+        Signal { name: "stageLimitWizardChanged"
+        }
+        Signal { name: "z_move_requested"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "xy_move_requested"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Signal { name: "motors_deenergize_requested"
+        }
+        Signal { name: "joystick_cal_requested"
+        }
+        Signal { name: "joystickCalDone"
+        }
+        Signal { name: "joystick_center_changed"
+        }
+        Signal { name: "joystickAxisChanged"
+        }
+        Signal { name: "deadzone_set_requested"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "deadzoneChanged"
+        }
+        Method { name: "on_position_updated"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "startStageLimitWizard"
+        }
+        Method { name: "closeStageLimitWizard"
+        }
+        Method { name: "setStageLimitWizardStep"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "confirmHomeZero"; type: "bool"
+        }
+        Method { name: "saveBottomRightLimit"; type: "bool"
+        }
+        Method { name: "setSoftLimitsEnabled"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "clearSoftLimits"
+        }
+        Method { name: "moveZ_rel"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "moveRelXY"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "deenergizeMotors"
+        }
+        Method { name: "on_joystick_center_updated"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
+        }
+        Method { name: "on_joystick_axes"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "startJoystickCal"
+        }
+        Method { name: "setJoystickSwapXY"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setJoystickInvertX"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setJoystickInvertY"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setDeadzone"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "on_deadzone_updated"
+            Parameter { name: "arg0"; type: "double" }
+        }
+    }
+    Component {
+        name: "ObjectiveBridge"
+        prototype: "QObject"
+        Property { name: "activeObjective"; type: "QString"; isReadonly: true }
+        Property { name: "activeDisplayName"; type: "QString"; isReadonly: true }
+        Property { name: "objectiveNames"; type: "QVariantList"; isReadonly: true }
+        Property { name: "objectiveDisplayNames"; type: "QVariantList"; isReadonly: true }
+        Property { name: "activeNumericalAperture"; type: "double"; isReadonly: true }
+        Property { name: "umPerPixel"; type: "double"; isReadonly: true }
+        Property { name: "scaleBarUm"; type: "double"; isReadonly: true }
+        Property { name: "activeBacklashX"; type: "int"; isReadonly: true }
+        Property { name: "activeBacklashY"; type: "int"; isReadonly: true }
+        Property { name: "activeBacklashZ"; type: "int"; isReadonly: true }
+        Property { name: "activeUmPerPixel"; type: "double"; isReadonly: true }
+        Property { name: "activeDofSteps"; type: "int"; isReadonly: true }
+        Property { name: "activeFocusStackStep"; type: "int"; isReadonly: true }
+        Signal { name: "objective_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "params_changed"
+        }
+        Signal { name: "names_changed"
+        }
+        Method { name: "renameObjective"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "QString" }
+        }
+        Method { name: "setNumericalAperture"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setNumericalApertureFor"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "double" }
+        }
+        Method { name: "select"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setBacklashX"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setBacklashY"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setBacklashZ"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setUmPerPixel"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setDofSteps"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setFocusStackStep"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "resetActiveToDefaults"
+        }
+        Method { name: "normalizedPixelDistance"; type: "double"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
+            Parameter { name: "arg2"; type: "double" }
+            Parameter { name: "arg3"; type: "double" }
+            Parameter { name: "arg4"; type: "double" }
+            Parameter { name: "arg5"; type: "double" }
+        }
+        Method { name: "calibratedUmPerPixel"; type: "double"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
+        }
+        Method { name: "dofStepsBetween"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "suggestedFocusStackStep"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "adjustBacklashSteps"; type: "int"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+    }
+    Component {
+        name: "ObjectiveDetectorBridge"
+        prototype: "QObject"
+        Property { name: "enabled"; type: "bool"; isReadonly: true }
+        Property { name: "darkThresholdPct"; type: "double"; isReadonly: true }
+        Property { name: "darkDurationMs"; type: "int"; isReadonly: true }
+        Property { name: "recoveryThresholdPct"; type: "double"; isReadonly: true }
+        Property { name: "autofocusOnSwitch"; type: "bool"; isReadonly: true }
+        Signal { name: "enabled_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "dark_threshold_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "dark_duration_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "recovery_threshold_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "autofocus_on_switch_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "switchDetected"
+        }
+        Method { name: "setEnabled"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setDarkThresholdPct"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setDarkDurationMs"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setRecoveryThresholdPct"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setAutofocusOnSwitch"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "cancel"
+        }
+    }
+    Component {
+        name: "OverlayBridge"
+        prototype: "QObject"
+        Property { name: "crosshairVisible"; type: "bool"; isReadonly: true }
+        Property { name: "gridVisible"; type: "bool"; isReadonly: true }
+        Property { name: "darkTheme"; type: "bool"; isReadonly: true }
+        Property { name: "scaleBarVisible"; type: "bool"; isReadonly: true }
+        Property { name: "histogramVisible"; type: "bool"; isReadonly: true }
+        Signal { name: "crosshair_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "grid_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "theme_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "scale_bar_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "histogram_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setCrosshairVisible"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setGridVisible"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setDarkTheme"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setScaleBarVisible"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setHistogramVisible"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+    }
+    Component {
+        name: "CalibrationBridge"
+        prototype: "QObject"
+        Property { name: "stageUmPerStepX"; type: "double"; isReadonly: true }
+        Property { name: "stageUmPerStepY"; type: "double"; isReadonly: true }
+        Property { name: "backlashOffsetXPx"; type: "double"; isReadonly: true }
+        Property { name: "backlashOffsetYPx"; type: "double"; isReadonly: true }
+        Property { name: "backlashMatchScore"; type: "double"; isReadonly: true }
+        Property { name: "backlashReverseSteps"; type: "int"; isReadonly: true }
+        Signal { name: "stage_scale_changed"
+        }
+        Signal { name: "backlash_measurement_changed"
+        }
+        Method { name: "setStageAxisCalibration"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "double" }
+        }
+        Method { name: "setStageAxisCalibrationWithScale"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "int" }
+            Parameter { name: "arg2"; type: "double" }
+            Parameter { name: "arg3"; type: "double" }
+        }
+        Method { name: "setBacklashReference"; type: "bool"
+        }
+        Method { name: "beginBacklashMeasurement"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setDofCalibrationActive"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "jogStageAxis"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "jogBacklashAxis"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "measureBacklashOffset"; type: "bool"
+        }
+        Method { name: "acceptBacklashSteps"; type: "bool"
+            Parameter { name: "arg0"; type: "QString" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+    }
+    Component {
+        name: "SettingsBridge"
+        prototype: "QObject"
+        Property { name: "captureRoot"; type: "QString"; isReadonly: true }
+        Property { name: "diskUsedGb"; type: "double"; isReadonly: true }
+        Property { name: "diskTotalGb"; type: "double"; isReadonly: true }
+        Property { name: "diskUsedFraction"; type: "double"; isReadonly: true }
+        Property { name: "captureCount"; type: "int"; isReadonly: true }
+        Property { name: "joystickDeadzonePct"; type: "int"; isReadonly: true }
+        Property { name: "joystickCurve"; type: "QString"; isReadonly: true }
+        Property { name: "joystickExpoStrength"; type: "int"; isReadonly: true }
+        Property { name: "joystickSensitivityPct"; type: "int"; isReadonly: true }
+        Property { name: "joystickSmoothingPct"; type: "int"; isReadonly: true }
+        Property { name: "joystickSwapXY"; type: "bool"; isReadonly: true }
+        Property { name: "joystickInvertX"; type: "bool"; isReadonly: true }
+        Property { name: "joystickInvertY"; type: "bool"; isReadonly: true }
+        Property { name: "zEncoderSensitivityPct"; type: "int"; isReadonly: true }
+        Property { name: "maxPanSpeedPxPerSec"; type: "int"; isReadonly: true }
+        Property { name: "zEncoderStepMultiplier"; type: "double"; isReadonly: true }
+        Property { name: "sangaboardStepTimeUs"; type: "int"; isReadonly: true }
+        Property { name: "sangaboardRampTimeUs"; type: "int"; isReadonly: true }
+        Property { name: "autofocusSpeedPreset"; type: "QString"; isReadonly: true }
+        Property { name: "autofocusSettleMs"; type: "int"; isReadonly: true }
+        Property { name: "autofocusMoveStartMs"; type: "int"; isReadonly: true }
+        Property { name: "autofocusCoarsePositions"; type: "int"; isReadonly: true }
+        Property { name: "autofocusFinePositions"; type: "int"; isReadonly: true }
+        Property { name: "autofocusSamplesPerPosition"; type: "int"; isReadonly: true }
+        Property { name: "autofocusMinConfidence"; type: "double"; isReadonly: true }
+        Property { name: "cameraDevice"; type: "QString"; isReadonly: true }
+        Property { name: "cameraResolution"; type: "QString"; isReadonly: true }
+        Property { name: "cameraFps"; type: "int"; isReadonly: true }
+        Property { name: "cameraImageFormat"; type: "QString"; isReadonly: true }
+        Property { name: "cameraNamingPattern"; type: "QString"; isReadonly: true }
+        Property { name: "restartAfterUpdate"; type: "bool"; isReadonly: true }
+        Signal { name: "joystick_deadzone_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "joystick_curve_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "joystick_expo_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "joystick_sensitivity_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "joystick_smoothing_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "joystick_swap_xy_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "joystick_invert_x_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "joystick_invert_y_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "z_encoder_sensitivity_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "max_pan_speed_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "z_encoder_step_multiplier_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "sangaboard_step_time_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "sangaboard_ramp_time_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "sangaboard_step_time_set_requested"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "sangaboard_ramp_time_set_requested"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_speed_preset_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "autofocus_settle_ms_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_move_start_ms_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_coarse_positions_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_fine_positions_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_samples_per_position_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "autofocus_min_confidence_changed"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Signal { name: "camera_device_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "camera_resolution_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "camera_fps_changed"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Signal { name: "camera_format_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "camera_naming_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "restart_after_update_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "capture_root_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "storage_changed"
+        }
+        Method { name: "setCaptureRoot"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "refreshStorage"
+        }
+        Method { name: "clearAllCaptures"
+        }
+        Method { name: "setJoystickDeadzonePct"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setJoystickCurve"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setJoystickExpoStrength"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setJoystickSensitivityPct"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setJoystickSmoothingPct"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setJoystickSwapXY"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setJoystickInvertX"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setJoystickInvertY"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setZEncoderSensitivityPct"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setMaxPanSpeedPxPerSec"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setZEncoderStepMultiplier"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setSangaboardStepTimeUs"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setSangaboardRampTimeUs"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "onSangaboardTimingUpdated"
+            Parameter { name: "arg0"; type: "int" }
+            Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "applySangaboardTimingOverrides"
+        }
+        Method { name: "setAutofocusSpeedPreset"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setAutofocusSettleMs"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAutofocusMoveStartMs"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAutofocusCoarsePositions"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAutofocusFinePositions"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAutofocusSamplesPerPosition"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setAutofocusMinConfidence"
+            Parameter { name: "arg0"; type: "double" }
+        }
+        Method { name: "setCameraDevice"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraResolution"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraFps"
+            Parameter { name: "arg0"; type: "int" }
+        }
+        Method { name: "setCameraImageFormat"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraNamingPattern"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setRestartAfterUpdate"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+    }
+    Component {
+        name: "StatusBridge"
+        prototype: "QObject"
+        Property { name: "sangaboardConnected"; type: "bool"; isReadonly: true }
+        Property { name: "endstopTriggered"; type: "bool"; isReadonly: true }
+        Signal { name: "connection_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "endstop_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "on_connection_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "on_endstop_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+    }
+    Component {
+        name: "SystemBridge"
+        prototype: "QObject"
+        Property { name: "isPi"; type: "bool"; isReadonly: true }
+        Property { name: "pythonVersion"; type: "QString"; isReadonly: true }
+        Property { name: "pyside6Version"; type: "QString"; isReadonly: true }
+        Property { name: "opencvVersion"; type: "QString"; isReadonly: true }
+        Property { name: "configPath"; type: "QString"; isReadonly: true }
+        Signal { name: "shutdown_initiated"
+        }
+        Method { name: "restartApp"
+        }
+        Method { name: "shutdownPi"
+        }
+        Method { name: "quitApp"
+        }
+        Method { name: "showInputPanel"
+        }
+    }
+    Component {
+        name: "UpdateBridge"
+        prototype: "QObject"
+        Property { name: "gitAvailable"; type: "bool"; isReadonly: true }
+        Property { name: "currentVersion"; type: "QString"; isReadonly: true }
+        Property { name: "updateAvailable"; type: "bool"; isReadonly: true }
+        Property { name: "checking"; type: "bool"; isReadonly: true }
+        Property { name: "applying"; type: "bool"; isReadonly: true }
+        Property { name: "statusMessage"; type: "QString"; isReadonly: true }
+        Signal { name: "state_changed"
+        }
+        Signal { name: "version_changed"
+            Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "checkForUpdates"
+        }
+        Method { name: "applyUpdate"
+        }
+    }
+    Component {
+        name: "App"
+        prototype: "AppController"
+        exports: ["RetroScope/App 1.0"]
+        isSingleton: true
+        isCreatable: false
+    }
+}

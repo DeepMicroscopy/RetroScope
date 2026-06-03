@@ -1,0 +1,131 @@
+{
+  "objectives": {
+    "4x": {
+      "numerical_aperture": 0.1,
+      "backlash_x": 300,
+      "backlash_y": 600,
+      "backlash_z": 10,
+      "um_per_pixel": 3.686795982763792,
+      "dof_steps": 1041,
+      "focus_stack_step": 521,
+      "autofocus_range_steps": 10410
+    },
+    "10x": {
+      "display_name": "20x",
+      "numerical_aperture": 0.25,
+      "backlash_x": 300,
+      "backlash_y": 600,
+      "backlash_z": 10,
+      "um_per_pixel": 0.7373591965527584,
+      "dof_steps": 167,
+      "focus_stack_step": 84,
+      "autofocus_range_steps": 1670
+    },
+    "20x": {
+      "display_name": "40x",
+      "numerical_aperture": 0.4,
+      "backlash_x": 300,
+      "backlash_y": 600,
+      "backlash_z": 10,
+      "um_per_pixel": 0.3686795982763792,
+      "dof_steps": 65,
+      "focus_stack_step": 33,
+      "autofocus_range_steps": 650
+    },
+    "40x": {
+      "display_name": "63x",
+      "numerical_aperture": 0.65,
+      "backlash_x": 300,
+      "backlash_y": 600,
+      "backlash_z": 10,
+      "um_per_pixel": 0.2340822846199233,
+      "dof_steps": 25,
+      "focus_stack_step": 13,
+      "autofocus_range_steps": 250
+    },
+    "100x": {
+      "numerical_aperture": 1.25,
+      "backlash_x": 300,
+      "backlash_y": 600,
+      "backlash_z": 10,
+      "um_per_pixel": 0.1474718393105517,
+      "dof_steps": 7,
+      "focus_stack_step": 4,
+      "autofocus_range_steps": 200
+    }
+  },
+  "ui": {
+    "dark_theme": false,
+    "crosshair_visible": true,
+    "active_objective": "10x",
+    "scale_bar_visible": true,
+    "histogram_visible": false,
+    "grid_visible": false,
+    "bookmarks": []
+  },
+  "captures": {
+    "root": ""
+  },
+  "input": {
+    "deadzone_pct": 10,
+    "curve": "exponential",
+    "expo_strength": 100,
+    "sensitivity_pct": 100,
+    "joystick_smoothing_pct": 0,
+    "swap_xy": true,
+    "invert_x": false,
+    "invert_y": false,
+    "z_encoder_sensitivity_pct": 100,
+    "max_pan_speed_px_per_sec": 590,
+    "z_encoder_step_multiplier": 1.0
+  },
+  "motor": {
+    "soft_limits": {
+      "enabled": false,
+      "calibrated": false,
+      "x_min": 0,
+      "x_max": 0,
+      "y_min": 0,
+      "y_max": 0
+    },
+    "stage_um_per_step_x": 2.208711384630534,
+    "stage_um_per_step_y": 3.113619429052156,
+    "sangaboard_step_time_us": 1000,
+    "sangaboard_ramp_time_us": 0
+  },
+  "camera": {
+    "device": "/dev/video0",
+    "resolution": "640x360",
+    "fps": 30,
+    "image_format": "OME-TIFF",
+    "naming_pattern": "{date}_{time}_{obj}",
+    "embed_metadata": true
+  },
+  "system": {
+    "restart_after_update": true
+  },
+  "detection": {
+    "enabled": true,
+    "dark_threshold_pct": 40.0,
+    "dark_duration_ms": 200,
+    "recovery_threshold_pct": 40.0,
+    "autofocus_on_switch": true
+  },
+  "autofocus": {
+    "speed_preset": "fast",
+    "settle_ms": 150,
+    "move_start_ms": 400,
+    "coarse_positions": 11,
+    "fine_positions": 13,
+    "samples_per_position": 1,
+    "min_confidence": 70.0
+  },
+  "buttons": {
+    "mapping": [
+      "snapshot",
+      "autofocus",
+      "toggle_recording",
+      "emergency_stop"
+    ]
+  }
+}
