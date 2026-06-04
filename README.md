@@ -4,8 +4,6 @@
   <img src="retroscope/qml/icons/app_logo_light.png" alt="RetroScope" width="500">
 </picture>
 
-# RetroScope
-
 **An Open Platform for Motorizing and Digitizing Vintage Microscopes**
 
 RetroScope is an open-source platform for older analog microscopes. It combines software, digital imaging, motorized stage and focus control, calibration workflows, and adaptable mechanical parts so that existing microscopes can be upgraded instead of replaced.
@@ -18,6 +16,9 @@ RetroScope is an open-source platform for older analog microscopes. It combines 
 
 The project was developed as part of the master's thesis **"Retrofitting a Vintage Microscope: Development of an Embedded System for Motorized Control and Digital Imaging"** in Applied Computer Science at Flensburg University of Applied Sciences.
 
+## Screenshot
+
+ToDo: Add screenshots
 
 ## Overview
 
@@ -167,7 +168,7 @@ Name                    | Version
 ------------------------|-------------------
 PySide6                 | >=6.11.1          
 numpy                   | >=2.4.6           
-opencv-python-headless  | >= 4.7.0.72       
+opencv-python-headless  | >=4.7.0.72       
 Pillow                  | >=12.2.0          
 tifffile                | >=2026.5.15       
 sangaboard              | >=0.3.3           
