@@ -10,8 +10,129 @@
 
 RetroScope is an open-source platform for older analog microscopes. It combines software, digital imaging, motorized stage and focus control, calibration workflows, and adaptable mechanical parts so that existing microscopes can be upgraded instead of replaced.
 
-**TODO: Replace image:**
-
-  <img src="retroscope/qml/icons/product.jpeg" alt="RetroScope" width="500">
+**TODO: Replace with 1 or 2 images:**
+<p align="center">
+  <img src="retroscope/qml/icons/product.jpeg" alt="RetroScope" width="49%">
+  <img src="retroscope/qml/icons/product.jpeg" alt="RetroScope" width="49%">
+</p>
 
 The project was developed as part of the master's thesis **"Retrofitting a Vintage Microscope: Development of an Embedded System for Motorized Control and Digital Imaging"** in Applied Computer Science at Flensburg University of Applied Sciences.
+
+## Features
+
+
+
+## Installation
+
+Clone the repository and create a virtual environment:
+
+```bash
+git clone https://github.com/marvincarstensen/RetroScope.git
+cd retroscope
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+For Raspberry Pi deployment, an additional setup script, to e.g. setup the service, has to be run with sudo:
+```bash
+sudo bash deploy/setup.sh
+```
+
+## Running
+
+Start the application:
+
+Note: First launch may take a little longer while Python builds its caches.
+
+```bash
+python app.py
+```
+
+Run in mock mode for desktop env:
+
+```bash
+python app.py --mock
+```
+
+Enable development mode with QML hot reloading:
+
+```bash
+python app.py --mock --dev
+```
+
+Apply a UI scale factor:
+
+```bash
+python app.py --scale 1.5
+```
+
+On the Raspberry Pi with Wayland:
+
+```bash
+WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000 python app.py --scale=1.5
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+.venv/bin/python -m pytest -q
+```
+
+Compile-check on the package:
+
+```bash
+.venv/bin/python -m compileall -q retroscope
+```
+
+Run QML lint checks:
+
+```bash
+.venv/bin/pyside6-qmllint -I retroscope/qml $(find retroscope/qml -name '*.qml')
+```
+
+## Shortcuts (Mock only)
+
+The following keyboard shortcuts can be used in mock simulation:
+
+Key       | Function           
+----------|-------------------
+WASD      | Joystick axes        
+Space     | Joystick center (release)         
+PgUp/PgDn | Encoder step +-1       
+1/2/3/4   | Button press 0–3      
+E         | Simulate endstop triggered/released toggle
+
+## Dependencies
+
+The following plugins, libraries and frameworks are used:
+
+Name                    | Version           
+------------------------|-------------------
+PySide6                 | >=6.11.1          
+numpy                   | >=2.4.6           
+opencv-python-headless  | >= 4.7.0.72       
+Pillow                  | >=12.2.0          
+tifffile                | >=2026.5.15       
+sangaboard              | >=0.3.3           
+smbus2 (only on Pi)     | >=0.6.1           
+gpiod (only on Pi)      | >=2.4.2           
+
+## Additional Sources
+
+- Font Awesome by Dave Gandy (https://fontawesome.com/)
+- LateX Template, Logo & CI (DeepMicroscopy) by Nils Porsche (@XYZ)
+
+ToDo: Add all references
+
+## Declaration: Use of Generative AI
+
+The following generative AI tools were used in this thesis: 
+
+- ChatGPT (OpenAI) & Claude (Anthropic) used to support brainstorming, quick research, and the generation of selected parts of the code (e.g. unit tests). AI-assisted scripts and functions are marked in the source code via comments.
+- DeepL write & Claude (Anthropic) were used in language editing and grammatical proof-reading.
+
+All AI-generated material was critically reviewed, edited, and verified by the author. No generative AI system was used to produce original scientific results, experimental data, proofs, or final implementations of algorithms. The author assumes full responsibility for the content, correctness, and originality of this thesis.
+
