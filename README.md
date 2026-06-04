@@ -4,6 +4,8 @@
   <img src="retroscope/qml/icons/app_logo_light.png" alt="RetroScope" width="500">
 </picture>
 
+---
+
 **An Open Platform for Motorizing and Digitizing Vintage Microscopes**
 
 RetroScope is an open-source platform for older analog microscopes. It combines software, digital imaging, motorized stage and focus control, calibration workflows, and adaptable mechanical parts so that existing microscopes can be upgraded instead of replaced.
@@ -98,11 +100,11 @@ sudo bash deploy/setup.sh
 
 Start the application:
 
-Note: First launch may take a little longer while Python builds its caches.
-
 ```bash
 python app.py
 ```
+> [!NOTE]
+> First launch may take a little longer while Python builds its caches.
 
 Run in mock mode for desktop env:
 
@@ -147,6 +149,10 @@ Run QML lint checks:
 ```bash
 .venv/bin/pyside6-qmllint -I retroscope/qml $(find retroscope/qml -name '*.qml')
 ```
+
+## REST-API
+
+ToDO: Add Docs
 
 ## Shortcuts (Mock only)
 
