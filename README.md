@@ -18,9 +18,63 @@ RetroScope is an open-source platform for older analog microscopes. It combines 
 
 The project was developed as part of the master's thesis **"Retrofitting a Vintage Microscope: Development of an Embedded System for Motorized Control and Digital Imaging"** in Applied Computer Science at Flensburg University of Applied Sciences.
 
+
+## Overview
+
+RetroScope is not just a single application. It is intended as a complete retrofit platform:
+
+- **Control software**: Python/PySide6 backend with a QML touchscreen interface.
+- **Embedded system**: Raspberry Pi-based embedded system with mock/development support for desktop.
+- **Motor control**: XY stage and Z focus movement through a motor controller ([Sangaboard](https://build.openflexure.org/openflexure-microscope/v7.0.0-beta5/parts/electronics/sangaboard.html)).
+- **Digital imaging**: Live camera preview, snapshots, video recording, OME-TIFF support and gallery management.
+- **Automation**: Autofocus, focus stacking and tile scanning with stitching support.
+- **Calibration**: Calibration wizards with objective profiles, pixel scale, stage scale, backlash compensation, etc.
+- **Electronics**: PCB schematics and Gerber files for manufacturing. Optional, just used to reduce the amount of cabling.
+- **Mechanical design**: Parametric Fusion/CAD files and 3D-printable parts for adapting the retrofit to different microscopes.
+
 ## Features
 
+- Low-latency live microscope view with overlays such as crosshair, scale bar and grid.
+- Objective profile system for different magnifications and numerical apertures.
+- Camera-assisted calibration for image scale, stage scale, and backlash compensation
+- Manual stage and focus control through touchscreen, joystick, and configurable buttons.
+- Contract-based autofocus.
+- Automated focus stacks and tile scans.
+- Measurement tools for distances, rectangles and angles.
+- Gallery for snapshots, videos, focus stacks, scans, and tagging.
+- Configurable dark/light UI
+- Mock mode for development without microscope hardware.
 
+## Software Architecture
+
+The software is organized into modular layers:
+
+- `retroscope/drivers`: Low-level hardware drivers for camera input, Sangaboard motor control, joystick ADC, buttons, and endstop.
+- `retroscope/services`: Application logic for motion, autofocus, calibration, camera processing, tile scanning, focus stacking, updates, ...
+- `retroscope/domain`: Pure domain modules (+ calculations) for scan planning, focus metrics, objective calibration, measurement, ...
+- `retroscope/bridge`: Qt/PySide bridge objects that expose APIs to QML.
+- `retroscope/qml`: Touchscreen user interface components and views.
+- `tests`: Unit tests for calibration, autofocus, motion, scanning, settings, ...
+
+This separation enables the expansion of individual subsystems without rewriting the entire platform.
+
+## Hardware Recommendations
+
+The following parts were used for the prototype:
+
+- Raspberry Pi 4 Model B, 4 GB RAM
+- [Sangaboard](https://build.openflexure.org/openflexure-microscope/v7.0.0-beta5/parts/electronics/sangaboard.html)
+- 3x 28BYJ-48 Stepper Motors
+- DSI Capacitive Touch Display
+- Analog Joystick with 10k Potentiometers
+- ADS1115 ADC Modul
+- Incremental Rotary Encoder
+- Bearing (60mm * 78mm * 10mm)
+- Endstop
+- 4x Buttons
+- Various cables
+- ABS (& PLA) filament/s for 3D printed parts
+- Optional Custom PCB
 
 ## Installation
 
