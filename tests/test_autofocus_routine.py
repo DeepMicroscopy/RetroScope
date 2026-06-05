@@ -106,6 +106,23 @@ class FlatCamera:
         raise AssertionError("autofocus must not sample camera frames")
 
 
+class LatestOnlyCamera:
+    def __init__(self, latest: float | None, age: float | None) -> None:
+        self.latest = latest
+        self.age = age
+        self.waits: list[tuple[int | None, float]] = []
+
+    def raw_focus_sequence(self) -> int:
+        return 1
+
+    def raw_focus_status(self):
+        return 1, self.latest, self.age, "test"
+
+    def wait_for_next_raw_focus_score(self, after_sequence: int | None = None, timeout: float = 0.5):
+        self.waits.append((after_sequence, timeout))
+        return None
+
+
 def _fast_config() -> FakeConfig:
     return FakeConfig({
         "autofocus.settle_ms": 50,
@@ -244,6 +261,27 @@ def test_autofocus_sweep_waits_after_moves_before_sampling(monkeypatch) -> None:
     worker.run()
 
     assert sleeps[:5] == [0.05, 0.05, 0.05, 0.1, 0.05]
+
+
+def test_autofocus_focus_timeout_scales_with_analysis_fps() -> None:
+    _app()
+    cfg = _fast_config()
+    cfg.set("camera.fps", 2)
+    worker = _AutofocusWorker(LatestOnlyCamera(None, None), None, None, cfg)
+
+    worker._load_config()
+
+    assert worker._focus_score_timeout_s() == pytest.approx(1.25)
+
+
+def test_autofocus_uses_recent_latest_score_from_settle_window() -> None:
+    _app()
+    camera = LatestOnlyCamera(4321.0, 0.05)
+    worker = _AutofocusWorker(camera, None, None, _fast_config())
+    worker._settle_s = 0.20
+
+    assert worker._grab_score() == pytest.approx(4321.0)
+    assert len(camera.waits) == 1
 
 
 def test_autofocus_min_confidence_aborts_and_returns_to_start() -> None:

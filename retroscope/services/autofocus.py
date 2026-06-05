@@ -106,6 +106,7 @@ class _AutofocusWorker(QThread):
         self._fine_positions      = 21
         self._samples_per_position = 2
         self._min_confidence      = 50.0
+        self._analysis_fps        = 8
 
     def request_cancel(self) -> None:
         self._cancel = True
@@ -135,10 +136,12 @@ class _AutofocusWorker(QThread):
             get("autofocus.min_confidence", 50.0),
             _MIN_CONFIDENCE_FLOOR, _MIN_CONFIDENCE_CEIL, 50.0,
         )
+        self._analysis_fps = _clamp_int(get("camera.fps", 8), 1, 30, 8)
 
     # Per-position score
     def _focus_score_timeout_s(self) -> float:
-        return max(0.25, min(0.8, self._settle_s + 0.3))
+        frame_period_s = 1.0 / max(1, self._analysis_fps)
+        return min(2.5, max(0.35, self._settle_s + 0.3, frame_period_s * 2.5))
 
     def _raw_focus_sequence(self) -> int:
         if hasattr(self._camera, "raw_focus_sequence"):
@@ -153,6 +156,7 @@ class _AutofocusWorker(QThread):
             return None
 
         timeout = self._focus_score_timeout_s()
+        sample_started = time.monotonic()
         after_sequence = self._raw_focus_sequence()
         scores: list[float] = []
         for _ in range(self._samples_per_position):
@@ -165,8 +169,12 @@ class _AutofocusWorker(QThread):
             scores.append(float(score))
             after_sequence = self._raw_focus_sequence()
         if not scores:
-            logger.info("[autofocus] no fresh focus score within %.2fs", timeout)
-            return None
+            latest = self._latest_score_from_current_settle(sample_started)
+            if latest is not None:
+                scores.append(latest)
+            else:
+                logger.info("[autofocus] no fresh focus score within %.2fs", timeout)
+                return None
 
         if hasattr(self._camera, "raw_focus_status"):
             seq, latest, age, source = self._camera.raw_focus_status()
@@ -182,6 +190,27 @@ class _AutofocusWorker(QThread):
                 median(scores),
             )
         return float(median(scores))
+
+    def _latest_score_from_current_settle(self, sample_started: float) -> float | None:
+        if not hasattr(self._camera, "raw_focus_status"):
+            return None
+        try:
+            _seq, latest, age, source = self._camera.raw_focus_status()
+        except Exception:
+            return None
+        if latest is None or age is None:
+            return None
+        latest_t = time.monotonic() - float(age)
+        settle_window_s = max(0.05, min(0.5, self._settle_s))
+        if latest_t < sample_started - settle_window_s:
+            return None
+        logger.debug(
+            "[autofocus] using latest raw focus score from current settle window, source=%s age=%.3fs latest=%.1f",
+            source or "unknown",
+            float(age),
+            float(latest),
+        )
+        return float(latest)
 
     # Main routine
     def run(self) -> None:
