@@ -40,6 +40,11 @@ from retroscope.platform import is_pi
 
 logger = logging.getLogger(__name__)
 
+_RECONNECT_POLL_MS = 1000
+_RECONNECT_SETTLE_S = 1.0
+_FRAME_START_TIMEOUT_S = 3.0
+_FRAME_STALL_TIMEOUT_S = 3.0
+
 
 class DirectCameraBridge(QObject):
     """Owns camera pipeline and mirrors frames into a QML VideoOutput."""
@@ -70,6 +75,10 @@ class DirectCameraBridge(QObject):
         self._camera_connected = False
         self._active_device_key = ""
         self._stopping_camera = False
+        self._next_camera_start_s = 0.0
+        self._camera_started_s = 0.0
+        self._last_video_frame_s = 0.0
+        self._invalid_frame_count = 0
         self._last_tap_s = 0.0
         # Settings UI overwrites _tap_fps/_tap_width via setCameraFps/setCameraResolution
         self._tap_fps = 8
@@ -96,8 +105,8 @@ class DirectCameraBridge(QObject):
         )
         self._analysis_thread.start()
         self._reconnect_timer = QTimer(self)
-        self._reconnect_timer.setInterval(1000)
-        self._reconnect_timer.timeout.connect(self._retry_camera_connection)
+        self._reconnect_timer.setInterval(_RECONNECT_POLL_MS)
+        self._reconnect_timer.timeout.connect(self._camera_watchdog_tick)
         self._media_devices.videoInputsChanged.connect(self._on_video_inputs_changed)
         # Hi-res capture queue
         self._hires_queue: deque[dict] = deque()
@@ -222,7 +231,8 @@ class DirectCameraBridge(QObject):
             logger.debug("[camera] direct bridge has no QML video sink yet")
             self._reconnect_timer.stop()
             return
-        self._ensure_started()
+        self._start_reconnect_timer()
+        self._camera_watchdog_tick()
 
     @Slot()
     def stop(self) -> None:
@@ -259,10 +269,11 @@ class DirectCameraBridge(QObject):
         self._warned_map_failure = False
         self._last_tap_s = 0.0
         if self._enabled and self._output_sink is not None:
-            self._ensure_started()
+            self._schedule_camera_start(delay_s=0.25)
 
     def _stop_camera_pipeline(self, delete_later: bool) -> None:
         self._stopping_camera = True
+        self._clear_output_sink()
         if self._input_sink is not None:
             try:
                 self._input_sink.videoFrameChanged.disconnect(self._on_video_frame)
@@ -324,22 +335,28 @@ class DirectCameraBridge(QObject):
         self._image_capture = None
         self._media_recorder = None
         self._active_device_key = ""
+        self._camera_started_s = 0.0
+        self._last_video_frame_s = 0.0
+        self._invalid_frame_count = 0
         self._stopping_camera = False
         self._fail_all_hires("camera pipeline stopped")
         self._set_camera_connected(False)
 
     def _ensure_started(self) -> None:
         if self._camera is not None:
-            self._reconnect_timer.stop()
+            return
+        now = time.monotonic()
+        if now < self._next_camera_start_s:
             return
 
         device = self._select_camera_device()
         if device.isNull():
             self._log_no_video_input()
             self._set_camera_connected(False)
-            self._start_reconnect_timer()
+            self._schedule_camera_start(delay_s=_RECONNECT_SETTLE_S)
             return
 
+        self._clear_output_sink()
         self._input_sink = QVideoSink(self)
         self._input_sink.videoFrameChanged.connect(self._on_video_frame)
         # QImageCapture is the only path to native-resolution stills
@@ -367,36 +384,55 @@ class DirectCameraBridge(QObject):
             self._session.setRecorder(self._media_recorder)
         self._camera.start()
         self._active_device_key = self._device_key(device)
+        self._camera_started_s = time.monotonic()
+        self._last_video_frame_s = 0.0
+        self._invalid_frame_count = 0
         self._update_active_format()
-        self._set_camera_connected(True)
-        self._reconnect_timer.stop()
 
     @Slot()
-    def _retry_camera_connection(self) -> None:
+    def _camera_watchdog_tick(self) -> None:
         if not self._enabled or self._output_sink is None:
             self._reconnect_timer.stop()
             return
-        if self._camera is not None:
-            self._reconnect_timer.stop()
+        now = time.monotonic()
+        if self._camera is None:
+            self._ensure_started()
             return
-        self._ensure_started()
+
+        keys = {self._device_key(device) for device in self._video_inputs()}
+        if self._active_device_key and keys and self._active_device_key not in keys:
+            self._handle_camera_lost("active video input disappeared")
+            return
+        if self._last_video_frame_s <= 0.0:
+            if now - self._camera_started_s > _FRAME_START_TIMEOUT_S:
+                self._handle_camera_lost("video input delivered no frames")
+            return
+        if now - self._last_video_frame_s > _FRAME_STALL_TIMEOUT_S:
+            self._handle_camera_lost("video input stopped delivering frames")
 
     def _start_reconnect_timer(self) -> None:
         if self._enabled and self._output_sink is not None and not self._reconnect_timer.isActive():
             self._reconnect_timer.start()
+
+    def _schedule_camera_start(self, delay_s: float = _RECONNECT_SETTLE_S) -> None:
+        self._next_camera_start_s = time.monotonic() + max(0.0, delay_s)
+        self._start_reconnect_timer()
+
+    def _handle_camera_lost(self, reason: str) -> None:
+        logger.info("[camera] %s, waiting for reconnect", reason)
+        self._stop_camera_pipeline(delete_later=True)
+        self._schedule_camera_start()
 
     @Slot()
     def _on_video_inputs_changed(self) -> None:
         if not self._enabled or self._output_sink is None:
             return
         if self._camera is None:
-            self._ensure_started()
+            self._schedule_camera_start()
             return
         keys = {self._device_key(device) for device in self._video_inputs()}
-        if self._active_device_key and self._active_device_key not in keys:
-            logger.info("[camera] No active video input, waiting for reconnect")
-            self._stop_camera_pipeline(delete_later=True)
-            self._start_reconnect_timer()
+        if self._active_device_key and keys and self._active_device_key not in keys:
+            self._handle_camera_lost("active video input disappeared")
 
     @Slot()
     def _on_camera_active_changed(self) -> None:
@@ -407,19 +443,15 @@ class DirectCameraBridge(QObject):
         except Exception:
             active = False
         if active:
-            self._set_camera_connected(True)
-        elif self._camera_connected:
-            logger.info("[camera] video input became inactive, waiting for reconnect")
-            self._stop_camera_pipeline(delete_later=True)
             self._start_reconnect_timer()
+        elif self._camera_connected:
+            self._handle_camera_lost("video input became inactive")
 
     @Slot(object, str)
     def _on_camera_error(self, _error: object, message: str = "") -> None:
         if self._stopping_camera:
             return
-        logger.info("[camera] video input error: %s", message or "unknown")
-        self._stop_camera_pipeline(delete_later=True)
-        self._start_reconnect_timer()
+        self._handle_camera_lost(f"video input error: {message or 'unknown'}")
 
     @Slot(object)
     def _on_recorder_state_changed(self, state: object) -> None:
@@ -441,14 +473,22 @@ class DirectCameraBridge(QObject):
 
     def _set_camera_connected(self, connected: bool) -> None:
         connected = bool(connected)
+        if connected == self._camera_connected:
+            return
+        self._camera_connected = connected
         if not connected:
             handler = getattr(self._camera_service, "on_camera_disconnected", None)
             if handler is not None:
                 handler()
-        if connected == self._camera_connected:
-            return
-        self._camera_connected = connected
         self.camera_connected_changed.emit(connected)
+
+    def _clear_output_sink(self) -> None:
+        if self._output_sink is None:
+            return
+        try:
+            self._output_sink.setVideoFrame(QVideoFrame())
+        except Exception:
+            pass
 
     def start_recording_to(self, path: str) -> bool:
         if not self._enabled:
@@ -767,6 +807,18 @@ class DirectCameraBridge(QObject):
     @Slot(object)
     def _on_video_frame(self, frame: object) -> None:
         now = time.monotonic()
+        dims = self._video_frame_dimensions(frame)
+        if dims is not None and (dims[0] <= 0 or dims[1] <= 0):
+            self._invalid_frame_count += 1
+            self._clear_output_sink()
+            if self._invalid_frame_count >= 3:
+                self._handle_camera_lost("video input delivered invalid frames")
+            return
+        self._invalid_frame_count = 0
+        self._last_video_frame_s = now
+        if not self._camera_connected:
+            self._set_camera_connected(True)
+
         should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
         if should_tap:
             self._last_tap_s = now
@@ -778,6 +830,12 @@ class DirectCameraBridge(QObject):
             except Exception as e:
                 logger.info("[camera] direct preview sink forward failed: %s", e)
                 self._output_sink = None
+
+    def _video_frame_dimensions(self, frame: object) -> tuple[int, int] | None:
+        try:
+            return int(frame.width()), int(frame.height())
+        except Exception:
+            return None
 
     def _enqueue_analysis_frame(self, frame: object, focus_plane: np.ndarray | None) -> None:
         try:

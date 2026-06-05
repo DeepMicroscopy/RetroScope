@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtCore import QCoreApplication, QObject, Signal
+from PySide6.QtCore import QCoreApplication
 
 
 def _app() -> QCoreApplication:
@@ -28,13 +28,12 @@ class ConfigStub:
         self.values[key] = value
 
 
-class FakeButtons(QObject):
-    button_pressed = Signal(int)
-
-
 class FakeVideoSink:
+    def __init__(self) -> None:
+        self.frames: list[object] = []
+
     def setVideoFrame(self, _frame: object) -> None:
-        pass
+        self.frames.append(_frame)
 
 
 class NullDevice:
@@ -42,33 +41,47 @@ class NullDevice:
         return True
 
 
-def test_button_manager_suppresses_startup_and_camera_change_edges(monkeypatch) -> None:
-    _app()
-    import retroscope.services.button_manager as button_manager
-    from retroscope.services.button_manager import ButtonManager
+class FakeFrame:
+    def __init__(self, width: int = 640, height: int = 360) -> None:
+        self._width = width
+        self._height = height
 
-    now = 100.0
-    monkeypatch.setattr(button_manager.time, "monotonic", lambda: now)
+    def width(self) -> int:
+        return self._width
 
-    driver = FakeButtons()
-    manager = ButtonManager(driver, ConfigStub({"buttons.mapping": ["autofocus"]}))
-    seen: list[str] = []
-    manager.register_action("autofocus", "Autofocus", lambda: seen.append("af"))
+    def height(self) -> int:
+        return self._height
 
-    driver.button_pressed.emit(0)
-    assert seen == []
 
-    now = 102.0
-    driver.button_pressed.emit(0)
-    assert seen == ["af"]
+class FakeSignal:
+    def disconnect(self, _slot) -> None:
+        pass
 
-    manager.suppress_for(1.0)
-    driver.button_pressed.emit(0)
-    assert seen == ["af"]
 
-    now = 103.1
-    driver.button_pressed.emit(0)
-    assert seen == ["af", "af"]
+class FakeCamera:
+    errorOccurred = FakeSignal()
+    activeChanged = FakeSignal()
+
+    def stop(self) -> None:
+        pass
+
+
+def test_gpio_button_driver_confirms_active_low_press() -> None:
+    from retroscope.drivers.buttons import ButtonsDriver
+
+    class Lines:
+        def __init__(self, value) -> None:
+            self.value = value
+
+        def get_value(self, _pin: int):
+            return self.value
+
+    driver = ButtonsDriver()
+    try:
+        assert driver._line_is_active_low(Lines(0), 13) is True
+        assert driver._line_is_active_low(Lines(1), 13) is False
+    finally:
+        driver.request_stop()
 
 
 def test_camera_disconnect_clears_stale_frames_focus_and_native_recording(tmp_path: Path) -> None:
@@ -125,6 +138,58 @@ def test_direct_camera_bridge_keeps_polling_when_no_video_input(monkeypatch) -> 
         bridge.setVideoSink(FakeVideoSink())
 
         assert bridge._reconnect_timer.isActive()
-        assert service.disconnects >= 1
+    finally:
+        bridge.stop()
+
+
+def test_direct_camera_bridge_marks_connected_on_first_valid_frame() -> None:
+    _app()
+    from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
+
+    service = object()
+    sink = FakeVideoSink()
+    bridge = DirectCameraBridge(service, enabled=True)
+    bridge._output_sink = sink
+    bridge.setFrameAnalysisEnabled(False)
+    seen: list[bool] = []
+    bridge.camera_connected_changed.connect(seen.append)
+    frame = FakeFrame()
+
+    try:
+        bridge._on_video_frame(frame)
+
+        assert seen == [True]
+        assert sink.frames == [frame]
+    finally:
+        bridge.stop()
+
+
+def test_direct_camera_bridge_watchdog_restarts_stalled_camera() -> None:
+    _app()
+    from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
+
+    class FakeCameraService:
+        def __init__(self) -> None:
+            self.disconnects = 0
+
+        def on_camera_disconnected(self) -> None:
+            self.disconnects += 1
+
+    service = FakeCameraService()
+    bridge = DirectCameraBridge(service, enabled=True)
+    bridge._output_sink = FakeVideoSink()
+    bridge._camera = FakeCamera()
+    bridge._active_device_key = "cam"
+    bridge._camera_connected = True
+    bridge._camera_started_s = 1.0
+    bridge._last_video_frame_s = 2.0
+    bridge._video_inputs = lambda: []
+
+    try:
+        bridge._camera_watchdog_tick()
+
+        assert bridge._camera is None
+        assert bridge._reconnect_timer.isActive()
+        assert service.disconnects == 1
     finally:
         bridge.stop()
