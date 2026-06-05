@@ -82,8 +82,12 @@ Module {
         name: "AutofocusBridge"
         prototype: "QObject"
         Property { name: "busy"; type: "bool"; isReadonly: true }
+        Property { name: "cancelling"; type: "bool"; isReadonly: true }
         Property { name: "progress"; type: "double"; isReadonly: true }
         Signal { name: "busy_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "cancelling_changed"
             Parameter { name: "arg0"; type: "bool" }
         }
         Signal { name: "progress_changed"

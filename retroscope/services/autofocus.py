@@ -8,6 +8,7 @@ Note: Partially AI-generated (Parabolic peak interpolation)
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from statistics import median
 from typing import Any
@@ -99,6 +100,7 @@ class _AutofocusWorker(QThread):
         self._obj    = objective_mgr
         self._config = config
         self._cancel = False
+        self._cancel_event = threading.Event()
         # Defaults (overwritten from config)
         self._settle_s            = 0.30
         self._move_start_s        = 0.80
@@ -110,6 +112,12 @@ class _AutofocusWorker(QThread):
 
     def request_cancel(self) -> None:
         self._cancel = True
+        self._cancel_event.set()
+
+    def _sleep_cancelable(self, delay_s: float) -> bool:
+        if delay_s <= 0.0:
+            return not self._cancel
+        return not self._cancel_event.wait(delay_s)
 
     # Config (read at the start of every run)
     def _load_config(self) -> None:
@@ -160,10 +168,26 @@ class _AutofocusWorker(QThread):
         after_sequence = self._raw_focus_sequence()
         scores: list[float] = []
         for _ in range(self._samples_per_position):
-            score = self._camera.wait_for_next_raw_focus_score(
-                after_sequence=after_sequence,
-                timeout=timeout,
-            )
+            deadline = time.monotonic() + timeout
+            score = None
+            while not self._cancel:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                waited_for = min(0.05, remaining)
+                wait_started = time.monotonic()
+                score = self._camera.wait_for_next_raw_focus_score(
+                    after_sequence=after_sequence,
+                    timeout=waited_for,
+                )
+                if score is not None:
+                    break
+                latest = self._latest_score_from_current_settle(sample_started)
+                if latest is not None:
+                    score = latest
+                    break
+                if time.monotonic() - wait_started < waited_for * 0.5:
+                    self._cancel_event.wait(min(0.01, max(0.0, remaining)))
             if score is None:
                 break
             scores.append(float(score))
@@ -233,6 +257,8 @@ class _AutofocusWorker(QThread):
 
         def move_and_wait(delta: int, delay_s: float) -> bool:
             nonlocal rel_pos
+            if self._cancel:
+                return False
             if delta == 0:
                 return True
             try:
@@ -246,8 +272,13 @@ class _AutofocusWorker(QThread):
             if ok is False:
                 return False
             rel_pos += int(delta)
-            time.sleep(delay_s)
-            return True
+            return self._sleep_cancelable(delay_s)
+
+        def finish_cancelled() -> None:
+            nonlocal failed_emitted
+            failed_emitted = True
+            self.failed.emit("Cancelled")
+            self.finished.emit()
 
         def return_to_start_and_fail(reason: str) -> None:
             nonlocal failed_emitted
@@ -268,12 +299,14 @@ class _AutofocusWorker(QThread):
         def run_centered_sweep(center_rel: int, offsets: list[int]) -> list[tuple[int, float]] | None:
             nonlocal done
             if not move_and_wait(center_rel - rel_pos, self._move_start_s):
+                if self._cancel:
+                    finish_cancelled()
                 return None
 
             scores: list[tuple[int, float]] = []
             for index, offset in enumerate(offsets):
                 if self._cancel:
-                    return_to_start_and_fail("Cancelled")
+                    finish_cancelled()
                     return None
 
                 target_rel = center_rel + offset
@@ -283,14 +316,21 @@ class _AutofocusWorker(QThread):
                     previous_offset = offsets[index - 1]
                     returning_to_center = offset < 0 and previous_offset > 0
                     if returning_to_center and not move_and_wait(center_rel - rel_pos, self._move_start_s):
+                        if self._cancel:
+                            finish_cancelled()
                         return None
                     delay_s = self._settle_s
 
                 if not move_and_wait(target_rel - rel_pos, delay_s):
+                    if self._cancel:
+                        finish_cancelled()
                     return None
 
                 score = sample_current()
                 if score is None:
+                    if self._cancel:
+                        finish_cancelled()
+                        return None
                     return_to_start_and_fail("No fresh focus score")
                     return None
                 scores.append((rel_pos, score))
@@ -370,6 +410,7 @@ class AutofocusService(QObject):
     """Manages the autofocus worker lifecycle and exposes state to the bridge."""
 
     busy_changed = Signal(bool)
+    cancelling_changed = Signal(bool)
     progress     = Signal(float)   # 0.0–1.0
     failed       = Signal(str)     
     finished     = Signal()
@@ -383,10 +424,15 @@ class AutofocusService(QObject):
         self._config = config
         self._worker: _AutofocusWorker | None = None
         self._busy = False
+        self._cancelling = False
 
     @property
     def busy(self) -> bool:
         return self._busy
+
+    @property
+    def cancelling(self) -> bool:
+        return self._cancelling
 
     @Slot()
     def start_autofocus(self) -> None:
@@ -399,12 +445,17 @@ class AutofocusService(QObject):
         self._worker.failed.connect(self.failed)
         self._worker.finished.connect(self._on_finished)
         self._busy = True
+        self._cancelling = False
         self.busy_changed.emit(True)
+        self.cancelling_changed.emit(False)
         self._worker.start()
 
     @Slot()
     def cancel(self) -> None:
         if self._worker and self._busy:
+            if not self._cancelling:
+                self._cancelling = True
+                self.cancelling_changed.emit(True)
             self._worker.request_cancel()
 
     @Slot()
@@ -417,6 +468,8 @@ class AutofocusService(QObject):
 
     def _on_finished(self) -> None:
         self._busy = False
+        self._cancelling = False
         self.busy_changed.emit(False)
+        self.cancelling_changed.emit(False)
         self.finished.emit()
         self._worker = None

@@ -116,16 +116,20 @@ Item {
             }
             Rectangle {
                 width: 36; height: 28; radius: 6
-                color: App.autofocus.busy
+                color: App.autofocus.cancelling
+                       ? Qt.rgba(theme.colorDanger.r, theme.colorDanger.g, theme.colorDanger.b, 0.28)
+                       : App.autofocus.busy
                        ? Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.3)
                        : Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.1)
                 Text {
                     anchors.centerIn: parent
-                    text: App.autofocus.busy
+                    text: App.autofocus.cancelling
+                          ? "STOP"
+                          : App.autofocus.busy
                           ? Math.round(App.autofocus.progress * 100) + "%"
                           : "AF"
-                    color: theme.colorAccent
-                    font.pixelSize: 10
+                    color: App.autofocus.cancelling ? theme.colorDanger : theme.colorAccent
+                    font.pixelSize: App.autofocus.cancelling ? 9 : 10
                     font.weight: Font.Medium
                 }
                 TapHandler {

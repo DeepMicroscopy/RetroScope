@@ -18,6 +18,7 @@ from PySide6.QtCore import QCoreApplication
 from retroscope.domain.focus_metrics import parabolic_peak
 import retroscope.services.autofocus as autofocus
 from retroscope.services.autofocus import (
+    AutofocusService,
     _AutofocusWorker,
     autofocus_sample_positions,
 )
@@ -249,7 +250,6 @@ def test_autofocus_sweep_waits_after_moves_before_sampling(monkeypatch) -> None:
     """Adjacent sweep moves use settle delay, return-to-centre uses move-start delay."""
     _app()
     sleeps: list[float] = []
-    monkeypatch.setattr(autofocus.time, "sleep", lambda seconds: sleeps.append(round(float(seconds), 3)))
     motion = FakeMotionController()
     profile = _profile(focus_stack_step=10, autofocus_range_steps=100)
     cfg = _fast_config()
@@ -257,6 +257,11 @@ def test_autofocus_sweep_waits_after_moves_before_sampling(monkeypatch) -> None:
     cfg.set("autofocus.fine_positions", 5)
     camera = PeakCamera(lambda: motion.position, peak_z=0, sigma=30.0)
     worker = _AutofocusWorker(camera, motion, _ObjMgr(profile), cfg)
+    monkeypatch.setattr(
+        worker,
+        "_sleep_cancelable",
+        lambda seconds: sleeps.append(round(float(seconds), 3)) or True,
+    )
 
     worker.run()
 
@@ -279,6 +284,7 @@ def test_autofocus_uses_recent_latest_score_from_settle_window() -> None:
     camera = LatestOnlyCamera(4321.0, 0.05)
     worker = _AutofocusWorker(camera, None, None, _fast_config())
     worker._settle_s = 0.20
+    worker._samples_per_position = 1
 
     assert worker._grab_score() == pytest.approx(4321.0)
     assert len(camera.waits) == 1
@@ -307,6 +313,60 @@ def test_autofocus_min_confidence_aborts_and_returns_to_start() -> None:
     assert motion.position == 0, motion.moves
 
 
+def test_autofocus_cancel_finishes_without_returning_to_start(monkeypatch) -> None:
+    _app()
+    motion = FakeMotionController()
+    profile = _profile(focus_stack_step=10, autofocus_range_steps=100)
+    cfg = _fast_config()
+    cfg.set("autofocus.coarse_positions", 7)
+    cfg.set("autofocus.fine_positions", 5)
+    camera = PeakCamera(lambda: motion.position, peak_z=0, sigma=30.0)
+    worker = _AutofocusWorker(camera, motion, _ObjMgr(profile), cfg)
+    failed_reasons: list[str] = []
+    worker.failed.connect(failed_reasons.append)
+
+    def cancel_after_first_wait(_seconds: float) -> bool:
+        worker.request_cancel()
+        return False
+
+    monkeypatch.setattr(worker, "_sleep_cancelable", cancel_after_first_wait)
+
+    worker.run()
+
+    assert failed_reasons == ["Cancelled"]
+    assert motion.moves == [33]
+    assert motion.position == 33
+
+
+def test_autofocus_service_exposes_cancelling_until_finished() -> None:
+    _app()
+    service = AutofocusService(None, None, None, None)
+    service._busy = True
+
+    class FakeWorker:
+        def __init__(self) -> None:
+            self.cancel_requested = False
+
+        def request_cancel(self) -> None:
+            self.cancel_requested = True
+
+    worker = FakeWorker()
+    service._worker = worker
+    seen: list[bool] = []
+    service.cancelling_changed.connect(seen.append)
+
+    service.cancel()
+
+    assert worker.cancel_requested is True
+    assert service.cancelling is True
+    assert seen == [True]
+
+    service._on_finished()
+
+    assert service.cancelling is False
+    assert seen == [True, False]
+
+
 def test_autofocus_progress_reaches_1_0_only_after_final_commit(monkeypatch) -> None:
     _app()
     motion = FakeMotionController()
@@ -317,7 +377,11 @@ def test_autofocus_progress_reaches_1_0_only_after_final_commit(monkeypatch) -> 
     events: list[tuple[str, float]] = []
     worker.progress.connect(lambda v: events.append(("progress", float(v))))
     worker.finished.connect(lambda: events.append(("finished", 0.0)))
-    monkeypatch.setattr(autofocus.time, "sleep", lambda seconds: events.append(("sleep", float(seconds))))
+    monkeypatch.setattr(
+        worker,
+        "_sleep_cancelable",
+        lambda seconds: events.append(("sleep", float(seconds))) or True,
+    )
 
     motion_move = motion.move_z
 
