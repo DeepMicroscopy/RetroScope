@@ -21,7 +21,6 @@ class SettingsBridge(QObject):
     joystick_invert_x_changed  = Signal(bool)
     joystick_invert_y_changed  = Signal(bool)
     joystick_sensitivity_changed = Signal(int)
-    joystick_smoothing_changed = Signal(int)
     z_encoder_sensitivity_changed = Signal(int)
     max_pan_speed_changed         = Signal(int)
     z_encoder_step_multiplier_changed = Signal(float)
@@ -61,7 +60,6 @@ class SettingsBridge(QObject):
         self._curve      = str(config.get("input.curve", "exponential"))
         self._expo       = int(config.get("input.expo_strength", 70))
         self._sensitivity = int(config.get("input.sensitivity_pct", 100))
-        self._smoothing = max(0, min(100, int(config.get("input.joystick_smoothing_pct", 25))))
         self._swap_xy    = bool(config.get("input.swap_xy", is_pi()))
         self._invert_x   = bool(config.get("input.invert_x", False))
         self._invert_y   = bool(config.get("input.invert_y", False))
@@ -169,19 +167,6 @@ class SettingsBridge(QObject):
         self._sensitivity = v
         self._config.set("input.sensitivity_pct", v)
         self.joystick_sensitivity_changed.emit(v)
-
-    @Property(int, notify=joystick_smoothing_changed)
-    def joystickSmoothingPct(self) -> int:
-        return self._smoothing
-
-    @Slot(int)
-    def setJoystickSmoothingPct(self, v: int) -> None:
-        v = max(0, min(100, int(v)))
-        if v == self._smoothing:
-            return
-        self._smoothing = v
-        self._config.set("input.joystick_smoothing_pct", v)
-        self.joystick_smoothing_changed.emit(v)
 
     @Property(bool, notify=joystick_swap_xy_changed)
     def joystickSwapXY(self) -> bool:

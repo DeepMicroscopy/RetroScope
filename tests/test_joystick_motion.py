@@ -13,7 +13,7 @@ pytest.importorskip("PySide6")
 from PySide6.QtCore import QCoreApplication
 
 from retroscope.drivers.sangaboard import MockSangaboard, SangaboardDriver
-from retroscope.services.motion_controller import MotionController, joystick_smoothing_params
+from retroscope.services.motion_controller import MotionController, joystick_dispatch_params
 
 
 def _app() -> QCoreApplication:
@@ -68,27 +68,17 @@ def _controller(config: _Config | None = None) -> tuple[MotionController, _Sanga
     return ctrl, sb
 
 
-def test_joystick_smoothing_parameter_mapping() -> None:
-    responsive = joystick_smoothing_params(0)
-    default = joystick_smoothing_params(25)
-    quiet = joystick_smoothing_params(100)
+def test_joystick_dispatch_uses_fixed_low_latency_parameters() -> None:
+    params = joystick_dispatch_params()
 
-    assert responsive.interval_ms == 40
-    assert responsive.min_command_steps == 4
-    assert responsive.force_command_ms == 120
-    assert responsive.target_alpha == pytest.approx(0.90)
-    assert default.interval_ms == 52
-    assert default.min_command_steps == 6
-    assert default.force_command_ms == 170
-    assert quiet.interval_ms == 90
-    assert quiet.min_command_steps == 12
-    assert quiet.force_command_ms == 320
-    assert quiet.target_alpha == pytest.approx(0.40)
+    assert params.interval_ms == 25
+    assert params.min_command_steps == 1
+    assert params.force_command_ms == 50
+    assert params.target_alpha == pytest.approx(0.90)
 
 
 def test_joystick_target_smoothing_reduces_abrupt_jumps() -> None:
     ctrl, _ = _controller()
-    ctrl.setJoystickSmoothingPct(100)
 
     first = ctrl._smooth_joystick_target(0.0, 1.0, active=True, sign_changed=False)
     second = ctrl._smooth_joystick_target(first, 1.0, active=True, sign_changed=False)
@@ -99,24 +89,18 @@ def test_joystick_target_smoothing_reduces_abrupt_jumps() -> None:
     assert reversed_target < 0.0
 
 
-def test_responsive_smoothing_emits_more_smaller_commands_than_quiet() -> None:
-    responsive_ctrl, responsive_sb = _controller(_Config(**{"input.joystick_smoothing_pct": 0}))
-    quiet_ctrl, quiet_sb = _controller(_Config(**{"input.joystick_smoothing_pct": 100}))
-    responsive_params = joystick_smoothing_params(0)
-    quiet_params = joystick_smoothing_params(100)
+def test_low_speed_joystick_emits_small_frequent_commands() -> None:
+    ctrl, sb = _controller(_Config(**{"input.max_pan_speed_px_per_sec": 10}))
+    params = joystick_dispatch_params()
     now = time.monotonic()
 
-    responsive_ctrl.on_axes_updated(4096, 0)
-    quiet_ctrl.on_axes_updated(4096, 0)
-    for i in range(25):
-        responsive_ctrl._dispatch_joystick_at(now + i * responsive_params.interval_s)
+    ctrl.on_axes_updated(4096, 0)
     for i in range(12):
-        quiet_ctrl._dispatch_joystick_at(now + i * quiet_params.interval_s)
+        ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    responsive_sizes = [abs(dx) for dx, _dy, _dz, _coalesce in responsive_sb.moves]
-    quiet_sizes = [abs(dx) for dx, _dy, _dz, _coalesce in quiet_sb.moves]
-    assert len(responsive_sizes) > len(quiet_sizes)
-    assert sum(responsive_sizes) / len(responsive_sizes) < sum(quiet_sizes) / len(quiet_sizes)
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    assert sizes
+    assert max(sizes) <= 2
 
 
 def test_ads_updates_do_not_move_until_dispatch() -> None:
@@ -130,36 +114,35 @@ def test_ads_updates_do_not_move_until_dispatch() -> None:
     assert len(sb.moves) == 1
 
 
-def test_dispatch_accumulates_before_sending_small_commands() -> None:
+def test_dispatch_sends_small_commands_without_batching() -> None:
     ctrl, sb = _controller(_Config(**{"input.max_pan_speed_px_per_sec": 10}))
     now = time.monotonic()
+    params = joystick_dispatch_params()
 
     ctrl.on_axes_updated(4096, 0)
-    ctrl._dispatch_joystick_at(now)
-    ctrl._dispatch_joystick_at(now + 0.067)
-    assert sb.moves == []
+    for i in range(4):
+        ctrl.on_axes_updated(4096, 0)
+        ctrl._joystick_sample_t = now + i * params.interval_s
+        ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    ctrl._dispatch_joystick_at(now + 0.134)
-    assert len(sb.moves) == 1
-    assert abs(sb.moves[-1][0]) >= 6
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    assert sizes
+    assert max(sizes) <= 2
 
 
-def test_dispatch_forces_small_command_after_hold_time() -> None:
+def test_tiny_deflection_emits_low_amplitude_commands() -> None:
     ctrl, sb = _controller(_Config(**{"input.max_pan_speed_px_per_sec": 10}))
     now = time.monotonic()
+    params = joystick_dispatch_params()
 
-    ctrl.on_axes_updated(1000, 0)
-    ctrl._dispatch_joystick_at(now)
-    ctrl.on_axes_updated(1000, 0)
-    ctrl._joystick_sample_t = now + 0.24
-    ctrl._dispatch_joystick_at(now + 0.24)
-    assert sb.moves == []
+    for i in range(8):
+        ctrl.on_axes_updated(1000, 0)
+        ctrl._joystick_sample_t = now + i * params.interval_s
+        ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    ctrl.on_axes_updated(1000, 0)
-    ctrl._joystick_sample_t = now + 0.50
-    ctrl._dispatch_joystick_at(now + 0.50)
-    assert len(sb.moves) == 1
-    assert 1 <= abs(sb.moves[-1][0]) < 6
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    assert sizes
+    assert max(sizes) <= 1
 
 
 def test_rest_noise_below_deadzone_emits_no_movement() -> None:
@@ -181,8 +164,9 @@ def test_hysteresis_exits_and_clears_accumulator_below_release_band() -> None:
 
     ctrl.on_axes_updated(4096, 0)
     ctrl._dispatch_joystick_at(now)
-    assert ctrl._dx_accum > 0.0
+    assert sb.moves
 
+    sb.moves.clear()
     ctrl.on_axes_updated(500, 0)
     ctrl._dispatch_joystick_at(now + 0.067)
 
@@ -213,13 +197,13 @@ def test_sign_change_clears_stale_accumulator() -> None:
 
     ctrl.on_axes_updated(4096, 0)
     ctrl._dispatch_joystick_at(now)
-    assert ctrl._dx_accum > 0.0
+    assert sb.moves
 
     ctrl.on_axes_updated(-4096, 0)
     ctrl._dispatch_joystick_at(now + 0.067)
 
-    assert sb.moves == []
-    assert ctrl._dx_accum < 0.0
+    assert sb.moves[-1][0] < 0
+    assert ctrl._dx_accum <= 0.0
 
 
 def test_sangaboard_coalesce_preserves_non_move_commands_and_drops_pending_moves() -> None:

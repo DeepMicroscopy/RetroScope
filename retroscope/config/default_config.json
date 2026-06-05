@@ -69,7 +69,6 @@
     "curve": "exponential",
     "expo_strength": 100,
     "sensitivity_pct": 100,
-    "joystick_smoothing_pct": 0,
     "swap_xy": true,
     "invert_x": false,
     "invert_y": false,

@@ -26,15 +26,13 @@ _BLOCK_REPEAT_S = 0.8
 _AXIS_MIN_SPAN = 2048.0
 _AXIS_INITIAL_SPAN = 8192.0
 _JOYSTICK_PAN_COMMAND_BOOST = 10.0
-JOYSTICK_SMOOTHING_DEFAULT_PCT = 25
 _JOYSTICK_RELEASE_FACTOR = 0.70
 _JOYSTICK_MAX_DISPATCH_DT_S = 0.25
 _JOYSTICK_SAMPLE_TIMEOUT_S = 0.15
 
 
 @dataclass(frozen=True)
-class JoystickSmoothingParams:
-    smoothing_pct: int
+class JoystickDispatchParams:
     interval_ms: int
     min_command_steps: int
     force_command_ms: int
@@ -49,15 +47,13 @@ class JoystickSmoothingParams:
         return self.force_command_ms / 1000.0
 
 
-def joystick_smoothing_params(smoothing_pct: int) -> JoystickSmoothingParams:
-    """Map the user-facing smoothing percentage to dispatch parameters."""
-    pct = max(0, min(100, int(smoothing_pct)))
-    return JoystickSmoothingParams(
-        smoothing_pct=pct,
-        interval_ms=int(round(40 + pct * 0.5)),
-        min_command_steps=int(round(4 + pct * 0.08)),
-        force_command_ms=int(round(120 + pct * 2.0)),
-        target_alpha=max(0.35, min(0.90, 0.90 - pct * 0.005)),
+def joystick_dispatch_params() -> JoystickDispatchParams:
+    """Return fixed low-latency joystick dispatch parameters."""
+    return JoystickDispatchParams(
+        interval_ms=25,
+        min_command_steps=1,
+        force_command_ms=50,
+        target_alpha=0.90,
     )
 
 
@@ -159,21 +155,7 @@ class MotionController(QObject):
             10,
             min(300, int(config.get("input.sensitivity_pct", 100) if config is not None else 100)),
         )
-        self._joystick_smoothing_pct = max(
-            0,
-            min(
-                100,
-                int(
-                    config.get(
-                        "input.joystick_smoothing_pct",
-                        JOYSTICK_SMOOTHING_DEFAULT_PCT,
-                    )
-                    if config is not None
-                    else JOYSTICK_SMOOTHING_DEFAULT_PCT
-                ),
-            ),
-        )
-        self._joystick_smoothing = joystick_smoothing_params(self._joystick_smoothing_pct)
+        self._joystick_dispatch = joystick_dispatch_params()
         self._max_pan_speed_px_per_sec = max(
             10,
             min(4000, int(config.get("input.max_pan_speed_px_per_sec", 400) if config is not None else 400)),
@@ -211,7 +193,7 @@ class MotionController(QObject):
         self._last_joystick_dispatch_t = 0.0
         self._joystick_pending_since_t: float | None = None
         self._joystick_timer = QTimer(self)
-        self._joystick_timer.setInterval(self._joystick_smoothing.interval_ms)
+        self._joystick_timer.setInterval(self._joystick_dispatch.interval_ms)
         self._joystick_timer.timeout.connect(self._dispatch_joystick)
         if QCoreApplication.instance() is not None:
             self._joystick_timer.start()
@@ -270,18 +252,6 @@ class MotionController(QObject):
             10,
             min(4000, int(self._config.get("input.max_pan_speed_px_per_sec", self._max_pan_speed_px_per_sec))),
         )
-        self._set_joystick_smoothing_pct(
-            self._config.get("input.joystick_smoothing_pct", self._joystick_smoothing_pct)
-        )
-
-    def _set_joystick_smoothing_pct(self, value: int) -> None:
-        pct = max(0, min(100, int(value)))
-        if pct == self._joystick_smoothing_pct:
-            return
-        self._joystick_smoothing_pct = pct
-        self._joystick_smoothing = joystick_smoothing_params(pct)
-        if hasattr(self, "_joystick_timer"):
-            self._joystick_timer.setInterval(self._joystick_smoothing.interval_ms)
 
     def _clear_joystick_motion_state(self, *, clear_sample: bool = False) -> None:
         self._joystick_x_active = False
@@ -672,7 +642,7 @@ class MotionController(QObject):
             return 0.0
         if sign_changed or (previous != 0.0 and self._sign(previous) != self._sign(target)):
             previous = 0.0
-        alpha = self._joystick_smoothing.target_alpha
+        alpha = self._joystick_dispatch.target_alpha
         return previous + alpha * (target - previous)
 
     @Slot()
@@ -687,9 +657,9 @@ class MotionController(QObject):
             return
         profile = self._obj.current_profile()
         self._refresh_motion_settings_from_config()
-        smoothing = self._joystick_smoothing
+        dispatch = self._joystick_dispatch
         dt = (
-            smoothing.interval_s
+            dispatch.interval_s
             if self._last_joystick_dispatch_t <= 0.0
             else now - self._last_joystick_dispatch_t
         )
@@ -742,8 +712,8 @@ class MotionController(QObject):
         if self._joystick_pending_since_t is None:
             self._joystick_pending_since_t = now
         pending_s = now - self._joystick_pending_since_t
-        should_send = max(abs(dx), abs(dy)) >= smoothing.min_command_steps
-        should_send = should_send or pending_s >= smoothing.force_command_s
+        should_send = max(abs(dx), abs(dy)) >= dispatch.min_command_steps
+        should_send = should_send or pending_s >= dispatch.force_command_s
         if not should_send:
             return
 
@@ -792,10 +762,6 @@ class MotionController(QObject):
     @Slot(int)
     def setJoystickSensitivityPct(self, value: int) -> None:
         self._joystick_sensitivity_pct = max(10, min(300, int(value)))
-
-    @Slot(int)
-    def setJoystickSmoothingPct(self, value: int) -> None:
-        self._set_joystick_smoothing_pct(value)
 
     @Slot(int)
     def setMaxPanSpeedPxPerSec(self, value: int) -> None:

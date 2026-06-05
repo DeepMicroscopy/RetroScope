@@ -754,7 +754,6 @@ Module {
         Property { name: "joystickCurve"; type: "QString"; isReadonly: true }
         Property { name: "joystickExpoStrength"; type: "int"; isReadonly: true }
         Property { name: "joystickSensitivityPct"; type: "int"; isReadonly: true }
-        Property { name: "joystickSmoothingPct"; type: "int"; isReadonly: true }
         Property { name: "joystickSwapXY"; type: "bool"; isReadonly: true }
         Property { name: "joystickInvertX"; type: "bool"; isReadonly: true }
         Property { name: "joystickInvertY"; type: "bool"; isReadonly: true }
@@ -788,9 +787,6 @@ Module {
             Parameter { name: "arg0"; type: "int" }
         }
         Signal { name: "joystick_sensitivity_changed"
-            Parameter { name: "arg0"; type: "int" }
-        }
-        Signal { name: "joystick_smoothing_changed"
             Parameter { name: "arg0"; type: "int" }
         }
         Signal { name: "joystick_swap_xy_changed"
@@ -890,9 +886,6 @@ Module {
             Parameter { name: "arg0"; type: "int" }
         }
         Method { name: "setJoystickSensitivityPct"
-            Parameter { name: "arg0"; type: "int" }
-        }
-        Method { name: "setJoystickSmoothingPct"
             Parameter { name: "arg0"; type: "int" }
         }
         Method { name: "setJoystickSwapXY"

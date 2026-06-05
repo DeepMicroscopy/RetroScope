@@ -436,12 +436,6 @@ Rectangle {
                             onValueEdited: function(v) { App.settings.setMaxPanSpeedPxPerSec(Math.round(v)) }
                         }
 
-                        SRow { label: "Joystick smoothing"; value: App.settings.joystickSmoothingPct + "%"; Layout.topMargin: 8 }
-                        SSlider {
-                            value: App.settings.joystickSmoothingPct; from: 0; to: 100; stepSize: 1
-                            onValueEdited: function(v) { App.settings.setJoystickSmoothingPct(Math.round(v)) }
-                        }
-
                         SRow { label: "Z encoder sensitivity"; value: App.settings.zEncoderSensitivityPct + "%"; Layout.topMargin: 8 }
                         SSlider {
                             value: App.settings.zEncoderSensitivityPct; from: 25; to: 400; stepSize: 5

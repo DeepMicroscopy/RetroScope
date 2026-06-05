@@ -23,21 +23,6 @@ class StoreStub:
         return 0
 
 
-def test_settings_bridge_joystick_smoothing_persists(tmp_path):
-    from retroscope.bridge.settings_bridge import SettingsBridge
-
-    config = ConfigStub()
-    bridge = SettingsBridge(config, StoreStub(tmp_path))
-    seen: list[int] = []
-    bridge.joystick_smoothing_changed.connect(seen.append)
-
-    bridge.setJoystickSmoothingPct(125)
-
-    assert bridge.joystickSmoothingPct == 100
-    assert config.values["input.joystick_smoothing_pct"] == 100
-    assert seen == [100]
-
-
 def test_settings_bridge_camera_performance_toggles_persist(tmp_path):
     from retroscope.bridge.settings_bridge import SettingsBridge
 
