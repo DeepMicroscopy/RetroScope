@@ -16,6 +16,8 @@ from retroscope.services.stage_calibration import tile_steps_for_frame
 
 _MOVE_START_S  = 0.50   # seconds to wait after moving to first tile
 _AF_TIMEOUT_S  = 30.0   # max seconds to wait for per-tile autofocus
+_OUTPUT_MOSAIC = "mosaic"
+_OUTPUT_STITCH = "stitch"
 
 
 def _serpentine_order(cols: int, rows: int) -> list[tuple[int, int]]:
@@ -284,12 +286,18 @@ class _TileScannerWorker(QThread):
 
     def _save_scan(self, tiles: list[dict]) -> str:
         self.stitch_started.emit()
-        stitched = self._stitch_tiles(tiles)
+        requested_mode = self._requested_output_mode()
+        stitched, actual_mode = self._render_scan_result(tiles)
         self.stitch_progress.emit(0.95)
         objective = self._obj.active_objective if self._obj is not None else ""
         path = self._image_store.new_image_path("stitch", "scan", objective=objective)
         try:
-            metadata = self._scan_metadata(stitched, len(tiles))
+            metadata = self._scan_metadata(
+                stitched,
+                len(tiles),
+                requested_mode=requested_mode,
+                actual_mode=actual_mode,
+            )
             ome_tiff.write_tile_scan(path, stitched, tiles, metadata)
             self.stitch_progress.emit(1.0)
             return str(path)
@@ -367,29 +375,42 @@ class _TileScannerWorker(QThread):
                 return bool(self._motion.move_rel_blocking(dx, dy, dz))
         return bool(self._motion.move_rel(dx, dy, dz, source="automation"))
 
+    def _requested_output_mode(self) -> str:
+        return _OUTPUT_STITCH if self._stitch_after else _OUTPUT_MOSAIC
+
+    def _render_scan_result(self, tiles: list[dict]) -> tuple[np.ndarray, str]:
+        if self._stitch_after:
+            stitched = self._try_stitch_tiles(tiles)
+            if stitched is not None:
+                return stitched, _OUTPUT_STITCH
+        return self._grid_mosaic(tiles), _OUTPUT_MOSAIC
+
     def _stitch_tiles(self, tiles: list[dict]) -> np.ndarray:
+        return self._render_scan_result(tiles)[0]
+
+    def _try_stitch_tiles(self, tiles: list[dict]) -> np.ndarray | None:
         images = [tile["frame"] for tile in tiles if tile.get("frame") is not None]
         if len(images) < 2:
-            return images[0] if images else np.zeros((1, 1, 3), dtype=np.uint8)
+            return None
 
-        if self._stitch_after:
-            try:
-                import cv2
+        try:
+            import cv2
 
-                self.stitch_progress.emit(0.1)
-                bgr = [img[:, :, ::-1] for img in images]
-                stitcher = cv2.Stitcher_create(cv2.Stitcher_SCANS)
-                status, pano = stitcher.stitch(bgr)
-                self.stitch_progress.emit(0.8)
-                if status == cv2.Stitcher_OK and pano is not None:
-                    return pano[:, :, ::-1]
-                print(f"[stitch] stitcher failed with status {status}. Using grid mosaic")
-            except Exception as e:
-                print(f"[stitch] failed: {e}. Using grid mosaic")
-
-        return self._grid_mosaic(tiles)
+            self.stitch_progress.emit(0.1)
+            bgr = [img[:, :, ::-1] for img in images]
+            stitcher = cv2.Stitcher_create(cv2.Stitcher_SCANS)
+            status, pano = stitcher.stitch(bgr)
+            self.stitch_progress.emit(0.8)
+            if status == cv2.Stitcher_OK and pano is not None:
+                return pano[:, :, ::-1]
+            print(f"[stitch] stitcher failed with status {status}. Using grid mosaic")
+        except Exception as e:
+            print(f"[stitch] failed: {e}. Using grid mosaic")
+        return None
 
     def _grid_mosaic(self, tiles: list[dict]) -> np.ndarray:
+        if not tiles:
+            return np.zeros((1, 1, 3), dtype=np.uint8)
         sample = tiles[0]["frame"]
         tile_h, tile_w = sample.shape[:2]
         out = np.zeros((tile_h * self._rows, tile_w * self._cols, 3), dtype=np.uint8)
@@ -407,9 +428,13 @@ class _TileScannerWorker(QThread):
         self,
         stitched: np.ndarray,
         tile_count: int,
+        requested_mode: str | None = None,
+        actual_mode: str | None = None,
     ) -> dict:
         h, w = stitched.shape[:2]
         px, py, pz = self._get_position()
+        requested = requested_mode or self._requested_output_mode()
+        actual = actual_mode or requested
         metadata = {
             "version": 1,
             "type": "stitch",
@@ -426,6 +451,10 @@ class _TileScannerWorker(QThread):
                 "rows": self._rows,
                 "overlap": self._overlap,
                 "pattern": self._pattern,
+            },
+            "output": {
+                "requested": requested,
+                "actual": actual,
             },
             "tags": [],
         }

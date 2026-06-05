@@ -29,7 +29,7 @@ Item {
     property string tsPattern:        "raster"
     property bool   tsAutofocusEach:  false
     property bool   tsRecordVideo:    false
-    property bool   tsStitchAfter:    true
+    property string tsSaveMode:       "stitch"
     property int    tsSettleMs:       1000
 
     // Estimate display values
@@ -464,13 +464,57 @@ Item {
 
                             // Per-Tile Options Card
                             Rectangle {
-                                Layout.fillWidth: true; implicitHeight: 125
+                                Layout.fillWidth: true; implicitHeight: 150
                                 color: theme.colorSurface; radius: 8; border.color: theme.colorBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 14; spacing: 10
                                     Text { text: "PER-TILE OPTIONS"; color: theme.colorTextSub; font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.7 }
                                     ToggleRow { label: "Autofocus each tile";  enabled: !root.tsRecordVideo; checked: root.tsAutofocusEach;  onCheckedChanged: root.tsAutofocusEach  = checked }
-                                    ToggleRow { label: "Stitch after scan";     enabled: !root.tsRecordVideo; checked: root.tsStitchAfter;    onCheckedChanged: root.tsStitchAfter    = checked }
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        enabled: !root.tsRecordVideo
+                                        opacity: enabled ? 1.0 : 0.45
+                                        spacing: 5
+
+                                        Text { text: "Save as"; color: theme.colorTextSub; font.pixelSize: 11 }
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 5
+
+                                            Rectangle {
+                                                Layout.fillWidth: true; Layout.preferredHeight: 26; radius: 5
+                                                color: root.tsSaveMode === "mosaic"
+                                                       ? Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.12)
+                                                       : theme.bgSecondary
+                                                border.color: root.tsSaveMode === "mosaic"
+                                                              ? Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.3)
+                                                              : "transparent"
+                                                Text {
+                                                    text: "Grid mosaic"
+                                                    color: root.tsSaveMode === "mosaic" ? theme.colorAccent : theme.colorTextSub
+                                                    font.pixelSize: 10; font.weight: root.tsSaveMode === "mosaic" ? Font.Medium : Font.Normal
+                                                    anchors.centerIn: parent
+                                                }
+                                                MouseArea { anchors.fill: parent; onClicked: root.tsSaveMode = "mosaic" }
+                                            }
+                                            Rectangle {
+                                                Layout.fillWidth: true; Layout.preferredHeight: 26; radius: 5
+                                                color: root.tsSaveMode === "stitch"
+                                                       ? Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.12)
+                                                       : theme.bgSecondary
+                                                border.color: root.tsSaveMode === "stitch"
+                                                              ? Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.3)
+                                                              : "transparent"
+                                                Text {
+                                                    text: "Stitched panorama"
+                                                    color: root.tsSaveMode === "stitch" ? theme.colorAccent : theme.colorTextSub
+                                                    font.pixelSize: 10; font.weight: root.tsSaveMode === "stitch" ? Font.Medium : Font.Normal
+                                                    anchors.centerIn: parent
+                                                }
+                                                MouseArea { anchors.fill: parent; onClicked: root.tsSaveMode = "stitch" }
+                                            }
+                                        }
+                                    }
                                     ToggleRow { label: "Record as video";       checked: root.tsRecordVideo;    onCheckedChanged: root.tsRecordVideo    = checked }
                                     Item { Layout.fillHeight: true }
                                 }
@@ -758,7 +802,7 @@ Item {
                                 if (root.currentSubTab === 0) {
                                     App.automation.startFocusStackAbsolute(root.fsZStart, root.fsZEnd, root.fsStepSize, root.fsSettleMs, root.fsBlending)
                                 } else {
-                                    App.automation.startTileScan(root.tsCols, root.tsRows, root.tsOverlapPct / 100.0, root.tsPattern, root.tsAutofocusEach, root.tsRecordVideo, root.tsStitchAfter, root.tsSettleMs)
+                                    App.automation.startTileScan(root.tsCols, root.tsRows, root.tsOverlapPct / 100.0, root.tsPattern, root.tsAutofocusEach, root.tsRecordVideo, !root.tsRecordVideo && root.tsSaveMode === "stitch", root.tsSettleMs)
                                 }
                             }
                         }

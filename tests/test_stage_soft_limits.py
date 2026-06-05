@@ -57,6 +57,8 @@ class FakeConfig:
 
 
 class FakeObjectiveManager:
+    active_objective = "10x"
+
     def current_profile(self):
         return SimpleNamespace(
             backlash_x=0,
@@ -414,6 +416,43 @@ def test_tile_scan_uses_configured_calibration_size_not_latest_frame() -> None:
 
     assert worker._calibration_frame_size_px() == (640, 360)
 
+
+def test_tile_scan_mosaic_mode_uses_full_tile_grid_without_stitch() -> None:
+    _app()
+    worker = _TileScannerWorker(
+        camera_svc=FakeTileCamera(),
+        motion_ctrl=FakeTileMotion(),
+        autofocus_svc=None,
+        image_store=None,
+        objective_mgr=FakeObjectiveManager(),
+        get_position=lambda: (1, 2, 3),
+        cols=2,
+        rows=1,
+        overlap=0.2,
+        pattern="raster",
+        autofocus_each=False,
+        record_video=False,
+        stitch_after=False,
+    )
+    worker._try_stitch_tiles = lambda _tiles: (_ for _ in ()).throw(AssertionError("stitch must not run"))
+    tiles = [
+        {"col": 0, "row": 0, "frame": np.full((2, 3, 3), 10, dtype=np.uint8)},
+        {"col": 1, "row": 0, "frame": np.full((2, 3, 3), 20, dtype=np.uint8)},
+    ]
+
+    rendered, actual_mode = worker._render_scan_result(tiles)
+    metadata = worker._scan_metadata(
+        rendered,
+        len(tiles),
+        requested_mode=worker._requested_output_mode(),
+        actual_mode=actual_mode,
+    )
+
+    assert actual_mode == "mosaic"
+    assert rendered.shape == (2, 6, 3)
+    assert np.all(rendered[:, :3] == 10)
+    assert np.all(rendered[:, 3:] == 20)
+    assert metadata["output"] == {"requested": "mosaic", "actual": "mosaic"}
 
 def test_video_tile_scan_records_only_and_uses_continuous_row_moves() -> None:
     _app()

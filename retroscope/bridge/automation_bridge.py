@@ -46,6 +46,7 @@ class AutomationBridge(QObject):
         self._completed: list[dict] = []
         self._stitch_pending   = False
         self._tile_record_video = False
+        self._tile_save_mode = ""
 
         # ETA tracking
         self._task_start: float = 0.0
@@ -186,7 +187,10 @@ class AutomationBridge(QObject):
         if self._busy:
             return
         self._tile_record_video = record_video
-        self._stitch_pending = stitch_after and not record_video
+        self._tile_save_mode = (
+            "video" if record_video else "stitch" if stitch_after else "mosaic"
+        )
+        self._stitch_pending = self._tile_save_mode == "stitch"
         self._start_task(f"Tile scan {cols}×{rows}", total_steps=automation_plan.tile_count(cols, rows))
         self._ts.start(cols, rows, overlap, pattern, autofocus_each, record_video, stitch_after, settle_ms)
 
@@ -270,11 +274,16 @@ class AutomationBridge(QObject):
             return
         if self._stitch_pending:
             return  # wait for stitch_finished
-        detail = "video recorded" if self._tile_record_video else f"{self._frame_total} tiles"
+        if self._tile_save_mode == "video":
+            detail = "video recorded"
+        elif self._tile_save_mode == "mosaic":
+            detail = "Grid mosaic saved"
+        else:
+            detail = f"{self._frame_total} tiles"
         self._finish_task(False, detail)
 
     def _on_stitch_started(self) -> None:
-        self._task_name = "Stitching…"
+        self._task_name = "Saving mosaic…" if self._tile_save_mode == "mosaic" else "Stitching…"
         self._task_progress = 0.0
         self.task_name_changed.emit(self._task_name)
         self.progress_changed.emit(0.0)
@@ -289,7 +298,7 @@ class AutomationBridge(QObject):
         self._stitch_pending = False
         tiles = self._frame_total
         if path:
-            detail = f"{tiles} tiles. Scan saved"
+            detail = "Scan saved"
         else:
             detail = f"{tiles} tiles. Stitch failed"
         self._finish_task(path == "" and tiles == 0, detail)
@@ -311,6 +320,7 @@ class AutomationBridge(QObject):
         self._paused        = False
         self._cancelling    = False
         self._tile_record_video = False
+        self._tile_save_mode = ""
         self._task_name     = ""
         self._task_progress = 0.0
         self._frame_cur     = 0
