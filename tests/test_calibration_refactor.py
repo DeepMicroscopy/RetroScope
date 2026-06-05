@@ -300,7 +300,8 @@ def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monk
         return analysis_frame, None
 
     monkeypatch.setattr(bridge, "_frame_to_rgb_array_and_focus", convert_frame)
-    monkeypatch.setattr(bridge, "_focus_score_from_frame", lambda _frame: 55.0)
+    monkeypatch.setattr(bridge, "_copy_focus_plane_from_frame", lambda _frame: analysis_frame[:, :, 0])
+    monkeypatch.setattr(bridge, "_focus_score_from_plane", lambda _plane: 55.0)
 
     bridge.setFrameAnalysisEnabled(False)
     bridge._on_video_frame(frame)

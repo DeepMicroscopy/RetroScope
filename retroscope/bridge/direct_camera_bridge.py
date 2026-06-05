@@ -80,7 +80,7 @@ class DirectCameraBridge(QObject):
         self._frame_analysis_enabled = True
         self._live_video_enabled = True
         self._analysis_cond = threading.Condition()
-        self._analysis_frame: object | None = None
+        self._analysis_frame: tuple[object | None, np.ndarray | None] | None = None
         self._analysis_running = True
         self._analysis_thread = threading.Thread(
             target=self._analysis_worker_loop,
@@ -602,10 +602,7 @@ class DirectCameraBridge(QObject):
         should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
         if should_tap:
             self._last_tap_s = now
-            focus_score = self._focus_score_from_frame(frame)
-            if focus_score is not None:
-                self._camera_service.on_focus_score_ready(focus_score)
-            self._enqueue_analysis_frame(frame)
+            self._enqueue_analysis_frame(frame, self._copy_focus_plane_from_frame(frame))
 
         if self._live_video_enabled and self._output_sink is not None:
             try:
@@ -614,7 +611,7 @@ class DirectCameraBridge(QObject):
                 logger.info("[camera] direct preview sink forward failed: %s", e)
                 self._output_sink = None
 
-    def _enqueue_analysis_frame(self, frame: object) -> None:
+    def _enqueue_analysis_frame(self, frame: object, focus_plane: np.ndarray | None) -> None:
         try:
             analysis_frame = QVideoFrame(frame)
         except Exception:
@@ -622,7 +619,7 @@ class DirectCameraBridge(QObject):
         with self._analysis_cond:
             if not self._analysis_running:
                 return
-            self._analysis_frame = analysis_frame
+            self._analysis_frame = (analysis_frame, focus_plane)
             self._analysis_cond.notify()
 
     def _analysis_worker_loop(self) -> None:
@@ -632,11 +629,13 @@ class DirectCameraBridge(QObject):
                     self._analysis_cond.wait()
                 if not self._analysis_running:
                     return
-                frame = self._analysis_frame
+                frame, focus_plane = self._analysis_frame
                 self._analysis_frame = None
 
             if not self._frame_analysis_enabled:
                 continue
+            if focus_plane is not None:
+                self._publish_focus_plane(focus_plane)
             arr, _focus_score = self._frame_to_rgb_array_and_focus(frame, compute_focus=False)
             if not self._frame_analysis_enabled:
                 continue
@@ -682,7 +681,7 @@ class DirectCameraBridge(QObject):
             image = image.scaled(self._tap_width, height)
         return self._qimage_to_rgb_array(image), focus_score
 
-    def _focus_score_from_frame(self, frame: object) -> float | None:
+    def _copy_focus_plane_from_frame(self, frame: object) -> np.ndarray | None:
         try:
             pixel = self._pixel_format_name(frame.surfaceFormat().pixelFormat()).lower()
             width = int(frame.width())
@@ -705,7 +704,7 @@ class DirectCameraBridge(QObject):
                     try:
                         y = self._mapped_plane(frame, 0, height, width)
                         if y is not None:
-                            return grayscale_focus_score(y, roi=0.15)
+                            return np.array(y, copy=True)
                     finally:
                         try:
                             frame.unmap()
@@ -714,13 +713,15 @@ class DirectCameraBridge(QObject):
             except Exception:
                 pass
 
-        try:
-            image = frame.toImage()
-        except Exception:
-            image = QImage()
-        if image.isNull():
-            return None
-        return self._focus_score_from_qimage(image)
+        return None
+
+    def _publish_focus_plane(self, focus_plane: np.ndarray) -> None:
+        focus_score = self._focus_score_from_plane(focus_plane)
+        if focus_score is not None:
+            self._camera_service.on_focus_score_ready(focus_score)
+
+    def _focus_score_from_plane(self, focus_plane: np.ndarray) -> float | None:
+        return grayscale_focus_score(focus_plane, roi=0.15)
 
     def _map_frame_to_rgb_array(
         self,
