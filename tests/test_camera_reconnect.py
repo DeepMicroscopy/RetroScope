@@ -156,8 +156,11 @@ def test_direct_camera_bridge_marks_connected_on_first_valid_frame() -> None:
     frame = FakeFrame()
 
     try:
+        assert bridge.cameraConnected is False
+
         bridge._on_video_frame(frame)
 
+        assert bridge.cameraConnected is True
         assert seen == [True]
         assert sink.frames == [frame]
     finally:

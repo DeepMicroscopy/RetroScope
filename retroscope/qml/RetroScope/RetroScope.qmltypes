@@ -249,11 +249,15 @@ Module {
         Property { name: "activeFps"; type: "double"; isReadonly: true }
         Property { name: "availableResolutions"; type: "QVariantList"; isReadonly: true }
         Property { name: "availableFps"; type: "QVariantList"; isReadonly: true }
+        Property { name: "cameraConnected"; type: "bool"; isReadonly: true }
         Signal { name: "frame_tap_changed"
         }
         Signal { name: "camera_format_changed"
         }
         Signal { name: "camera_capabilities_changed"
+        }
+        Signal { name: "camera_connected_changed"
+            Parameter { name: "arg0"; type: "bool" }
         }
         Method { name: "configureCamera"
             Parameter { name: "arg0"; type: "QString" }

@@ -132,6 +132,10 @@ class DirectCameraBridge(QObject):
     def availableFps(self) -> list[int]:
         return self._available_fps
 
+    @Property(bool, notify=camera_connected_changed)
+    def cameraConnected(self) -> bool:
+        return self._camera_connected
+
     @Property(bool, notify=frame_analysis_enabled_changed)
     def frameAnalysisEnabled(self) -> bool:
         return self._frame_analysis_enabled

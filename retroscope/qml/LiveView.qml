@@ -13,6 +13,7 @@ Item {
     property real   _focusRawScore: 0
     property string _focusSource: ""
     property bool   _objSwitchVisible: false
+    readonly property bool cameraLive: App.cameraFrameTap.cameraConnected
 
     // Touch stage movement state
     property real  _dragLastX: 0
@@ -69,6 +70,37 @@ Item {
         }
     }
 
+    Rectangle {
+        id: cameraPlaceholder
+        anchors.fill: parent
+        visible: !root.cameraLive
+        color: theme.dark ? "#05070a" : "#eef2f5"
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 12
+            width: Math.min(parent.width - 48, 360)
+
+            Icon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                code: "\uf4e2"
+                iconSize: 44
+                color: theme.colorTextSub
+                opacity: 0.8
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width
+                text: "Waiting for video input"
+                color: theme.colorTextSub
+                font.pixelSize: 12
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+            }
+        }
+    }
+
     Timer {
         id: directSinkBindTimer
         interval: 500
@@ -87,7 +119,7 @@ Item {
     Canvas {
         id: gridCanvas
         anchors.fill: parent
-        visible: App.overlay.gridVisible
+        visible: root.cameraLive && App.overlay.gridVisible
         opacity: 0.6
 
         onVisibleChanged: requestPaint()
@@ -118,7 +150,7 @@ Item {
     // Crosshair overlay
     Crosshair {
         anchors.fill: parent
-        visible: App.overlay.crosshairVisible
+        visible: root.cameraLive && App.overlay.crosshairVisible
         lineColor: theme.colorAccent
         lineWidth: 1
     }
@@ -128,6 +160,7 @@ Item {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.margins: 16
+        visible: root.cameraLive
         umPerPixel: App.objective.umPerPixel
     }
 
@@ -135,6 +168,7 @@ Item {
     Item {
         id: stageInputSurface
         anchors.fill: parent
+        enabled: root.cameraLive
 
         DragHandler {
             id: stageDrag
@@ -197,6 +231,7 @@ Item {
         anchors.left: parent.left
         anchors.margins: 16
         spacing: 6
+        visible: root.cameraLive
 
         // Crosshair Tool
         Rectangle {
@@ -240,6 +275,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         anchors.margins: 16
+        visible: root.cameraLive
         height: 24
         width: focusLayout.implicitWidth + 16
         radius: 6
@@ -264,7 +300,7 @@ Item {
     Rectangle {
         id: _objSwitchPopup
         anchors.fill: parent
-        visible: root._objSwitchVisible
+        visible: root.cameraLive && root._objSwitchVisible
         color: Qt.rgba(0, 0, 0, 0.78)
         z: 100
 
