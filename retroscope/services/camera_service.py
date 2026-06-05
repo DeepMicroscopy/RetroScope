@@ -613,11 +613,8 @@ class CameraService(QObject):
     def on_frame_ready(self, frame: object) -> None:
         now = time.monotonic()
         should_schedule_ui = False
-        focus_score: float | None = None
         brightness: float | None = None
         analysis_enabled = self._frame_analysis_enabled
-        if analysis_enabled and isinstance(frame, np.ndarray):
-            focus_score = self._compute_focus_score(frame)
         if analysis_enabled and isinstance(frame, np.ndarray) and frame.ndim >= 2:
             # Uses a cheap strided brightness sample so the objective detector can catch brief turret-rotation dark frames.
             brightness = float(frame[::8, ::8].mean())
@@ -648,8 +645,6 @@ class CameraService(QObject):
             )
         if brightness is not None:
             self.brightness_updated.emit(brightness)
-        if focus_score is not None:
-            self.on_focus_score_ready(focus_score)
         if recorder is not None:
             recorder.enqueue(frame)
 

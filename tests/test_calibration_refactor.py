@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import threading
 from types import SimpleNamespace
 
 import numpy as np
@@ -223,18 +224,23 @@ def test_grayscale_focus_score_drops_under_blur() -> None:
     assert grayscale_focus_score(sharp) > grayscale_focus_score(blurred) * 5
 
 
-def test_direct_preview_frame_emits_immediate_focus_score() -> None:
+def test_camera_service_frame_delivery_emits_brightness_without_duplicate_focus() -> None:
     _app()
     service = CameraService(FakeConfig())
-    raw_scores: list[float] = []
-    service.focus_score_updated.connect(raw_scores.append)
-    sharp = ((np.indices((120, 160)).sum(axis=0) % 8) < 4).astype(np.uint8) * 255
-    frame = np.dstack([sharp, sharp, sharp]).astype(np.uint8)
+    try:
+        raw_scores: list[float] = []
+        brightness_values: list[float] = []
+        service.focus_score_updated.connect(raw_scores.append)
+        service.brightness_updated.connect(brightness_values.append)
+        frame = np.full((24, 32, 3), 128, dtype=np.uint8)
 
-    service.on_frame_ready(frame)
+        service.on_frame_ready(frame)
 
-    assert raw_scores
-    assert raw_scores[-1] > 1000.0
+        assert service.get_latest_frame() is frame
+        assert raw_scores == []
+        assert brightness_values == pytest.approx([128.0])
+    finally:
+        service.shutdown()
 
 
 def test_camera_service_frame_analysis_toggle_skips_focus_and_brightness() -> None:
@@ -264,9 +270,11 @@ def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monk
         def __init__(self) -> None:
             self.frames: list[np.ndarray] = []
             self.focus_scores: list[float] = []
+            self.frame_ready = threading.Event()
 
         def on_frame_ready(self, frame: np.ndarray) -> None:
             self.frames.append(frame)
+            self.frame_ready.set()
 
         def on_focus_score_ready(self, score: float) -> None:
             self.focus_scores.append(score)
@@ -295,6 +303,7 @@ def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monk
 
     bridge.setFrameAnalysisEnabled(False)
     bridge._on_video_frame(frame)
+    time.sleep(0.02)
 
     assert conversions == []
     assert service.focus_scores == []
@@ -308,11 +317,13 @@ def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monk
 
     bridge._on_video_frame(frame)
 
+    assert service.frame_ready.wait(timeout=1.0)
     assert conversions == [frame]
     assert service.focus_scores == [55.0]
     assert len(service.frames) == 1
     assert service.frames[0] is analysis_frame
     assert sink.frames == []
+    bridge.stop()
 
 
 def test_source_focus_score_can_be_waited_for_independently_of_frame() -> None:

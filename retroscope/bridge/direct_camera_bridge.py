@@ -79,6 +79,14 @@ class DirectCameraBridge(QObject):
         self._available_fps: list[int] = []
         self._frame_analysis_enabled = True
         self._live_video_enabled = True
+        self._analysis_cond = threading.Condition()
+        self._analysis_frame: object | None = None
+        self._analysis_running = True
+        self._analysis_thread = threading.Thread(
+            target=self._analysis_worker_loop,
+            daemon=True,
+        )
+        self._analysis_thread.start()
         # Hi-res capture queue
         self._hires_queue: deque[dict] = deque()
         self._hires_lock = threading.Lock()
@@ -114,6 +122,9 @@ class DirectCameraBridge(QObject):
             return
         self._frame_analysis_enabled = enabled
         self._last_tap_s = 0.0
+        if not enabled:
+            with self._analysis_cond:
+                self._analysis_frame = None
         self.frame_analysis_enabled_changed.emit(enabled)
 
     @Property(bool, notify=live_video_enabled_changed)
@@ -204,8 +215,20 @@ class DirectCameraBridge(QObject):
     def stop(self) -> None:
         self._enabled = False
         self._output_sink = None
+        self._stop_analysis_worker()
         self._stop_camera_pipeline(delete_later=True)
         self._flush_deferred_deletes()
+
+    def _stop_analysis_worker(self) -> None:
+        with self._analysis_cond:
+            self._analysis_running = False
+            self._analysis_frame = None
+            self._analysis_cond.notify_all()
+        if (
+            self._analysis_thread.is_alive()
+            and threading.current_thread() is not self._analysis_thread
+        ):
+            self._analysis_thread.join(timeout=1.0)
 
     def _flush_deferred_deletes(self) -> None:
         if QCoreApplication.instance() is None:
@@ -575,14 +598,11 @@ class DirectCameraBridge(QObject):
 
     @Slot(object)
     def _on_video_frame(self, frame: object) -> None:
-        arr: np.ndarray | None = None
         now = time.monotonic()
         should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
         if should_tap:
             self._last_tap_s = now
-            arr, focus_score = self._frame_to_rgb_array_and_focus(frame)
-            if focus_score is not None:
-                self._camera_service.on_focus_score_ready(focus_score)
+            self._enqueue_analysis_frame(frame)
 
         if self._live_video_enabled and self._output_sink is not None:
             try:
@@ -591,15 +611,44 @@ class DirectCameraBridge(QObject):
                 logger.info("[camera] direct preview sink forward failed: %s", e)
                 self._output_sink = None
 
-        if not should_tap:
-            return
+    def _enqueue_analysis_frame(self, frame: object) -> None:
+        try:
+            analysis_frame = QVideoFrame(frame)
+        except Exception:
+            analysis_frame = frame
+        with self._analysis_cond:
+            if not self._analysis_running:
+                return
+            self._analysis_frame = analysis_frame
+            self._analysis_cond.notify()
 
-        if arr is None:
-            if not self._warned_conversion:
-                logger.info("[camera] direct bridge could not convert QVideoFrame")
-                self._warned_conversion = True
-            return
+    def _analysis_worker_loop(self) -> None:
+        while True:
+            with self._analysis_cond:
+                while self._analysis_frame is None and self._analysis_running:
+                    self._analysis_cond.wait()
+                if not self._analysis_running:
+                    return
+                frame = self._analysis_frame
+                self._analysis_frame = None
 
+            if not self._frame_analysis_enabled:
+                continue
+            arr, focus_score = self._frame_to_rgb_array_and_focus(frame)
+            if not self._frame_analysis_enabled:
+                continue
+            if focus_score is not None:
+                self._camera_service.on_focus_score_ready(focus_score)
+
+            if arr is None:
+                if not self._warned_conversion:
+                    logger.info("[camera] direct bridge could not convert QVideoFrame")
+                    self._warned_conversion = True
+                continue
+
+            self._publish_analysis_frame(arr)
+
+    def _publish_analysis_frame(self, arr: np.ndarray) -> None:
         self._frame_tap_count += 1
         if self._frame_tap_count <= 3 or self._frame_tap_count % 120 == 0:
             logger.debug(
