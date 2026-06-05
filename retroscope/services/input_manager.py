@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication
 from retroscope.services.motion_controller import MotionController
 
 _KBD_AXIS_VALUE = 20000
-_KBD_ENCODER_STEP = 1
+_KBD_ENCODER_STEP = 100
 
 
 class InputManager(QObject):
@@ -37,7 +37,7 @@ class InputManager(QObject):
 
         WASD        joystick axes
         Space       joystick center (release)
-        PgUp/PgDn   encoder step +-1
+        +/-         encoder step +-1
         1/2/3/4     button press 0–3
         E           simulate endstop triggered/released toggle
         """
@@ -105,8 +105,8 @@ class InputManager(QObject):
             self._kbd_listener.one_shot[key] = cb
 
         # Encoder
-        _setup(Qt.Key.Key_PageUp, lambda: self._encoder.simulate_step(_KBD_ENCODER_STEP))
-        _setup(Qt.Key.Key_PageDown, lambda: self._encoder.simulate_step(-_KBD_ENCODER_STEP))
+        _setup(Qt.Key.Key_Plus, lambda: self._encoder.simulate_step(_KBD_ENCODER_STEP))
+        _setup(Qt.Key.Key_Minus, lambda: self._encoder.simulate_step(-_KBD_ENCODER_STEP))
 
         # Buttons
         if buttons_driver is not None:

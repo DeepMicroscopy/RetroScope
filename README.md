@@ -162,7 +162,7 @@ Key       | Function
 ----------|-------------------
 WASD      | Joystick axes        
 Space     | Joystick center (release)         
-PgUp/PgDn | Encoder step +-1       
++/-       | Encoder step +-1       
 1/2/3/4   | Button press 0–3      
 E         | Simulate endstop triggered/released toggle
 
