@@ -1,14 +1,11 @@
 """Button manager: Maps physical GPIO buttons to configurable actions."""
 
-import time
-
 from PySide6.QtCore import QObject, Signal, Slot
 
 from retroscope.services.config_store import ConfigStore
 
 NUM_BUTTONS = 4
 DEFAULT_MAPPING = ["none"] * NUM_BUTTONS
-_STARTUP_SUPPRESS_S = 1.5
 
 class ActionDefinition:
     def __init__(self, action_id: str, label: str, callback) -> None:
@@ -30,7 +27,6 @@ class ButtonManager(QObject):
         super().__init__(parent)
         self._config = config
         self._actions: dict[str, ActionDefinition] = {}
-        self._suppressed_until = time.monotonic() + _STARTUP_SUPPRESS_S
         self._mapping: list[str] = list(
             config.get("buttons.mapping", DEFAULT_MAPPING)
         )
@@ -69,19 +65,10 @@ class ButtonManager(QObject):
         self._mapping[button_index] = action_id
         self._config.set("buttons.mapping", list(self._mapping))
 
-    def suppress_for(self, seconds: float) -> None:
-        """Ignore hardware button edges during noisy device-change windows."""
-        self._suppressed_until = max(
-            self._suppressed_until,
-            time.monotonic() + max(0.0, seconds),
-        )
-
     # Dispatch
     @Slot(int)
     def on_button_pressed(self, index: int) -> None:
         if not 0 <= index < NUM_BUTTONS:
-            return
-        if time.monotonic() < self._suppressed_until:
             return
         action_id = self._mapping[index]
         action = self._actions.get(action_id)

@@ -32,6 +32,3 @@ class ButtonBridge(QObject):
     def setAction(self, button_index: int, action_id: str) -> None:
         self._mgr.set_action(button_index, action_id)
         self.mapping_changed.emit()
-
-    def suppress_for(self, seconds: float) -> None:
-        self._mgr.suppress_for(seconds)

@@ -147,7 +147,6 @@ class AppController(QObject):
 
     def _on_direct_camera_connected_changed(self, _connected: bool) -> None:
         self._obj_detector.suppress_for_camera_change()
-        self._buttons.suppress_for(1.5)
 
     # Properties
     @Property(QObject, constant=True)
