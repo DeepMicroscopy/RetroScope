@@ -295,11 +295,12 @@ def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monk
     analysis_frame = np.ones((4, 4, 3), dtype=np.uint8)
     conversions: list[object] = []
 
-    def convert_frame(received_frame: object):
+    def convert_frame(received_frame: object, compute_focus: bool = True):
         conversions.append(received_frame)
-        return analysis_frame, 55.0
+        return analysis_frame, None
 
     monkeypatch.setattr(bridge, "_frame_to_rgb_array_and_focus", convert_frame)
+    monkeypatch.setattr(bridge, "_focus_score_from_frame", lambda _frame: 55.0)
 
     bridge.setFrameAnalysisEnabled(False)
     bridge._on_video_frame(frame)

@@ -602,6 +602,9 @@ class DirectCameraBridge(QObject):
         should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
         if should_tap:
             self._last_tap_s = now
+            focus_score = self._focus_score_from_frame(frame)
+            if focus_score is not None:
+                self._camera_service.on_focus_score_ready(focus_score)
             self._enqueue_analysis_frame(frame)
 
         if self._live_video_enabled and self._output_sink is not None:
@@ -634,11 +637,9 @@ class DirectCameraBridge(QObject):
 
             if not self._frame_analysis_enabled:
                 continue
-            arr, focus_score = self._frame_to_rgb_array_and_focus(frame)
+            arr, _focus_score = self._frame_to_rgb_array_and_focus(frame, compute_focus=False)
             if not self._frame_analysis_enabled:
                 continue
-            if focus_score is not None:
-                self._camera_service.on_focus_score_ready(focus_score)
 
             if arr is None:
                 if not self._warned_conversion:
@@ -660,8 +661,12 @@ class DirectCameraBridge(QObject):
         self.frame_tap_changed.emit()
         self._camera_service.on_frame_ready(arr)
 
-    def _frame_to_rgb_array_and_focus(self, frame: object) -> tuple[np.ndarray | None, float | None]:
-        mapped = self._map_frame_to_rgb_array(frame)
+    def _frame_to_rgb_array_and_focus(
+        self,
+        frame: object,
+        compute_focus: bool = True,
+    ) -> tuple[np.ndarray | None, float | None]:
+        mapped = self._map_frame_to_rgb_array(frame, compute_focus=compute_focus)
         if mapped is not None:
             return mapped
 
@@ -671,13 +676,57 @@ class DirectCameraBridge(QObject):
             image = QImage()
         if image.isNull():
             return None, None
-        focus_score = self._focus_score_from_qimage(image)
+        focus_score = self._focus_score_from_qimage(image) if compute_focus else None
         if image.width() > self._tap_width:
             height = max(1, int(image.height() * self._tap_width / max(1, image.width())))
             image = image.scaled(self._tap_width, height)
         return self._qimage_to_rgb_array(image), focus_score
 
-    def _map_frame_to_rgb_array(self, frame: object) -> tuple[np.ndarray, float | None] | None:
+    def _focus_score_from_frame(self, frame: object) -> float | None:
+        try:
+            pixel = self._pixel_format_name(frame.surfaceFormat().pixelFormat()).lower()
+            width = int(frame.width())
+            height = int(frame.height())
+        except Exception:
+            pixel = ""
+            width = 0
+            height = 0
+
+        if width > 0 and height > 0 and (
+            "nv12" in pixel
+            or "nv21" in pixel
+            or "yuv420p" in pixel
+            or "yu12" in pixel
+            or "yv12" in pixel
+        ):
+            try:
+                map_mode = getattr(getattr(QVideoFrame, "MapMode", QVideoFrame), "ReadOnly")
+                if frame.map(map_mode):
+                    try:
+                        y = self._mapped_plane(frame, 0, height, width)
+                        if y is not None:
+                            return grayscale_focus_score(y, roi=0.15)
+                    finally:
+                        try:
+                            frame.unmap()
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+        try:
+            image = frame.toImage()
+        except Exception:
+            image = QImage()
+        if image.isNull():
+            return None
+        return self._focus_score_from_qimage(image)
+
+    def _map_frame_to_rgb_array(
+        self,
+        frame: object,
+        compute_focus: bool = True,
+    ) -> tuple[np.ndarray, float | None] | None:
         try:
             pixel = self._pixel_format_name(frame.surfaceFormat().pixelFormat()).lower()
             width = int(frame.width())
@@ -698,11 +747,29 @@ class DirectCameraBridge(QObject):
 
         try:
             if "nv12" in pixel or "nv21" in pixel:
-                return self._mapped_nv12_to_rgb(frame, width, height, swap_uv="nv21" in pixel)
+                return self._mapped_nv12_to_rgb(
+                    frame,
+                    width,
+                    height,
+                    swap_uv="nv21" in pixel,
+                    compute_focus=compute_focus,
+                )
             if "yuv420p" in pixel or "yu12" in pixel:
-                return self._mapped_yuv420p_to_rgb(frame, width, height, swap_uv=False)
+                return self._mapped_yuv420p_to_rgb(
+                    frame,
+                    width,
+                    height,
+                    swap_uv=False,
+                    compute_focus=compute_focus,
+                )
             if "yv12" in pixel:
-                return self._mapped_yuv420p_to_rgb(frame, width, height, swap_uv=True)
+                return self._mapped_yuv420p_to_rgb(
+                    frame,
+                    width,
+                    height,
+                    swap_uv=True,
+                    compute_focus=compute_focus,
+                )
         finally:
             try:
                 frame.unmap()
@@ -724,13 +791,14 @@ class DirectCameraBridge(QObject):
         width: int,
         height: int,
         swap_uv: bool,
+        compute_focus: bool = True,
     ) -> tuple[np.ndarray, float] | None:
         uv_h = max(1, height // 2)
         y = self._mapped_plane(frame, 0, height, width)
         uv = self._mapped_plane(frame, 1, uv_h, width)
         if y is None or uv is None or uv.shape[1] < 2:
             return None
-        focus_score = grayscale_focus_score(y, roi=0.15)
+        focus_score = grayscale_focus_score(y, roi=0.15) if compute_focus else None
         u = uv[:, 1::2] if swap_uv else uv[:, 0::2]
         v = uv[:, 0::2] if swap_uv else uv[:, 1::2]
         rgb = self._sample_yuv420_to_rgb(y, u, v, width, height)
@@ -742,6 +810,7 @@ class DirectCameraBridge(QObject):
         width: int,
         height: int,
         swap_uv: bool,
+        compute_focus: bool = True,
     ) -> tuple[np.ndarray, float] | None:
         uv_w = max(1, width // 2)
         uv_h = max(1, height // 2)
@@ -750,7 +819,7 @@ class DirectCameraBridge(QObject):
         second = self._mapped_plane(frame, 2, uv_h, uv_w)
         if y is None or first is None or second is None:
             return None
-        focus_score = grayscale_focus_score(y, roi=0.15)
+        focus_score = grayscale_focus_score(y, roi=0.15) if compute_focus else None
         u, v = (second, first) if swap_uv else (first, second)
         rgb = self._sample_yuv420_to_rgb(y, u, v, width, height)
         return (rgb, focus_score) if rgb is not None else None
