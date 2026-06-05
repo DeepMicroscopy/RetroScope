@@ -19,6 +19,7 @@ class MotionBridge(QObject):
     joystickAxisChanged = Signal()
     deadzone_set_requested = Signal(float)
     deadzoneChanged = Signal()
+    backlashSlackChanged = Signal(float, float, float)
 
     def __init__(self, motion_controller=None, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -37,10 +38,15 @@ class MotionBridge(QObject):
         self._joy_invert_x = False
         self._joy_invert_y = False
         self._deadzone: float = 0.05
+        self._backlash_slack_x: float = 0.0
+        self._backlash_slack_y: float = 0.0
+        self._backlash_slack_z: float = 0.0
         self._stage_limit_wizard_active = False
         self._stage_limit_wizard_step = 0
         if self._motion_controller is not None:
             self._motion_controller.soft_limits_changed.connect(self.softLimitsChanged)
+            self._motion_controller.backlash_slack_changed.connect(self.on_backlash_slack_changed)
+            self._set_backlash_slack(*self._motion_controller.backlash_slack_state(), notify=False)
 
     @Slot(int, int, int)
     def on_position_updated(self, x: int, y: int, z: int) -> None:
@@ -58,6 +64,33 @@ class MotionBridge(QObject):
     @Property(int, notify=position_changed)
     def posZ(self) -> int:
         return self._z
+
+    def _set_backlash_slack(self, x: float, y: float, z: float, *, notify: bool = True) -> None:
+        self._backlash_slack_x = float(x)
+        self._backlash_slack_y = float(y)
+        self._backlash_slack_z = float(z)
+        if notify:
+            self.backlashSlackChanged.emit(
+                self._backlash_slack_x,
+                self._backlash_slack_y,
+                self._backlash_slack_z,
+            )
+
+    @Slot(float, float, float)
+    def on_backlash_slack_changed(self, x: float, y: float, z: float) -> None:
+        self._set_backlash_slack(x, y, z)
+
+    @Property(float, notify=backlashSlackChanged)
+    def backlashSlackX(self) -> float:
+        return self._backlash_slack_x
+
+    @Property(float, notify=backlashSlackChanged)
+    def backlashSlackY(self) -> float:
+        return self._backlash_slack_y
+
+    @Property(float, notify=backlashSlackChanged)
+    def backlashSlackZ(self) -> float:
+        return self._backlash_slack_z
 
     @Property(bool, notify=softLimitsChanged)
     def softLimitsEnabled(self) -> bool:

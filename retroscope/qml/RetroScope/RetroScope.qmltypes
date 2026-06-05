@@ -437,6 +437,9 @@ Module {
         Property { name: "posX"; type: "int"; isReadonly: true }
         Property { name: "posY"; type: "int"; isReadonly: true }
         Property { name: "posZ"; type: "int"; isReadonly: true }
+        Property { name: "backlashSlackX"; type: "double"; isReadonly: true }
+        Property { name: "backlashSlackY"; type: "double"; isReadonly: true }
+        Property { name: "backlashSlackZ"; type: "double"; isReadonly: true }
         Property { name: "softLimitsEnabled"; type: "bool"; isReadonly: true }
         Property { name: "softLimitsCalibrated"; type: "bool"; isReadonly: true }
         Property { name: "softLimitXMin"; type: "int"; isReadonly: true }
@@ -484,10 +487,20 @@ Module {
         }
         Signal { name: "deadzoneChanged"
         }
+        Signal { name: "backlashSlackChanged"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
+            Parameter { name: "arg2"; type: "double" }
+        }
         Method { name: "on_position_updated"
             Parameter { name: "arg0"; type: "int" }
             Parameter { name: "arg1"; type: "int" }
             Parameter { name: "arg2"; type: "int" }
+        }
+        Method { name: "on_backlash_slack_changed"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
+            Parameter { name: "arg2"; type: "double" }
         }
         Method { name: "startStageLimitWizard"
         }

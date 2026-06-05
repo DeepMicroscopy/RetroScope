@@ -129,6 +129,7 @@ class MotionController(QObject):
     soft_limits_changed     = Signal()
     position_reset          = Signal(int, int, int)
     stage_zeroed            = Signal()
+    backlash_slack_changed  = Signal(float, float, float)
 
     def __init__(self, sangaboard, objective_manager: ObjectiveManager,
                  config=None, parent: QObject | None = None) -> None:
@@ -244,6 +245,36 @@ class MotionController(QObject):
             motor_delta = int(delta)
             new_slack = max(-half, min(half, slack + delta))
         return motor_delta, new_slack
+
+    def backlash_slack_state(self) -> tuple[float, float, float]:
+        """Return the current per-axis backlash slack estimate."""
+        return (self._slack_x, self._slack_y, self._slack_z)
+
+    def _emit_backlash_slack_changed(self) -> None:
+        self.backlash_slack_changed.emit(self._slack_x, self._slack_y, self._slack_z)
+
+    def _commit_backlash_slack(
+        self,
+        dx: int,
+        dy: int,
+        dz: int,
+        new_slack: tuple[float, float, float],
+    ) -> None:
+        old_slack = self.backlash_slack_state()
+        slack_x, slack_y, slack_z = old_slack
+        new_slack_x, new_slack_y, new_slack_z = new_slack
+        if dx != 0:
+            slack_x = new_slack_x
+        if dy != 0:
+            slack_y = new_slack_y
+        if dz != 0:
+            slack_z = new_slack_z
+        if (slack_x, slack_y, slack_z) == old_slack:
+            return
+        self._slack_x = slack_x
+        self._slack_y = slack_y
+        self._slack_z = slack_z
+        self._emit_backlash_slack_changed()
 
     def _refresh_motion_settings_from_config(self) -> None:
         if self._config is None:
@@ -508,13 +539,7 @@ class MotionController(QObject):
             self._expected_y += my
             self._expected_z += mz
 
-        new_slack_x, new_slack_y, new_slack_z = new_slack
-        if dx != 0:
-            self._slack_x = new_slack_x
-        if dy != 0:
-            self._slack_y = new_slack_y
-        if dz != 0:
-            self._slack_z = new_slack_z
+        self._commit_backlash_slack(dx, dy, dz, new_slack)
         return True
 
     def _blocking_move_timeout_s(self, dx: int, dy: int, dz: int) -> float:
@@ -558,13 +583,7 @@ class MotionController(QObject):
             self._expected_y += my
             self._expected_z += mz
 
-        new_slack_x, new_slack_y, new_slack_z = new_slack
-        if dx != 0:
-            self._slack_x = new_slack_x
-        if dy != 0:
-            self._slack_y = new_slack_y
-        if dz != 0:
-            self._slack_z = new_slack_z
+        self._commit_backlash_slack(dx, dy, dz, new_slack)
         return True
 
     # Slots called from InputManager
@@ -861,6 +880,7 @@ class MotionController(QObject):
         self._slack_x = 0.0
         self._slack_y = 0.0
         self._slack_z = 0.0
+        self._emit_backlash_slack_changed()
 
     # Joystick calibration
     @Property(float, notify=joystick_center_changed)

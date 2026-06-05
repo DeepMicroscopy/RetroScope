@@ -19,6 +19,13 @@ Rectangle {
         Qt.callLater(function() { App.system.showInputPanel() })
     }
 
+    function normalizedSlack(slack, backlash) {
+        var halfBand = Math.abs(Number(backlash)) / 2.0
+        if (halfBand <= 0)
+            return 0.0
+        return Math.max(-1.0, Math.min(1.0, Number(slack) / halfBand))
+    }
+
     Connections {
         target: App
         function onHistogram_updated(bins) { root.histBins = bins }
@@ -170,6 +177,122 @@ Rectangle {
                                     radius: 1
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.colorBorder }
+
+            // Backlash slack
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                Text {
+                    text: "BACKLASH"
+                    color: theme.colorTextSub
+                    font.pixelSize: 10
+                    font.weight: Font.Medium
+                    font.letterSpacing: 0.8
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14
+                    anchors.bottomMargin: 8
+                }
+            }
+
+            Item {
+                id: backlashViz
+                Layout.fillWidth: true
+                Layout.preferredHeight: 136
+
+                property real xNorm: root.normalizedSlack(App.motion.backlashSlackX, App.objective.activeBacklashX)
+                property real yNorm: root.normalizedSlack(App.motion.backlashSlackY, App.objective.activeBacklashY)
+                property real zNorm: root.normalizedSlack(App.motion.backlashSlackZ, App.objective.activeBacklashZ)
+
+                Row {
+                    id: backlashRow
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    anchors.bottomMargin: 10
+                    spacing: 10
+
+                    Item {
+                        id: xyBand
+                        width: Math.max(1, Math.min(backlashRow.width - zBand.width - backlashRow.spacing, backlashRow.height))
+                        height: width
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 6
+                            color: theme.dark ? "#252528" : "#e0e0e0"
+                            border.color: theme.dark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.08)
+                            border.width: 1
+                        }
+
+                        Rectangle {
+                            width: 1
+                            height: parent.height - 14
+                            anchors.centerIn: parent
+                            color: theme.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.12)
+                        }
+
+                        Rectangle {
+                            width: parent.width - 14
+                            height: 1
+                            anchors.centerIn: parent
+                            color: theme.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.12)
+                        }
+
+                        Rectangle {
+                            id: xyDot
+                            width: 9
+                            height: 9
+                            radius: 4.5
+                            color: theme.colorAccent
+                            border.color: theme.dark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.8)
+                            border.width: 1
+                            x: (xyBand.width - width) / 2 + backlashViz.xNorm * ((xyBand.width - width - 14) / 2)
+                            y: (xyBand.height - height) / 2 - backlashViz.yNorm * ((xyBand.height - height - 14) / 2)
+
+                            Behavior on x { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                            Behavior on y { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                        }
+                    }
+
+                    Item {
+                        id: zBand
+                        width: 28
+                        height: xyBand.height
+
+                        Rectangle {
+                            width: 10
+                            height: parent.height
+                            radius: 5
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: theme.dark ? "#252528" : "#e0e0e0"
+                            border.color: theme.dark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.08)
+                            border.width: 1
+                        }
+
+                        Rectangle {
+                            width: parent.width
+                            height: 1
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: theme.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.12)
+                        }
+
+                        Rectangle {
+                            id: zMarker
+                            width: 18
+                            height: 6
+                            radius: 3
+                            color: theme.colorAccent
+                            x: (zBand.width - width) / 2
+                            y: (zBand.height - height) / 2 - backlashViz.zNorm * ((zBand.height - height - 14) / 2)
+
+                            Behavior on y { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
                         }
                     }
                 }
