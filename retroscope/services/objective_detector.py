@@ -8,6 +8,8 @@ from PySide6.QtCore import QObject, Signal
 from retroscope.domain.objective_detection import DetectorState, Event, Phase, step
 from retroscope.services.config_store import ConfigStore
 
+_CAMERA_WARMUP_IGNORE_MS = 1500.0
+
 
 class ObjectiveDetector(QObject):
     """Monitors mean frame brightness and signals when a turret rotation (darkness -> recovery cycle) is detected."""
@@ -25,16 +27,20 @@ class ObjectiveDetector(QObject):
         self._recovery_threshold_pct = float(config.get("detection.recovery_threshold_pct", 40.0))
 
         self._state = DetectorState()
+        self._ignore_until_ms = time.monotonic() * 1000.0 + _CAMERA_WARMUP_IGNORE_MS
 
     # Called from camera analysis thread (direct connection)
     def on_brightness_updated(self, brightness: float) -> None:
+        now_ms = time.monotonic() * 1000.0
         with self._lock:
             if not self._enabled:
+                return
+            if now_ms < self._ignore_until_ms:
                 return
             event = step(
                 self._state,
                 brightness,
-                now_ms=time.monotonic() * 1000.0,
+                now_ms=now_ms,
                 dark_threshold_pct=self._dark_threshold_pct,
                 dark_duration_ms=self._dark_duration_ms,
                 recovery_threshold_pct=self._recovery_threshold_pct,
@@ -47,6 +53,12 @@ class ObjectiveDetector(QObject):
         """Reset state machine without emitting switch_detected."""
         with self._lock:
             self._state = DetectorState()
+
+    def suppress_temporarily(self, duration_ms: float = _CAMERA_WARMUP_IGNORE_MS) -> None:
+        """Ignore brightness transitions during camera startup/reconnect settling."""
+        with self._lock:
+            self._state = DetectorState()
+            self._ignore_until_ms = time.monotonic() * 1000.0 + max(0.0, float(duration_ms))
 
     # Config setters
     def set_enabled(self, v: bool) -> None:

@@ -186,6 +186,29 @@ class CameraService(QObject):
     def set_frame_analysis_enabled(self, enabled: bool) -> None:
         self._frame_analysis_enabled = bool(enabled)
 
+    def on_camera_disconnected(self) -> None:
+        """Clear stale camera state after the live input disappears."""
+        with self._frame_cond:
+            self._latest_frame = None
+            self._frame_seq += 1
+            self._latest_raw_focus_score = None
+            self._latest_raw_focus_t = 0.0
+            self._latest_raw_focus_source = ""
+            self._latest_source_focus_score = None
+            self._latest_source_focus_t = 0.0
+            self._stable_source_focus_score = None
+            self._pending_source_focus_score = None
+            self._focus_score_ema = None
+            self._hist_ema = None
+            self._hist_scale_ema = None
+            self._fps_times.clear()
+            self._frame_cond.notify_all()
+        self.on_recording_backend_stopped()
+
+    def on_recording_backend_stopped(self) -> None:
+        """Finalize state when Qt stops native recording internally."""
+        self._finish_recording(stop_backend=False)
+
     def capture_native_frame(
         self,
         timeout_s: float = 3.0,
@@ -502,10 +525,19 @@ class CameraService(QObject):
 
     def stop_recording(self) -> None:
         """Stop and finalise the current recording."""
+        self._finish_recording(stop_backend=True)
+
+    def _finish_recording(self, stop_backend: bool) -> None:
         with self._lock:
-            was_recording = self._recording or self._writer is not None
+            was_recording = (
+                self._recording
+                or self._writer is not None
+                or self._recorder is not None
+                or self._native_recording
+            )
             writer = self._writer
             recorder = self._recorder
+            was_native = self._native_recording
             path = self._recording_path
             captured_at = self._recording_started_at
             started_monotonic = self._recording_started_monotonic
@@ -529,7 +561,7 @@ class CameraService(QObject):
 
         if recorder is not None:
             recorder.close()
-        elif writer is None and self._recording_backend is not None:
+        elif writer is None and was_native and stop_backend and self._recording_backend is not None:
             try:
                 self._recording_backend.stop_recording()
             except Exception as e:

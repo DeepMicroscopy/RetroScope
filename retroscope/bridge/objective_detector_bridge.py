@@ -97,3 +97,6 @@ class ObjectiveDetectorBridge(ConfigBackedBridgeMixin, QObject):
     def cancel(self) -> None:
         """Dismiss popup and reset state machine."""
         self._det.cancel()
+
+    def suppress_for_camera_change(self, duration_ms: float = 1500.0) -> None:
+        self._det.suppress_temporarily(duration_ms)

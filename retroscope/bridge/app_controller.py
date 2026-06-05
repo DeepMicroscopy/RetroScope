@@ -114,6 +114,9 @@ class AppController(QObject):
         self._direct_camera_bridge.camera_capabilities_changed.connect(
             self._on_direct_camera_capabilities_changed
         )
+        self._direct_camera_bridge.camera_connected_changed.connect(
+            self._on_direct_camera_connected_changed
+        )
 
         self._capture_busy = False
 
@@ -141,6 +144,10 @@ class AppController(QObject):
         self._camera_resolution_options = list(self._direct_camera_bridge.availableResolutions)
         self._camera_fps_options = [int(v) for v in self._direct_camera_bridge.availableFps]
         self.camera_capabilities_changed.emit()
+
+    def _on_direct_camera_connected_changed(self, _connected: bool) -> None:
+        self._obj_detector.suppress_for_camera_change()
+        self._buttons.suppress_for(1.5)
 
     # Properties
     @Property(QObject, constant=True)
