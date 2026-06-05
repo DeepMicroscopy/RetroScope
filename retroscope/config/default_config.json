@@ -96,7 +96,9 @@
     "resolution": "640x360",
     "fps": 30,
     "image_format": "OME-TIFF",
-    "naming_pattern": "{date}_{time}_{obj}"
+    "naming_pattern": "{date}_{time}_{obj}",
+    "frame_analysis_enabled": true,
+    "live_video_enabled": true
   },
   "system": {
     "restart_after_update": true

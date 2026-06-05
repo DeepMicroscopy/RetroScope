@@ -237,6 +237,84 @@ def test_direct_preview_frame_emits_immediate_focus_score() -> None:
     assert raw_scores[-1] > 1000.0
 
 
+def test_camera_service_frame_analysis_toggle_skips_focus_and_brightness() -> None:
+    _app()
+    service = CameraService(FakeConfig())
+    try:
+        focus_scores: list[float] = []
+        brightness_values: list[float] = []
+        service.focus_score_updated.connect(focus_scores.append)
+        service.brightness_updated.connect(brightness_values.append)
+        frame = np.full((24, 32, 3), 128, dtype=np.uint8)
+
+        service.set_frame_analysis_enabled(False)
+        service.on_frame_ready(frame)
+
+        assert service.get_latest_frame() is frame
+        assert focus_scores == []
+        assert brightness_values == []
+    finally:
+        service.shutdown()
+
+
+def test_direct_camera_bridge_performance_toggles_gate_analysis_and_preview(monkeypatch) -> None:
+    _app()
+
+    class FakeCameraService:
+        def __init__(self) -> None:
+            self.frames: list[np.ndarray] = []
+            self.focus_scores: list[float] = []
+
+        def on_frame_ready(self, frame: np.ndarray) -> None:
+            self.frames.append(frame)
+
+        def on_focus_score_ready(self, score: float) -> None:
+            self.focus_scores.append(score)
+
+    class FakeVideoSink:
+        def __init__(self) -> None:
+            self.frames: list[object] = []
+
+        def setVideoFrame(self, frame: object) -> None:
+            self.frames.append(frame)
+
+    service = FakeCameraService()
+    sink = FakeVideoSink()
+    bridge = DirectCameraBridge(service, enabled=True)
+    bridge._output_sink = sink
+    bridge._tap_interval_s = 0.0
+    frame = object()
+    analysis_frame = np.ones((4, 4, 3), dtype=np.uint8)
+    conversions: list[object] = []
+
+    def convert_frame(received_frame: object):
+        conversions.append(received_frame)
+        return analysis_frame, 55.0
+
+    monkeypatch.setattr(bridge, "_frame_to_rgb_array_and_focus", convert_frame)
+
+    bridge.setFrameAnalysisEnabled(False)
+    bridge._on_video_frame(frame)
+
+    assert conversions == []
+    assert service.focus_scores == []
+    assert service.frames == []
+    assert sink.frames == [frame]
+
+    sink.frames.clear()
+    bridge.setFrameAnalysisEnabled(True)
+    bridge.setLiveVideoEnabled(False)
+    sink.frames.clear()
+
+    bridge._on_video_frame(frame)
+
+    assert conversions == [frame]
+    assert service.focus_scores == [55.0]
+    assert len(service.frames) == 1
+    assert service.frames[0] is analysis_frame
+    assert sink.frames == []
+
+
 def test_source_focus_score_can_be_waited_for_independently_of_frame() -> None:
     _app()
     service = CameraService(FakeConfig())

@@ -38,6 +38,27 @@ def test_settings_bridge_joystick_smoothing_persists(tmp_path):
     assert seen == [100]
 
 
+def test_settings_bridge_camera_performance_toggles_persist(tmp_path):
+    from retroscope.bridge.settings_bridge import SettingsBridge
+
+    config = ConfigStub()
+    bridge = SettingsBridge(config, StoreStub(tmp_path))
+    analysis_seen: list[bool] = []
+    video_seen: list[bool] = []
+    bridge.camera_frame_analysis_changed.connect(analysis_seen.append)
+    bridge.camera_live_video_changed.connect(video_seen.append)
+
+    bridge.setCameraFrameAnalysisEnabled(False)
+    bridge.setCameraLiveVideoEnabled(False)
+
+    assert bridge.cameraFrameAnalysisEnabled is False
+    assert bridge.cameraLiveVideoEnabled is False
+    assert config.values["camera.frame_analysis_enabled"] is False
+    assert config.values["camera.live_video_enabled"] is False
+    assert analysis_seen == [False]
+    assert video_seen == [False]
+
+
 def test_settings_bridge_sangaboard_timing_uses_reported_values_until_user_override(tmp_path):
     from retroscope.bridge.settings_bridge import SettingsBridge
 

@@ -769,6 +769,22 @@ Rectangle {
                             Text { text: "NAMING PATTERN"; color: root.colorTextSub; font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.7; Layout.topMargin: 6 }
                             STextInput { value: App.settings.cameraNamingPattern; mono: true; onCommitted: function(t) { App.settings.setCameraNamingPattern(t) } }
                             Text { text: "Tokens: {date} {time} {obj} {seq}"; color: root.colorTextSub; font.pixelSize: 9; font.family: "Courier New" }
+                            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: root.colorBorder; Layout.topMargin: 8; Layout.bottomMargin: 4 }
+                            Text { text: "PERFORMANCE DEBUG"; color: root.colorTextSub; font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.7 }
+                            SRow {
+                                label: "Frame analysis"
+                                SToggle {
+                                    checked: App.settings.cameraFrameAnalysisEnabled
+                                    onToggled: function(v) { App.settings.setCameraFrameAnalysisEnabled(v) }
+                                }
+                            }
+                            SRow {
+                                label: "Live video feed"
+                                SToggle {
+                                    checked: App.settings.cameraLiveVideoEnabled
+                                    onToggled: function(v) { App.settings.setCameraLiveVideoEnabled(v) }
+                                }
+                            }
                         }
                     }
 

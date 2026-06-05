@@ -124,6 +124,7 @@ class CameraService(QObject):
         self._recording_backend = None
         self._native_capture_backend = None
         self._native_recording = False
+        self._frame_analysis_enabled = True
         self._shutdown_event = threading.Event()
 
         # Recording state
@@ -180,6 +181,10 @@ class CameraService(QObject):
 
     def set_native_capture_backend(self, backend) -> None:
         self._native_capture_backend = backend
+
+    @Slot(bool)
+    def set_frame_analysis_enabled(self, enabled: bool) -> None:
+        self._frame_analysis_enabled = bool(enabled)
 
     def capture_native_frame(
         self,
@@ -355,6 +360,8 @@ class CameraService(QObject):
         """Background loop: emit histogram and fallback focus scores."""
         while not self._shutdown_event.wait(_HIST_INTERVAL):
             with self._lock:
+                if not self._frame_analysis_enabled:
+                    continue
                 frame = self._latest_frame
                 source_focus_fresh = (
                     self._latest_source_focus_score is not None
@@ -608,9 +615,10 @@ class CameraService(QObject):
         should_schedule_ui = False
         focus_score: float | None = None
         brightness: float | None = None
-        if isinstance(frame, np.ndarray):
+        analysis_enabled = self._frame_analysis_enabled
+        if analysis_enabled and isinstance(frame, np.ndarray):
             focus_score = self._compute_focus_score(frame)
-        if isinstance(frame, np.ndarray) and frame.ndim >= 2:
+        if analysis_enabled and isinstance(frame, np.ndarray) and frame.ndim >= 2:
             # Uses a cheap strided brightness sample so the objective detector can catch brief turret-rotation dark frames.
             brightness = float(frame[::8, ::8].mean())
         with self._frame_cond:

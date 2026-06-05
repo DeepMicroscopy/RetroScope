@@ -43,6 +43,8 @@ class SettingsBridge(QObject):
     camera_fps_changed         = Signal(int)
     camera_format_changed      = Signal(str)
     camera_naming_changed      = Signal(str)
+    camera_frame_analysis_changed = Signal(bool)
+    camera_live_video_changed     = Signal(bool)
     # Storage signals
     capture_root_changed       = Signal(str)
     storage_changed            = Signal()
@@ -104,6 +106,8 @@ class SettingsBridge(QObject):
         self._cam_fps    = self._clamp_analysis_fps(int(config.get("camera.fps", 8)))
         self._cam_fmt    = str(config.get("camera.image_format", "OME-TIFF"))
         self._cam_name   = str(config.get("camera.naming_pattern", "{date}_{time}_{obj}"))
+        self._cam_frame_analysis = bool(config.get("camera.frame_analysis_enabled", True))
+        self._cam_live_video = bool(config.get("camera.live_video_enabled", True))
         # System
         self._restart_after_update = bool(config.get("system.restart_after_update", True))
         # Disk stats (refresh via refreshStorage())
@@ -459,6 +463,32 @@ class SettingsBridge(QObject):
         self._cam_fps = v
         self._config.set("camera.fps", v)
         self.camera_fps_changed.emit(v)
+
+    @Property(bool, notify=camera_frame_analysis_changed)
+    def cameraFrameAnalysisEnabled(self) -> bool:
+        return self._cam_frame_analysis
+
+    @Slot(bool)
+    def setCameraFrameAnalysisEnabled(self, v: bool) -> None:
+        enabled = bool(v)
+        if enabled == self._cam_frame_analysis:
+            return
+        self._cam_frame_analysis = enabled
+        self._config.set("camera.frame_analysis_enabled", enabled)
+        self.camera_frame_analysis_changed.emit(enabled)
+
+    @Property(bool, notify=camera_live_video_changed)
+    def cameraLiveVideoEnabled(self) -> bool:
+        return self._cam_live_video
+
+    @Slot(bool)
+    def setCameraLiveVideoEnabled(self, v: bool) -> None:
+        enabled = bool(v)
+        if enabled == self._cam_live_video:
+            return
+        self._cam_live_video = enabled
+        self._config.set("camera.live_video_enabled", enabled)
+        self.camera_live_video_changed.emit(enabled)
 
     @staticmethod
     def _clamp_analysis_resolution(v: str) -> str:

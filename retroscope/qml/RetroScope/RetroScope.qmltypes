@@ -775,6 +775,8 @@ Module {
         Property { name: "cameraFps"; type: "int"; isReadonly: true }
         Property { name: "cameraImageFormat"; type: "QString"; isReadonly: true }
         Property { name: "cameraNamingPattern"; type: "QString"; isReadonly: true }
+        Property { name: "cameraFrameAnalysisEnabled"; type: "bool"; isReadonly: true }
+        Property { name: "cameraLiveVideoEnabled"; type: "bool"; isReadonly: true }
         Property { name: "restartAfterUpdate"; type: "bool"; isReadonly: true }
         Signal { name: "joystick_deadzone_changed"
             Parameter { name: "arg0"; type: "int" }
@@ -856,6 +858,12 @@ Module {
         }
         Signal { name: "camera_naming_changed"
             Parameter { name: "arg0"; type: "QString" }
+        }
+        Signal { name: "camera_frame_analysis_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "camera_live_video_changed"
+            Parameter { name: "arg0"; type: "bool" }
         }
         Signal { name: "restart_after_update_changed"
             Parameter { name: "arg0"; type: "bool" }
@@ -952,6 +960,12 @@ Module {
         }
         Method { name: "setCameraNamingPattern"
             Parameter { name: "arg0"; type: "QString" }
+        }
+        Method { name: "setCameraFrameAnalysisEnabled"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setCameraLiveVideoEnabled"
+            Parameter { name: "arg0"; type: "bool" }
         }
         Method { name: "setRestartAfterUpdate"
             Parameter { name: "arg0"; type: "bool" }

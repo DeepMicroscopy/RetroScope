@@ -45,6 +45,8 @@ class DirectCameraBridge(QObject):
     frame_tap_changed = Signal()
     camera_format_changed = Signal()
     camera_capabilities_changed = Signal()
+    frame_analysis_enabled_changed = Signal(bool)
+    live_video_enabled_changed = Signal(bool)
 
     def __init__(
         self,
@@ -75,6 +77,8 @@ class DirectCameraBridge(QObject):
         self._active_fps = 0.0
         self._available_resolutions: list[str] = []
         self._available_fps: list[int] = []
+        self._frame_analysis_enabled = True
+        self._live_video_enabled = True
         # Hi-res capture queue
         self._hires_queue: deque[dict] = deque()
         self._hires_lock = threading.Lock()
@@ -98,6 +102,36 @@ class DirectCameraBridge(QObject):
     @Property(list, notify=camera_capabilities_changed)
     def availableFps(self) -> list[int]:
         return self._available_fps
+
+    @Property(bool, notify=frame_analysis_enabled_changed)
+    def frameAnalysisEnabled(self) -> bool:
+        return self._frame_analysis_enabled
+
+    @Slot(bool)
+    def setFrameAnalysisEnabled(self, enabled: bool) -> None:
+        enabled = bool(enabled)
+        if enabled == self._frame_analysis_enabled:
+            return
+        self._frame_analysis_enabled = enabled
+        self._last_tap_s = 0.0
+        self.frame_analysis_enabled_changed.emit(enabled)
+
+    @Property(bool, notify=live_video_enabled_changed)
+    def liveVideoEnabled(self) -> bool:
+        return self._live_video_enabled
+
+    @Slot(bool)
+    def setLiveVideoEnabled(self, enabled: bool) -> None:
+        enabled = bool(enabled)
+        if enabled == self._live_video_enabled:
+            return
+        self._live_video_enabled = enabled
+        if not enabled and self._output_sink is not None:
+            try:
+                self._output_sink.setVideoFrame(QVideoFrame())
+            except Exception:
+                pass
+        self.live_video_enabled_changed.emit(enabled)
 
     @Slot(str, str, int)
     def configureCamera(self, device: str, resolution: str, fps: int) -> None:
@@ -543,14 +577,14 @@ class DirectCameraBridge(QObject):
     def _on_video_frame(self, frame: object) -> None:
         arr: np.ndarray | None = None
         now = time.monotonic()
-        should_tap = now - self._last_tap_s >= self._tap_interval_s
+        should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
         if should_tap:
             self._last_tap_s = now
             arr, focus_score = self._frame_to_rgb_array_and_focus(frame)
             if focus_score is not None:
                 self._camera_service.on_focus_score_ready(focus_score)
 
-        if self._output_sink is not None:
+        if self._live_video_enabled and self._output_sink is not None:
             try:
                 self._output_sink.setVideoFrame(frame)
             except Exception as e:

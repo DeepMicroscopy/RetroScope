@@ -95,9 +95,19 @@ class AppController(QObject):
             settings.cameraResolution,
             settings.cameraFps,
         )
+        camera_svc.set_frame_analysis_enabled(settings.cameraFrameAnalysisEnabled)
+        self._direct_camera_bridge.setFrameAnalysisEnabled(settings.cameraFrameAnalysisEnabled)
+        self._direct_camera_bridge.setLiveVideoEnabled(settings.cameraLiveVideoEnabled)
         settings.camera_device_changed.connect(self._direct_camera_bridge.setCameraDevice)
         settings.camera_resolution_changed.connect(self._direct_camera_bridge.setCameraResolution)
         settings.camera_fps_changed.connect(self._direct_camera_bridge.setCameraFps)
+        settings.camera_frame_analysis_changed.connect(camera_svc.set_frame_analysis_enabled)
+        settings.camera_frame_analysis_changed.connect(
+            self._direct_camera_bridge.setFrameAnalysisEnabled
+        )
+        settings.camera_live_video_changed.connect(
+            self._direct_camera_bridge.setLiveVideoEnabled
+        )
         self._direct_camera_bridge.camera_format_changed.connect(
             self._on_direct_camera_format_changed
         )
