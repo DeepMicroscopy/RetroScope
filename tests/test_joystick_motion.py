@@ -150,9 +150,13 @@ def test_dispatch_forces_small_command_after_hold_time() -> None:
 
     ctrl.on_axes_updated(1000, 0)
     ctrl._dispatch_joystick_at(now)
+    ctrl.on_axes_updated(1000, 0)
+    ctrl._joystick_sample_t = now + 0.24
     ctrl._dispatch_joystick_at(now + 0.24)
     assert sb.moves == []
 
+    ctrl.on_axes_updated(1000, 0)
+    ctrl._joystick_sample_t = now + 0.50
     ctrl._dispatch_joystick_at(now + 0.50)
     assert len(sb.moves) == 1
     assert 1 <= abs(sb.moves[-1][0]) < 6
@@ -183,6 +187,23 @@ def test_hysteresis_exits_and_clears_accumulator_below_release_band() -> None:
     ctrl._dispatch_joystick_at(now + 0.067)
 
     assert sb.moves == []
+    assert ctrl._dx_accum == 0.0
+
+
+def test_stale_joystick_sample_clears_motion_state_quickly() -> None:
+    ctrl, sb = _controller(_Config(**{"input.max_pan_speed_px_per_sec": 400}))
+    now = time.monotonic()
+
+    ctrl.on_axes_updated(12000, 0)
+    ctrl._dispatch_joystick_at(now)
+    assert sb.moves
+
+    sb.moves.clear()
+    ctrl._dispatch_joystick_at(now + 0.20)
+
+    assert sb.moves == []
+    assert ctrl._joystick_sample_ready is False
+    assert ctrl._vx_filtered == 0.0
     assert ctrl._dx_accum == 0.0
 
 
