@@ -15,6 +15,7 @@ Item {
     property int borderWidth: 1
     property bool asynchronous: true
     property bool cache: false
+    property int sourceMaxSize: 0
     default property alias content: overlayLayer.data
 
     Rectangle {
@@ -45,6 +46,8 @@ Item {
             visible: root.imageVisible
             asynchronous: root.asynchronous
             cache: root.cache
+            sourceSize.width: root.sourceMaxSize
+            sourceSize.height: root.sourceMaxSize
         }
 
         Item {

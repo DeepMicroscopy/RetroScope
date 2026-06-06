@@ -269,6 +269,13 @@ class _TileScannerWorker(QThread):
                 actual_mode=actual_mode,
             )
             ome_tiff.write_tile_scan(path, stitched, tiles, metadata)
+            # Pre-generate the gallery thumbnail from the array we already have in
+            # memory, so the first gallery open doesn't decode the huge stitch.
+            if hasattr(self._image_store, "write_thumbnail_from_array"):
+                try:
+                    self._image_store.write_thumbnail_from_array(Path(path), stitched)
+                except Exception as e:
+                    print(f"[tile_scan] thumbnail failed: {e}")
             self.stitch_progress.emit(1.0)
             return str(path)
         except Exception as e:

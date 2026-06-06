@@ -334,247 +334,191 @@ Item {
                                 anchors.margins: 12
                                 anchors.topMargin: 8
 
-                                TouchScrollView {
-                                    id: groupedGridScroll
+                                GridView {
+                                    id: gridView
                                     anchors.fill: parent
                                     visible: App.gallery.viewMode === "grid"
                                     clip: true
-                                    contentWidth: availableWidth
+                                    model: App.gallery.items
+                                    cacheBuffer: Math.round(height)   // prefetch one screen of cells
+                                    boundsBehavior: Flickable.StopAtBounds
+                                    cellWidth: Math.max(126, Math.floor(width / 5))
+                                    cellHeight: Math.round(cellWidth * 0.75)
 
-                                    Column {
-                                        id: groupedGridColumn
-                                        width: groupedGridScroll.availableWidth
-                                        spacing: 10
-
-                                        Repeater {
-                                            model: App.gallery.groupedItems
-                                            delegate: Column {
-                                                id: gridGroupRoot
-                                                required property var modelData
-                                                property var group: gridGroupRoot.modelData
-                                                property var groupItems: (gridGroupRoot.group && gridGroupRoot.group["items"]) ? gridGroupRoot.group["items"] : []
-                                                width: parent.width
-                                                spacing: 6
-
-                                                Row {
-                                                    width: parent.width
-                                                    spacing: 0
-                                                    Text {
-                                                        text: gridGroupRoot.group.label + " (" + gridGroupRoot.groupItems.length + " captures)"
-                                                        color: root.colorTextSub
-                                                        font.pixelSize: 11
+                                    delegate: Item {
+                                        id: gridItemRoot
+                                        required property var modelData
+                                        property var item: gridItemRoot.modelData
+                                        width: gridView.cellWidth
+                                        height: gridView.cellHeight
+                                        RoundedMediaPreview {
+                                            anchors.fill: parent
+                                            anchors.margins: 3
+                                            radius: 6
+                                            backgroundColor: root.colorSurfaceLight
+                                            borderColor: root.colorBorder
+                                            borderWidth: 1
+                                            source: gridItemRoot.item.previewUrl || gridItemRoot.item.fileUrl || ""
+                                            imageVisible: !gridItemRoot.item.isVideo || !!gridItemRoot.item.previewUrl
+                                            fillMode: Image.PreserveAspectCrop
+                                            asynchronous: true
+                                            cache: false
+                                            sourceMaxSize: Math.ceil(gridView.cellWidth)
+                                            Rectangle {
+                                                anchors.fill: parent
+                                                anchors.margins: 1
+                                                visible: gridItemRoot.item.isVideo
+                                                radius: 5
+                                                color: Qt.rgba(0, 0, 0, 0.35)
+                                            }
+                                            Rectangle {
+                                                visible: gridItemRoot.item.objective !== ""
+                                                anchors.top: parent.top
+                                                anchors.right: parent.right
+                                                anchors.margins: 4
+                                                color: App.gallery.selectedId === gridItemRoot.item.itemId ? root.colorAccent : Qt.rgba(0, 0, 0, 0.55)
+                                                radius: 4
+                                                height: 16
+                                                width: objText.implicitWidth + 8
+                                                Text {
+                                                    id: objText
+                                                    anchors.centerIn: parent
+                                                    text: gridItemRoot.item.objective
+                                                    color: App.gallery.selectedId === gridItemRoot.item.itemId ? "#ffffff" : "#a9a9ad"
+                                                    font.pixelSize: 9
+                                                    font.weight: Font.Medium
+                                                }
+                                            }
+                                            Rectangle {
+                                                visible: gridItemRoot.item.type !== "snapshot"
+                                                anchors.top: parent.top
+                                                anchors.left: parent.left
+                                                anchors.margins: 4
+                                                color: Qt.rgba(0, 0, 0, 0.55)
+                                                radius: 4
+                                                height: 16
+                                                width: typeText.implicitWidth + 8
+                                                Text {
+                                                    id: typeText
+                                                    anchors.centerIn: parent
+                                                    text: gridItemRoot.item.typeLabel.toUpperCase()
+                                                    color: gridItemRoot.item.type === "stack" ? "#EF9F27" : "#85B7EB"
+                                                    font.pixelSize: 8
+                                                    font.weight: Font.Medium
+                                                }
+                                            }
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.right: parent.right
+                                                anchors.bottom: parent.bottom
+                                                height: 20
+                                                gradient: Gradient {
+                                                    GradientStop {
+                                                        position: 0.0
+                                                        color: "transparent"
+                                                    }
+                                                    GradientStop {
+                                                        position: 1.0
+                                                        color: Qt.rgba(0, 0, 0, 0.7)
                                                     }
                                                 }
-
-                                                Flow {
-                                                    id: groupFlow
-                                                    width: parent.width
-                                                    spacing: 6
-                                                    Repeater {
-                                                        model: gridGroupRoot.groupItems
-                                                        delegate: Item {
-                                                            id: gridItemRoot
-                                                            required property var modelData
-                                                            property var item: gridItemRoot.modelData
-                                                            width: Math.max(120, Math.floor((groupFlow.width - 24) / 5))
-                                                            height: width * 0.75
-                                                            RoundedMediaPreview {
-                                                                anchors.fill: parent
-                                                                radius: 6
-                                                                backgroundColor: root.colorSurfaceLight
-                                                                borderColor: root.colorBorder
-                                                                borderWidth: 1
-                                                                source: gridItemRoot.item.isVideo ? (gridItemRoot.item.previewUrl || "") : (gridItemRoot.item.fileUrl || "")
-                                                                imageVisible: !gridItemRoot.item.isVideo || !!gridItemRoot.item.previewUrl
-                                                                fillMode: Image.PreserveAspectCrop
-                                                                asynchronous: true
-                                                                cache: false
-                                                                Rectangle {
-                                                                    anchors.fill: parent
-                                                                    anchors.margins: 1
-                                                                    visible: gridItemRoot.item.isVideo
-                                                                    radius: 5
-                                                                    color: Qt.rgba(0, 0, 0, 0.35)
-                                                                }
-                                                                Rectangle {
-                                                                    visible: gridItemRoot.item.objective !== ""
-                                                                    anchors.top: parent.top
-                                                                    anchors.right: parent.right
-                                                                    anchors.margins: 4
-                                                                    color: App.gallery.selectedId === gridItemRoot.item.itemId ? root.colorAccent : Qt.rgba(0, 0, 0, 0.55)
-                                                                    radius: 4
-                                                                    height: 16
-                                                                    width: objText.implicitWidth + 8
-                                                                    Text {
-                                                                        id: objText
-                                                                        anchors.centerIn: parent
-                                                                        text: gridItemRoot.item.objective
-                                                                        color: App.gallery.selectedId === gridItemRoot.item.itemId ? "#ffffff" : "#a9a9ad"
-                                                                        font.pixelSize: 9
-                                                                        font.weight: Font.Medium
-                                                                    }
-                                                                }
-                                                                Rectangle {
-                                                                    visible: gridItemRoot.item.type !== "snapshot"
-                                                                    anchors.top: parent.top
-                                                                    anchors.left: parent.left
-                                                                    anchors.margins: 4
-                                                                    color: Qt.rgba(0, 0, 0, 0.55)
-                                                                    radius: 4
-                                                                    height: 16
-                                                                    width: typeText.implicitWidth + 8
-                                                                    Text {
-                                                                        id: typeText
-                                                                        anchors.centerIn: parent
-                                                                        text: gridItemRoot.item.typeLabel.toUpperCase()
-                                                                        color: gridItemRoot.item.type === "stack" ? "#EF9F27" : "#85B7EB"
-                                                                        font.pixelSize: 8
-                                                                        font.weight: Font.Medium
-                                                                    }
-                                                                }
-                                                                Rectangle {
-                                                                    anchors.left: parent.left
-                                                                    anchors.right: parent.right
-                                                                    anchors.bottom: parent.bottom
-                                                                    height: 20
-                                                                    gradient: Gradient {
-                                                                        GradientStop {
-                                                                            position: 0.0
-                                                                            color: "transparent"
-                                                                        }
-                                                                        GradientStop {
-                                                                            position: 1.0
-                                                                            color: Qt.rgba(0, 0, 0, 0.7)
-                                                                        }
-                                                                    }
-                                                                    Text {
-                                                                        anchors.left: parent.left
-                                                                        anchors.leftMargin: 6
-                                                                        anchors.bottom: parent.bottom
-                                                                        anchors.bottomMargin: 4
-                                                                        text: gridItemRoot.item.timeLabel
-                                                                        color: "#d0d0d0"
-                                                                        font.pixelSize: 9
-                                                                    }
-                                                                }
-                                                                Rectangle {
-                                                                    anchors.fill: parent
-                                                                    color: "transparent"
-                                                                    radius: 6
-                                                                    border.color: root.colorAccent
-                                                                    border.width: App.gallery.selectedId === gridItemRoot.item.itemId ? 2 : 0
-                                                                }
-                                                                TapHandler {
-                                                                    onTapped: App.gallery.selectItem(gridItemRoot.item.itemId)
-                                                                }
-                                                            }
-                                                        }
-                                                    }
+                                                Text {
+                                                    anchors.left: parent.left
+                                                    anchors.leftMargin: 6
+                                                    anchors.bottom: parent.bottom
+                                                    anchors.bottomMargin: 4
+                                                    text: gridItemRoot.item.timeLabel
+                                                    color: "#d0d0d0"
+                                                    font.pixelSize: 9
                                                 }
+                                            }
+                                            Rectangle {
+                                                anchors.fill: parent
+                                                color: "transparent"
+                                                radius: 6
+                                                border.color: root.colorAccent
+                                                border.width: App.gallery.selectedId === gridItemRoot.item.itemId ? 2 : 0
+                                            }
+                                            TapHandler {
+                                                onTapped: App.gallery.selectItem(gridItemRoot.item.itemId)
                                             }
                                         }
                                     }
                                 }
 
-                                TouchScrollView {
-                                    id: groupedListScroll
+                                ListView {
+                                    id: listView
                                     anchors.fill: parent
                                     visible: App.gallery.viewMode === "list"
                                     clip: true
-                                    contentWidth: availableWidth
+                                    model: App.gallery.items
+                                    spacing: 6
+                                    cacheBuffer: Math.round(height)
+                                    boundsBehavior: Flickable.StopAtBounds
 
-                                    Column {
-                                        id: groupedListColumn
-                                        width: groupedListScroll.availableWidth
-                                        spacing: 6
-                                        Repeater {
-                                            model: App.gallery.groupedItems
-                                            delegate: Column {
-                                                id: listGroupRoot
-                                                required property var modelData
-                                                property var group: listGroupRoot.modelData
-                                                property var groupItems: (listGroupRoot.group && listGroupRoot.group["items"]) ? listGroupRoot.group["items"] : []
+                                    delegate: Rectangle {
+                                        id: listItemRoot
+                                        required property var modelData
+                                        property var item: listItemRoot.modelData
+                                        width: ListView.view.width
+                                        height: 48
+                                        radius: 6
+                                        color: App.gallery.selectedId === listItemRoot.item.itemId ? Qt.rgba(root.colorAccent.r, root.colorAccent.g, root.colorAccent.b, 0.12) : root.colorSurface
+                                        border.color: App.gallery.selectedId === listItemRoot.item.itemId ? root.colorAccent : root.colorBorder
+                                        border.width: App.gallery.selectedId === listItemRoot.item.itemId ? 2 : 1
+
+                                        RoundedMediaPreview {
+                                            id: listThumb
+                                            anchors.left: parent.left
+                                            anchors.top: parent.top
+                                            anchors.leftMargin: 4
+                                            anchors.topMargin: 4
+                                            width: 56
+                                            height: 40
+                                            radius: 4
+                                            backgroundColor: root.colorSurfaceLight
+                                            borderColor: "transparent"
+                                            borderWidth: 0
+                                            source: listItemRoot.item.previewUrl || listItemRoot.item.fileUrl || ""
+                                            imageVisible: !listItemRoot.item.isVideo || !!listItemRoot.item.previewUrl
+                                            fillMode: Image.PreserveAspectCrop
+                                            asynchronous: true
+                                            cache: false
+                                            sourceMaxSize: 96
+                                        }
+                                        Text {
+                                            id: listFileSize
+                                            anchors.right: parent.right
+                                            anchors.rightMargin: 8
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: listItemRoot.item.fileSize
+                                            color: root.colorTextSub
+                                            font.pixelSize: 10
+                                        }
+                                        Column {
+                                            anchors.left: listThumb.right
+                                            anchors.leftMargin: 8
+                                            anchors.right: listFileSize.left
+                                            anchors.rightMargin: 8
+                                            anchors.top: listThumb.top
+                                            spacing: 2
+                                            Text {
                                                 width: parent.width
-                                                spacing: 4
-
-                                                Row {
-                                                    width: parent.width
-                                                    spacing: 0
-                                                    Text {
-                                                        text: listGroupRoot.group.label + " (" + listGroupRoot.groupItems.length + " captures)"
-                                                        color: root.colorTextSub
-                                                        font.pixelSize: 11
-                                                    }
-                                                }
-
-                                                Repeater {
-                                                    model: listGroupRoot.groupItems
-                                                    delegate: Rectangle {
-                                                        id: listItemRoot
-                                                        required property var modelData
-                                                        property var item: listItemRoot.modelData
-                                                        width: groupedListColumn.width
-                                                        height: 48
-                                                        radius: 6
-                                                        color: App.gallery.selectedId === listItemRoot.item.itemId ? Qt.rgba(root.colorAccent.r, root.colorAccent.g, root.colorAccent.b, 0.12) : root.colorSurface
-                                                        border.color: App.gallery.selectedId === listItemRoot.item.itemId ? root.colorAccent : root.colorBorder
-                                                        border.width: App.gallery.selectedId === listItemRoot.item.itemId ? 2 : 1
-
-                                                        RoundedMediaPreview {
-                                                            id: listThumb
-                                                            anchors.left: parent.left
-                                                            anchors.top: parent.top
-                                                            anchors.leftMargin: 4
-                                                            anchors.topMargin: 4
-                                                            width: 56
-                                                            height: 40
-                                                            radius: 4
-                                                            backgroundColor: root.colorSurfaceLight
-                                                            borderColor: "transparent"
-                                                            borderWidth: 0
-                                                            source: listItemRoot.item.isVideo ? (listItemRoot.item.previewUrl || "") : (listItemRoot.item.fileUrl || "")
-                                                            imageVisible: !listItemRoot.item.isVideo || !!listItemRoot.item.previewUrl
-                                                            fillMode: Image.PreserveAspectCrop
-                                                            asynchronous: true
-                                                            cache: false
-                                                        }
-                                                        Text {
-                                                            id: listFileSize
-                                                            anchors.right: parent.right
-                                                            anchors.rightMargin: 8
-                                                            anchors.verticalCenter: parent.verticalCenter
-                                                            text: listItemRoot.item.fileSize
-                                                            color: root.colorTextSub
-                                                            font.pixelSize: 10
-                                                        }
-                                                        Column {
-                                                            anchors.left: listThumb.right
-                                                            anchors.leftMargin: 8
-                                                            anchors.right: listFileSize.left
-                                                            anchors.rightMargin: 8
-                                                            anchors.top: listThumb.top
-                                                            spacing: 2
-                                                            Text {
-                                                                width: parent.width
-                                                                text: listItemRoot.item.filename
-                                                                color: root.colorText
-                                                                font.pixelSize: 11
-                                                                elide: Text.ElideRight
-                                                            }
-                                                            Text {
-                                                                width: parent.width
-                                                                text: listItemRoot.item.typeLabel + " • " + listItemRoot.item.timeLabel + " • " + listItemRoot.item.resolution
-                                                                color: root.colorTextSub
-                                                                font.pixelSize: 10
-                                                                elide: Text.ElideRight
-                                                            }
-                                                        }
-                                                        TapHandler {
-                                                            onTapped: App.gallery.selectItem(listItemRoot.item.itemId)
-                                                        }
-                                                    }
-                                                }
+                                                text: listItemRoot.item.filename
+                                                color: root.colorText
+                                                font.pixelSize: 11
+                                                elide: Text.ElideRight
                                             }
+                                            Text {
+                                                width: parent.width
+                                                text: listItemRoot.item.typeLabel + " • " + listItemRoot.item.timeLabel + " • " + listItemRoot.item.resolution
+                                                color: root.colorTextSub
+                                                font.pixelSize: 10
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+                                        TapHandler {
+                                            onTapped: App.gallery.selectItem(listItemRoot.item.itemId)
                                         }
                                     }
                                 }
@@ -626,8 +570,11 @@ Item {
                                         return detailViewer.dItem.fileUrl || "";
                                     }
                                     fillMode: Image.PreserveAspectCrop
-                                    asynchronous: false
+                                    asynchronous: true
                                     cache: true
+                                    // Decode at the viewport resolution (scaled by zoom, capped) instead of the full image
+                                    sourceSize.width: Math.min(2048, Math.ceil(detailFlickable.width * detailFlickable.zoomScale))
+                                    sourceSize.height: Math.min(2048, Math.ceil(detailFlickable.height * detailFlickable.zoomScale))
                                 }
 
                                 PinchHandler {
@@ -766,11 +713,12 @@ Item {
                                     backgroundColor: root.colorBg
                                     borderColor: root.colorBorder
                                     borderWidth: 1
-                                    source: sidebarContent.hasSelection ? (sidebarContent.selected.isVideo ? (sidebarContent.selected.previewUrl || "") : (sidebarContent.selected.fileUrl || "")) : ""
+                                    source: sidebarContent.hasSelection ? (sidebarContent.selected.previewUrl || sidebarContent.selected.fileUrl || "") : ""
                                     fillMode: Image.PreserveAspectCrop
                                     imageVisible: sidebarContent.hasSelection && (!sidebarContent.selected.isVideo || !!sidebarContent.selected.previewUrl)
                                     asynchronous: true
                                     cache: false
+                                    sourceMaxSize: 480
 
                                     Rectangle {
                                         anchors.top: parent.top

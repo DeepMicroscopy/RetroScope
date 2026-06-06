@@ -302,9 +302,13 @@ class GalleryBridge(QObject):
         height = int(raw.get("height", 0) or 0)
         objective = str(raw.get("objective", "") or "")
         is_ome = ome_tiff.is_ome_tiff(Path(raw["path"]))
+        # A cached thumbnail (different from the original path) is preferred for the
+        # grid/list preview so we never decode the full-res image to draw a cell.
+        preview_path = str(raw.get("preview_path", "") or "")
+        has_thumb = preview_path != "" and preview_path != raw["path"]
         if is_ome:
             file_url = ome_tiff.ome_image_url(raw["path"], 0, dt.timestamp())
-            preview_url = file_url
+            preview_url = QUrl.fromLocalFile(preview_path).toString() if has_thumb else file_url
             frames = [
                 ome_tiff.ome_image_url(raw["path"], int(p.get("ifd", 0)), dt.timestamp())
                 for p in raw.get("frames", [])
@@ -317,11 +321,7 @@ class GalleryBridge(QObject):
             ]
         else:
             file_url = QUrl.fromLocalFile(raw["path"]).toString()
-            preview_url = (
-                QUrl.fromLocalFile(raw.get("preview_path", raw["path"])).toString()
-                if str(raw.get("preview_path", "")).strip() != ""
-                else ""
-            )
+            preview_url = QUrl.fromLocalFile(preview_path).toString() if has_thumb else file_url
             frames = list(raw.get("frames", []))
             tiles = list(raw.get("tiles", []))
 

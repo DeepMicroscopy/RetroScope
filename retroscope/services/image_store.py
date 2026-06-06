@@ -23,6 +23,10 @@ SUPPORTED_TYPES = {"snapshot", "video", "stack", "stitch"}
 VIDEO_EXTS = {".avi", ".mp4", ".mov", ".mkv", ".m4v"}
 THUMBNAIL_DIR = ".thumbnails"
 THUMBNAIL_MAX_WIDTH = 640
+# Grid/list previews never need more than a few hundred px; keep image thumbnails
+# small so huge stitched scans don't get decoded at full resolution to draw a cell.
+IMAGE_THUMBNAIL_MAX_WIDTH = 480
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
 class ConfigLike(Protocol):
@@ -52,6 +56,9 @@ class ImageStore:
 
     def __init__(self, config: ConfigLike) -> None:
         self._config = config
+        # Incremental scan cache: resolved path -> (mtime, size, built item).
+        # Lets scan_items() skip metadata/thumbnail work for unchanged files.
+        self._item_cache: dict[str, tuple[float, int, dict[str, Any]]] = {}
 
     # Paths
     def capture_root(self) -> Path:
@@ -198,11 +205,29 @@ class ImageStore:
     def scan_items(self) -> list[dict[str, Any]]:
         self.ensure_directories()
         items: list[dict[str, Any]] = []
+        seen: set[str] = set()
         for path in self._iter_capture_files():
+            key = str(path.resolve())
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            seen.add(key)
+            cached = self._item_cache.get(key)
+            if cached is not None and cached[0] == stat.st_mtime and cached[1] == stat.st_size:
+                items.append(cached[2])
+                continue
             item = self._build_item(path)
             if item:
+                self._item_cache[key] = (stat.st_mtime, stat.st_size, item)
                 items.append(item)
+        # Drop cache entries for files that disappeared.
+        for stale in self._item_cache.keys() - seen:
+            self._item_cache.pop(stale, None)
         return items
+
+    def invalidate(self, media_path: Path) -> None:
+        self._item_cache.pop(str(media_path.resolve()), None)
 
     def persist_tags(self, media_path: Path, tags: list[str]) -> bool:
         item = self._build_item(media_path)
@@ -210,7 +235,10 @@ class ImageStore:
             return False
         md = item["metadata"]
         md["tags"] = tags
-        return self.write_metadata(media_path, md)
+        ok = self.write_metadata(media_path, md)
+        if ok:
+            self.invalidate(media_path)
+        return ok
 
     def total_count(self) -> int:
         """Return number of captured files (images + videos)."""
@@ -233,6 +261,7 @@ class ImageStore:
             ok = False
         self._remove_thumbnails(media_path)
         self._remove_playback_proxies(media_path)
+        self.invalidate(media_path)
         return ok
 
     # Internal helpers
@@ -297,6 +326,12 @@ class ImageStore:
             playback_proxy = self._ensure_video_playback_proxy(media_path, stat.st_mtime, stat.st_size)
             if playback_proxy is not None:
                 playback_path = str(playback_proxy.resolve())
+        else:
+            thumb = self._ensure_image_thumbnail(
+                media_path, stat.st_mtime, stat.st_size, ome_tiff.is_ome_tiff(media_path)
+            )
+            if thumb is not None:
+                preview_path = str(thumb.resolve())
         frames, tiles = self._resolve_ome_plane_lists(metadata)
 
         return {
@@ -458,6 +493,89 @@ class ImageStore:
             marker.write_text("failed\n", encoding="utf-8")
         except Exception:
             return
+
+    def _downscale_bgr(self, bgr, max_w: int):
+        import cv2
+
+        h, w = bgr.shape[:2]
+        if w > max_w:
+            nh = max(1, int(h * (max_w / float(w))))
+            bgr = cv2.resize(bgr, (max_w, nh), interpolation=cv2.INTER_AREA)
+        return bgr
+
+    def _rgb_to_bgr(self, rgb):
+        import cv2
+
+        if rgb.ndim == 2:
+            return cv2.cvtColor(rgb, cv2.COLOR_GRAY2BGR)
+        if rgb.shape[2] == 4:
+            return cv2.cvtColor(rgb, cv2.COLOR_RGBA2BGR)
+        return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
+    def write_thumbnail_from_array(self, media_path: Path, rgb) -> Path | None:
+        """Pre-generate the gallery thumbnail from an in-memory RGB array (e.g. a freshly stitched scan)."""
+        try:
+            import cv2
+
+            stat = media_path.stat()
+            thumb = self._thumbnail_path(media_path, stat.st_mtime, stat.st_size)
+            bgr = self._downscale_bgr(self._rgb_to_bgr(rgb), IMAGE_THUMBNAIL_MAX_WIDTH)
+            thumb.parent.mkdir(parents=True, exist_ok=True)
+            if cv2.imwrite(str(thumb), bgr):
+                self._thumbnail_fail_path(media_path).unlink(missing_ok=True)
+                return thumb
+        except Exception:
+            return None
+        return None
+
+    def _ensure_image_thumbnail(
+        self,
+        media_path: Path,
+        mtime: float,
+        size: int,
+        is_ome: bool,
+    ) -> Path | None:
+        thumb = self._thumbnail_path(media_path, mtime, size)
+        if thumb.exists():
+            return thumb
+
+        fail_marker = self._thumbnail_fail_path(media_path)
+        if fail_marker.exists():
+            try:
+                if fail_marker.stat().st_mtime >= mtime:
+                    return None
+            except OSError:
+                pass
+
+        self._remove_thumbnails(media_path)
+        try:
+            import cv2
+        except Exception:
+            self._mark_thumbnail_failure(media_path)
+            return None
+
+        try:
+            if is_ome:
+                rgb = ome_tiff.read_plane(media_path, 0)
+                if rgb is None:
+                    self._mark_thumbnail_failure(media_path)
+                    return None
+                bgr = self._rgb_to_bgr(rgb)
+            else:
+                bgr = cv2.imread(str(media_path), cv2.IMREAD_COLOR)
+                if bgr is None:
+                    self._mark_thumbnail_failure(media_path)
+                    return None
+            bgr = self._downscale_bgr(bgr, IMAGE_THUMBNAIL_MAX_WIDTH)
+            thumb.parent.mkdir(parents=True, exist_ok=True)
+            if cv2.imwrite(str(thumb), bgr):
+                fail_marker.unlink(missing_ok=True)
+                return thumb
+        except Exception:
+            self._mark_thumbnail_failure(media_path)
+            return None
+        self._mark_thumbnail_failure(media_path)
+        return None
 
     def _ensure_video_thumbnail(
         self,
