@@ -170,9 +170,10 @@ Item {
             gesturePolicy: TapHandler.WithinBounds
             onTapped: function(eventPoint) {
                 if (root._stageInputBlockedAt(eventPoint.position)) return
-                var fr = directVideoOutput.sourceRect
-                if (!(fr.width > 0 && fr.height > 0)) return
-                var cover = Math.max(root.width / fr.width, root.height / fr.height)
+                var fw = App.cameraFrameTap.frameWidth
+                var fh = App.cameraFrameTap.frameHeight
+                if (!(fw > 0 && fh > 0)) return
+                var cover = Math.max(root.width / fw, root.height / fh)
                 var frameDx = (eventPoint.position.x - root.width  / 2) / cover
                 var frameDy = (eventPoint.position.y - root.height / 2) / cover
                 App.motion.moveByFramePixels(frameDx, frameDy)

@@ -119,6 +119,16 @@ class DirectCameraBridge(QObject):
     def frameTapCount(self) -> int:
         return self._frame_tap_count
 
+    @Property(int, notify=frame_tap_changed)
+    def frameWidth(self) -> int:
+        frame = self._camera_service.get_latest_frame()
+        return int(frame.shape[1]) if frame is not None else 0
+
+    @Property(int, notify=frame_tap_changed)
+    def frameHeight(self) -> int:
+        frame = self._camera_service.get_latest_frame()
+        return int(frame.shape[0]) if frame is not None else 0
+
     @Property(str, notify=camera_format_changed)
     def activeResolution(self) -> str:
         return self._active_resolution
