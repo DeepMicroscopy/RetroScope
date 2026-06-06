@@ -124,6 +124,33 @@ class LatestOnlyCamera:
         return None
 
 
+class FakeRawFocusCamera:
+    def __init__(self, scores: list[float] | None = None) -> None:
+        self.scores = list(scores or [])
+        self.seq = 0
+        self.frame_calls = 0
+        self.raw_waits: list[tuple[int | None, float]] = []
+
+    def raw_focus_sequence(self) -> int:
+        return self.seq
+
+    def raw_focus_status(self):
+        latest = self.scores[0] if self.scores else None
+        return self.seq, latest, 0.0, "test"
+
+    def wait_for_next_raw_focus_score(self, after_sequence: int | None = None, timeout: float = 0.5):
+        self.raw_waits.append((after_sequence, timeout))
+        if not self.scores:
+            return None
+        self.seq += 1
+        return self.scores.pop(0)
+
+    def wait_for_next_frame(self, timeout: float = 0.5):
+        del timeout
+        self.frame_calls += 1
+        raise AssertionError("autofocus must not use camera frames")
+
+
 def _fast_config() -> FakeConfig:
     return FakeConfig({
         "autofocus.settle_ms": 50,
@@ -290,6 +317,26 @@ def test_autofocus_uses_recent_latest_score_from_settle_window() -> None:
     assert len(camera.waits) == 1
 
 
+def test_autofocus_score_uses_raw_live_focus_scores_not_frames() -> None:
+    _app()
+    camera = FakeRawFocusCamera([100.0, 300.0])
+    worker = _AutofocusWorker(camera, None, None, None)
+    worker._samples_per_position = 2
+
+    score = worker._grab_score()
+
+    assert score == pytest.approx(200.0)
+    assert camera.frame_calls == 0
+    assert len(camera.raw_waits) == 2
+
+
+def test_autofocus_score_fails_without_fresh_raw_focus_score() -> None:
+    _app()
+    worker = _AutofocusWorker(FakeRawFocusCamera([]), None, None, None)
+
+    assert worker._grab_score() is None
+
+
 def test_autofocus_min_confidence_aborts_and_returns_to_start() -> None:
     _app()
     motion = FakeMotionController()
@@ -403,6 +450,18 @@ def test_autofocus_progress_reaches_1_0_only_after_final_commit(monkeypatch) -> 
 
 
 # Sample-position plan
+def test_autofocus_plan_samples_center_then_positive_then_negative() -> None:
+    profile = SimpleNamespace(autofocus_range_steps=1000, dof_steps=100, focus_stack_step=10)
+
+    positions = autofocus_sample_positions(profile)
+
+    assert positions[0] == 0
+    assert positions[1] > 0
+    assert max(positions) > 0
+    assert min(positions) < 0
+    assert positions.index(min(positions)) > positions.index(max(positions))
+
+
 def test_autofocus_sample_positions_honors_coarse_positions_arg() -> None:
     profile = _profile(autofocus_range_steps=1000, dof_steps=100, focus_stack_step=10)
     positions = autofocus_sample_positions(profile, coarse_positions=9)
@@ -411,78 +470,3 @@ def test_autofocus_sample_positions_honors_coarse_positions_arg() -> None:
     # Even-valued count gets bumped to odd.
     positions_even = autofocus_sample_positions(profile, coarse_positions=10)
     assert len(positions_even) == 11
-
-
-# Settings bridge preset
-def test_settings_bridge_autofocus_speed_preset_balanced_sets_defaults(tmp_path, monkeypatch) -> None:
-    """Selecting a named preset on the bridge updates all four numeric defaults."""
-    _app()
-    import retroscope.services.config_store as config_store
-
-    monkeypatch.setattr(config_store, "_CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(config_store, "_CONFIG_FILE", tmp_path / "config.json")
-    from retroscope.services.config_store import ConfigStore
-    from retroscope.services.image_store import ImageStore
-    from retroscope.bridge.settings_bridge import SettingsBridge
-
-    cfg = ConfigStore(autosave_delay_ms=0)
-    cfg.load()
-    image_store = ImageStore(cfg)
-    bridge = SettingsBridge(cfg, image_store)
-
-    bridge.setAutofocusSpeedPreset("fast")
-    assert bridge.autofocusSettleMs == 1000
-    assert bridge.autofocusMoveStartMs == 400
-    assert bridge.autofocusCoarsePositions == 11
-    assert bridge.autofocusFinePositions == 13
-    assert bridge.autofocusSamplesPerPosition == 1
-
-    bridge.setAutofocusSpeedPreset("slow")
-    assert bridge.autofocusSettleMs == 1000
-    assert bridge.autofocusFinePositions == 31
-
-    # "custom" leaves the slider values intact.
-    bridge.setAutofocusSettleMs(1000)
-    bridge.setAutofocusSpeedPreset("custom")
-    assert bridge.autofocusSettleMs == 1000
-
-
-def test_settings_bridge_autofocus_coarse_positions_force_odd(tmp_path, monkeypatch) -> None:
-    """Coarse positions must always be odd for the symmetric centre-out sweep."""
-    _app()
-    import retroscope.services.config_store as config_store
-
-    monkeypatch.setattr(config_store, "_CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(config_store, "_CONFIG_FILE", tmp_path / "config.json")
-    from retroscope.services.config_store import ConfigStore
-    from retroscope.services.image_store import ImageStore
-    from retroscope.bridge.settings_bridge import SettingsBridge
-
-    cfg = ConfigStore(autosave_delay_ms=0)
-    cfg.load()
-    bridge = SettingsBridge(cfg, ImageStore(cfg))
-    bridge.setAutofocusCoarsePositions(14)
-    assert bridge.autofocusCoarsePositions == 15
-
-    bridge.setAutofocusCoarsePositions(40)
-    assert bridge.autofocusCoarsePositions == 41
-
-
-def test_settings_bridge_autofocus_fine_positions_force_odd(tmp_path, monkeypatch) -> None:
-    _app()
-    import retroscope.services.config_store as config_store
-
-    monkeypatch.setattr(config_store, "_CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(config_store, "_CONFIG_FILE", tmp_path / "config.json")
-    from retroscope.services.config_store import ConfigStore
-    from retroscope.services.image_store import ImageStore
-    from retroscope.bridge.settings_bridge import SettingsBridge
-
-    cfg = ConfigStore(autosave_delay_ms=0)
-    cfg.load()
-    bridge = SettingsBridge(cfg, ImageStore(cfg))
-    bridge.setAutofocusFinePositions(12)
-    assert bridge.autofocusFinePositions == 13
-
-    bridge.setAutofocusFinePositions(40)
-    assert bridge.autofocusFinePositions == 41

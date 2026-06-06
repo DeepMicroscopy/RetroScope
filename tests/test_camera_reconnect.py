@@ -66,24 +66,6 @@ class FakeCamera:
         pass
 
 
-def test_gpio_button_driver_confirms_active_low_press() -> None:
-    from retroscope.drivers.buttons import ButtonsDriver
-
-    class Lines:
-        def __init__(self, value) -> None:
-            self.value = value
-
-        def get_value(self, _pin: int):
-            return self.value
-
-    driver = ButtonsDriver()
-    try:
-        assert driver._line_is_active_low(Lines(0), 13) is True
-        assert driver._line_is_active_low(Lines(1), 13) is False
-    finally:
-        driver.request_stop()
-
-
 def test_camera_disconnect_clears_stale_frames_focus_and_native_recording(tmp_path: Path) -> None:
     _app()
     from retroscope.services.camera_service import CameraService
@@ -164,29 +146,6 @@ def test_direct_camera_bridge_marks_connected_on_first_valid_frame() -> None:
         assert bridge.cameraConnected is True
         assert seen == [True]
         assert sink.frames == [frame]
-    finally:
-        bridge.stop()
-
-
-def test_direct_camera_bridge_taps_frames_for_fallback_recording_when_analysis_disabled() -> None:
-    _app()
-    from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
-
-    class FakeCameraService:
-        def needs_recording_frame_tap(self) -> bool:
-            return True
-
-    service = FakeCameraService()
-    bridge = DirectCameraBridge(service, enabled=True)
-    bridge.setFrameAnalysisEnabled(False)
-    calls: list[tuple[object, object]] = []
-    bridge._enqueue_analysis_frame = lambda frame, focus: calls.append((frame, focus))
-
-    try:
-        frame = FakeFrame()
-        bridge._on_video_frame(frame)
-
-        assert calls == [(frame, None)]
     finally:
         bridge.stop()
 

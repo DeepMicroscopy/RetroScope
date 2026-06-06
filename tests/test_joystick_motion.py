@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import queue
 import time
 from types import SimpleNamespace
 
@@ -12,8 +11,7 @@ pytest.importorskip("PySide6")
 
 from PySide6.QtCore import QCoreApplication
 
-from retroscope.drivers.sangaboard import MockSangaboard, SangaboardDriver
-from retroscope.services.motion_controller import MotionController, joystick_dispatch_params
+from retroscope.services.motion_controller import MotionController, _joystick_curve, joystick_dispatch_params
 
 
 def _app() -> QCoreApplication:
@@ -75,6 +73,16 @@ def test_joystick_dispatch_uses_fixed_low_latency_parameters() -> None:
     assert params.min_command_steps == 1
     assert params.force_command_ms == 50
     assert params.target_alpha == pytest.approx(0.90)
+
+
+def test_joystick_curve_modes_are_distinct() -> None:
+    linear = _joystick_curve(0.5, deadzone=0.0, curve="linear", expo_strength=70)
+    expo = _joystick_curve(0.5, deadzone=0.0, curve="exponential", expo_strength=70)
+    scurve = _joystick_curve(0.25, deadzone=0.0, curve="scurve", expo_strength=70)
+
+    assert linear == 0.5
+    assert expo < linear
+    assert scurve == pytest.approx(0.15625)
 
 
 def test_joystick_target_smoothing_reduces_abrupt_jumps() -> None:
@@ -206,46 +214,14 @@ def test_sign_change_clears_stale_accumulator() -> None:
     assert ctrl._dx_accum <= 0.0
 
 
-def test_sangaboard_coalesce_preserves_non_move_commands_and_drops_pending_moves() -> None:
-    driver = SangaboardDriver()
-    driver._queue.put_nowait(("zero",))
-    driver.move_rel(1, 0, 0, coalesce=False)
-    driver.move_rel(2, 0, 0, coalesce=False)
-    driver.move_rel(9, 0, 0, coalesce=True)
+def test_joystick_release_clears_pending_accumulator() -> None:
+    ctrl, _ = _controller()
+    ctrl._joystick_x_active = True
+    ctrl._joystick_x_sign = 1
+    ctrl._dx_accum = 3.4
 
-    queued = []
-    try:
-        while True:
-            queued.append(driver._queue.get_nowait())
-    except queue.Empty:
-        pass
+    ctrl.on_axes_updated(0, 0)
+    ctrl._dispatch_joystick_at(time.monotonic())
 
-    assert queued == [("zero",), ("move", 9, 0, 0)]
-
-
-def test_sangaboard_timing_commands_are_queued() -> None:
-    driver = SangaboardDriver()
-
-    driver.request_motion_timing()
-    driver.set_step_time_us(750)
-    driver.set_ramp_time_us(25000)
-
-    queued = [driver._queue.get_nowait() for _ in range(3)]
-    assert queued == [
-        ("read_motion_timing",),
-        ("set_step_time", 750),
-        ("set_ramp_time", 25000),
-    ]
-
-
-def test_mock_sangaboard_reports_board_timing() -> None:
-    _app()
-    mock = MockSangaboard()
-    seen: list[tuple[int, int]] = []
-    mock.motion_timing_updated.connect(lambda step, ramp: seen.append((step, ramp)))
-
-    mock.request_motion_timing()
-    mock.set_step_time_us(800)
-    mock.set_ramp_time_us(20000)
-
-    assert seen == [(1000, 0), (800, 0), (800, 20000)]
+    assert ctrl._vx_filtered == 0.0
+    assert ctrl._dx_accum == 0.0

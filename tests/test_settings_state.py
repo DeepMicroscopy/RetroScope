@@ -1,5 +1,17 @@
 """Test SettingsBridge interactions with configuration."""
 
+from __future__ import annotations
+
+import pytest
+
+pytest.importorskip("PySide6")
+
+from PySide6.QtCore import QCoreApplication
+
+
+def _app() -> QCoreApplication:
+    return QCoreApplication.instance() or QCoreApplication([])
+
 
 class ConfigStub:
     def __init__(self, values=None):
@@ -74,3 +86,56 @@ def test_settings_bridge_sangaboard_timing_uses_reported_values_until_user_overr
 
     bridge.applySangaboardTimingOverrides()
     assert step_requests == [1250, 1250]
+
+
+def _real_settings_bridge(tmp_path, monkeypatch):
+    _app()
+    import retroscope.services.config_store as config_store
+    from retroscope.bridge.settings_bridge import SettingsBridge
+    from retroscope.services.config_store import ConfigStore
+    from retroscope.services.image_store import ImageStore
+
+    monkeypatch.setattr(config_store, "_CONFIG_DIR", tmp_path)
+    monkeypatch.setattr(config_store, "_CONFIG_FILE", tmp_path / "config.json")
+    cfg = ConfigStore(autosave_delay_ms=0)
+    cfg.load()
+    return SettingsBridge(cfg, ImageStore(cfg))
+
+
+def test_settings_bridge_autofocus_speed_preset_balanced_sets_defaults(tmp_path, monkeypatch) -> None:
+    bridge = _real_settings_bridge(tmp_path, monkeypatch)
+
+    bridge.setAutofocusSpeedPreset("fast")
+    assert bridge.autofocusSettleMs == 1000
+    assert bridge.autofocusMoveStartMs == 400
+    assert bridge.autofocusCoarsePositions == 11
+    assert bridge.autofocusFinePositions == 13
+    assert bridge.autofocusSamplesPerPosition == 1
+
+    bridge.setAutofocusSpeedPreset("slow")
+    assert bridge.autofocusSettleMs == 1000
+    assert bridge.autofocusFinePositions == 31
+
+    bridge.setAutofocusSettleMs(1000)
+    bridge.setAutofocusSpeedPreset("custom")
+    assert bridge.autofocusSettleMs == 1000
+
+
+def test_settings_bridge_autofocus_coarse_positions_force_odd(tmp_path, monkeypatch) -> None:
+    bridge = _real_settings_bridge(tmp_path, monkeypatch)
+
+    bridge.setAutofocusCoarsePositions(14)
+    assert bridge.autofocusCoarsePositions == 15
+
+    bridge.setAutofocusCoarsePositions(40)
+    assert bridge.autofocusCoarsePositions == 41
+
+
+def test_settings_bridge_autofocus_fine_positions_force_odd(tmp_path, monkeypatch) -> None:
+    bridge = _real_settings_bridge(tmp_path, monkeypatch)
+
+    bridge.setAutofocusFinePositions(12)
+    assert bridge.autofocusFinePositions == 13
+
+    bridge.setAutofocusFinePositions(40)
+    assert bridge.autofocusFinePositions == 41
