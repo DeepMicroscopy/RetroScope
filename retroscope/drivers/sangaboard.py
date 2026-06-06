@@ -67,7 +67,7 @@ class SangaboardDriver(QThread):
         """Queue a relative move.
 
         'coalesce=True' Replaces any pending moves with this one, commands don't pile up
-        'coalesce=False' Queues every move additively (used for jog buttons, bookmarks, automation)
+        'coalesce=False' Queues every move additively (used for jog buttons and automation)
         """
         if coalesce:
             self._drop_pending_moves()

@@ -28,7 +28,6 @@ class Services:
     system_svc: Any
     autofocus_svc: Any
     objective_detector: Any
-    bookmark_svc: Any
     measurement_capture_svc: Any
     storage_svc: Any
     focus_stacker_svc: Any | None = None
@@ -46,7 +45,6 @@ class Bridges:
     system: Any
     buttons: Any
     autofocus: Any
-    bookmarks: Any
     measurement: Any
     automation: Any
     calibration: Any

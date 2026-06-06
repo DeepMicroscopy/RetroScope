@@ -16,7 +16,6 @@ def load_config():
 def create_services(config, drivers: Drivers) -> Services:
     """Create services that do not depend on QML bridge state."""
     from retroscope.services.autofocus import AutofocusService
-    from retroscope.services.bookmark_service import BookmarkService
     from retroscope.services.button_manager import ButtonManager
     from retroscope.services.camera_service import CameraService
     from retroscope.services.image_store import ImageStore
@@ -40,7 +39,6 @@ def create_services(config, drivers: Drivers) -> Services:
     system_svc = SystemService(config)
     autofocus_svc = AutofocusService(camera_svc, motion_ctrl, objective_mgr, config)
     objective_detector = ObjectiveDetector(config)
-    bookmark_svc = BookmarkService(config, motion_ctrl, objective_mgr)
     measurement_capture_svc = MeasurementCaptureService()
     storage_svc = StorageService(config, image_store)
 
@@ -56,7 +54,6 @@ def create_services(config, drivers: Drivers) -> Services:
         system_svc=system_svc,
         autofocus_svc=autofocus_svc,
         objective_detector=objective_detector,
-        bookmark_svc=bookmark_svc,
         measurement_capture_svc=measurement_capture_svc,
         storage_svc=storage_svc,
     )

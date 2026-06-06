@@ -58,8 +58,7 @@
     "dark_theme": false,
     "crosshair_visible": true,
     "active_objective": "10x",
-    "grid_visible": false,
-    "bookmarks": []
+    "grid_visible": false
   },
   "captures": {
     "root": ""

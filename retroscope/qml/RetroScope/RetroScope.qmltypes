@@ -18,7 +18,6 @@ Module {
         Property { name: "buttons"; type: "ButtonBridge"; isReadonly: true }
         Property { name: "autofocus"; type: "AutofocusBridge"; isReadonly: true }
         Property { name: "objDetector"; type: "ObjectiveDetectorBridge"; isReadonly: true }
-        Property { name: "bookmarks"; type: "BookmarkBridge"; isReadonly: true }
         Property { name: "measurement"; type: "MeasurementBridge"; isReadonly: true }
         Property { name: "isMockMode"; type: "bool"; isReadonly: true }
         Property { name: "cameraFrameTap"; type: "DirectCameraBridge"; isReadonly: true }
@@ -203,23 +202,6 @@ Module {
         Method { name: "pauseTask"
         }
         Method { name: "resumeTask"
-        }
-    }
-    Component {
-        name: "BookmarkBridge"
-        prototype: "QObject"
-        Property { name: "bookmarkList"; type: "QVariantList"; isReadonly: true }
-        Signal { name: "bookmarks_changed"
-            Parameter { name: "arg0"; type: "QVariantList" }
-        }
-        Method { name: "saveCurrent"
-            Parameter { name: "arg0"; type: "QString" }
-        }
-        Method { name: "deleteBM"
-            Parameter { name: "arg0"; type: "QString" }
-        }
-        Method { name: "navigateTo"
-            Parameter { name: "arg0"; type: "QString" }
         }
     }
     Component {

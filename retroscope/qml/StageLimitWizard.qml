@@ -69,7 +69,7 @@ Dialog {
             SRow { label: "Current"; value: "X " + App.motion.posX + "  Y " + App.motion.posY + "  Z " + App.motion.posZ; mono: true }
             SRow { label: "Z endstop"; value: App.status.endstopTriggered ? "Triggered" : "Clear"; mono: true }
             Text {
-                text: "Move XY to the physical top-left corner, then set firmware home to 0,0,0. Saved bookmarks keep their old coordinates."
+                text: "Move XY to the physical top-left corner, then set firmware home to 0,0,0."
                 color: theme.colorTextSub; font.pixelSize: 12; wrapMode: Text.WordWrap; Layout.fillWidth: true
             }
             Item { Layout.fillHeight: true }

@@ -10,7 +10,6 @@ def create_bridges(services: Services) -> tuple[Bridges, ImageProviders]:
     """Create QML bridges and image providers."""
     from retroscope.bridge.autofocus_bridge import AutofocusBridge
     from retroscope.bridge.automation_bridge import AutomationBridge
-    from retroscope.bridge.bookmark_bridge import BookmarkBridge
     from retroscope.bridge.button_bridge import ButtonBridge
     from retroscope.bridge.calibration_bridge import CalibrationBridge
     from retroscope.bridge.camera_provider import (
@@ -62,11 +61,6 @@ def create_bridges(services: Services) -> tuple[Bridges, ImageProviders]:
         services.focus_stacker_svc,
         services.tile_scanner_svc,
     )
-    bookmark_bridge = BookmarkBridge(
-        services.bookmark_svc,
-        motion_bridge,
-        objective_bridge,
-    )
 
     services.camera_svc.set_metadata_provider(
         get_position=get_position,
@@ -83,7 +77,6 @@ def create_bridges(services: Services) -> tuple[Bridges, ImageProviders]:
         system=system_bridge,
         buttons=button_bridge,
         autofocus=autofocus_bridge,
-        bookmarks=bookmark_bridge,
         measurement=measurement_bridge,
         automation=automation_bridge,
         calibration=calibration_bridge,
@@ -111,7 +104,6 @@ def create_app_controller(app, services: Services, bridges: Bridges):
         system=bridges.system,
         buttons=bridges.buttons,
         autofocus=bridges.autofocus,
-        bookmarks=bridges.bookmarks,
         measurement=bridges.measurement,
         automation=bridges.automation,
         calibration=bridges.calibration,

@@ -6,7 +6,6 @@ from retroscope.bridge.autofocus_bridge import AutofocusBridge
 from retroscope.bridge.calibration_bridge import CalibrationBridge
 from retroscope.bridge.objective_detector_bridge import ObjectiveDetectorBridge
 from retroscope.bridge.automation_bridge import AutomationBridge
-from retroscope.bridge.bookmark_bridge import BookmarkBridge
 from retroscope.bridge.button_bridge import ButtonBridge
 from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
 from retroscope.bridge.motion_bridge import MotionBridge
@@ -50,7 +49,6 @@ class AppController(QObject):
         system: SystemBridge,
         buttons: ButtonBridge,
         autofocus: AutofocusBridge,
-        bookmarks: BookmarkBridge,
         measurement: MeasurementBridge,
         automation: AutomationBridge,
         calibration: CalibrationBridge,
@@ -70,7 +68,6 @@ class AppController(QObject):
         self._system       = system
         self._buttons      = buttons
         self._autofocus    = autofocus
-        self._bookmarks    = bookmarks
         self._measurement   = measurement
         self._automation    = automation
         self._calibration   = calibration
@@ -200,10 +197,6 @@ class AppController(QObject):
     @Property(QObject, constant=True)
     def objDetector(self) -> ObjectiveDetectorBridge:
         return self._obj_detector
-
-    @Property(QObject, constant=True)
-    def bookmarks(self) -> BookmarkBridge:
-        return self._bookmarks
 
     @Property(QObject, constant=True)
     def measurement(self) -> MeasurementBridge:
