@@ -758,6 +758,7 @@ Module {
         Property { name: "joystickSwapXY"; type: "bool"; isReadonly: true }
         Property { name: "joystickInvertX"; type: "bool"; isReadonly: true }
         Property { name: "joystickInvertY"; type: "bool"; isReadonly: true }
+        Property { name: "joystickBacklashCompensationEnabled"; type: "bool"; isReadonly: true }
         Property { name: "zEncoderSensitivityPct"; type: "int"; isReadonly: true }
         Property { name: "maxPanSpeedPxPerSec"; type: "int"; isReadonly: true }
         Property { name: "zEncoderStepMultiplier"; type: "double"; isReadonly: true }
@@ -797,6 +798,9 @@ Module {
             Parameter { name: "arg0"; type: "bool" }
         }
         Signal { name: "joystick_invert_y_changed"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Signal { name: "joystick_backlash_compensation_changed"
             Parameter { name: "arg0"; type: "bool" }
         }
         Signal { name: "z_encoder_sensitivity_changed"
@@ -898,6 +902,9 @@ Module {
             Parameter { name: "arg0"; type: "bool" }
         }
         Method { name: "setJoystickInvertY"
+            Parameter { name: "arg0"; type: "bool" }
+        }
+        Method { name: "setJoystickBacklashCompensationEnabled"
             Parameter { name: "arg0"; type: "bool" }
         }
         Method { name: "setZEncoderSensitivityPct"

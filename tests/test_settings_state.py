@@ -56,6 +56,55 @@ def test_settings_bridge_camera_performance_toggles_persist(tmp_path):
     assert video_seen == [False]
 
 
+def test_settings_bridge_joystick_backlash_compensation_persists_and_emits(tmp_path):
+    from retroscope.bridge.settings_bridge import SettingsBridge
+
+    config = ConfigStub()
+    bridge = SettingsBridge(config, StoreStub(tmp_path))
+    seen: list[bool] = []
+    bridge.joystick_backlash_compensation_changed.connect(seen.append)
+
+    assert bridge.joystickBacklashCompensationEnabled is True
+
+    bridge.setJoystickBacklashCompensationEnabled(False)
+
+    assert bridge.joystickBacklashCompensationEnabled is False
+    assert config.values["input.joystick_backlash_compensation_enabled"] is False
+    assert seen == [False]
+
+
+def test_settings_bridge_joystick_backlash_signal_can_drive_motion_controller(tmp_path):
+    from types import SimpleNamespace
+
+    from retroscope.bridge.settings_bridge import SettingsBridge
+    from retroscope.services.motion_controller import MotionController
+
+    class Sangaboard:
+        def move_rel(self, dx: int, dy: int, dz: int, coalesce: bool = False) -> None:
+            pass
+
+    class ObjectiveManager:
+        def current_profile(self):
+            return SimpleNamespace(
+                backlash_x=0,
+                backlash_y=0,
+                backlash_z=0,
+                um_per_pixel=1.0,
+                focus_stack_step=10,
+            )
+
+    config = ConfigStub()
+    bridge = SettingsBridge(config, StoreStub(tmp_path))
+    ctrl = MotionController(Sangaboard(), ObjectiveManager(), config)
+    bridge.joystick_backlash_compensation_changed.connect(
+        ctrl.setJoystickBacklashCompensationEnabled
+    )
+
+    bridge.setJoystickBacklashCompensationEnabled(False)
+
+    assert ctrl._joystick_backlash_compensation_enabled is False
+
+
 def test_settings_bridge_sangaboard_timing_uses_reported_values_until_user_override(tmp_path):
     from retroscope.bridge.settings_bridge import SettingsBridge
 
@@ -170,13 +219,22 @@ def test_settings_bridge_reset_defaults_resets_full_config_and_live_state(tmp_pa
     objectives.set_active("100x")
     bridge.setJoystickDeadzonePct(44)
     bridge.setCameraFrameAnalysisEnabled(False)
+    bridge.setJoystickBacklashCompensationEnabled(False)
 
     bridge.resetToDefaults()
 
     assert cfg.get("objectives.4x.backlash_x") == defaults["objectives"]["4x"]["backlash_x"]
     assert cfg.get("ui.active_objective") == defaults["ui"]["active_objective"]
     assert cfg.get("input.deadzone_pct") == defaults["input"]["deadzone_pct"]
+    assert (
+        cfg.get("input.joystick_backlash_compensation_enabled")
+        is defaults["input"]["joystick_backlash_compensation_enabled"]
+    )
     assert bridge.joystickDeadzonePct == defaults["input"]["deadzone_pct"]
+    assert (
+        bridge.joystickBacklashCompensationEnabled
+        is defaults["input"]["joystick_backlash_compensation_enabled"]
+    )
     assert bridge.cameraFrameAnalysisEnabled is defaults["camera"]["frame_analysis_enabled"]
     assert objectives.active_objective == defaults["ui"]["active_objective"]
     assert objectives.profile("4x").backlash_x == defaults["objectives"]["4x"]["backlash_x"]

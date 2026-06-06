@@ -22,6 +22,7 @@ class SettingsBridge(QObject):
     joystick_invert_x_changed  = Signal(bool)
     joystick_invert_y_changed  = Signal(bool)
     joystick_sensitivity_changed = Signal(int)
+    joystick_backlash_compensation_changed = Signal(bool)
     z_encoder_sensitivity_changed = Signal(int)
     max_pan_speed_changed         = Signal(int)
     z_encoder_step_multiplier_changed = Signal(float)
@@ -69,6 +70,9 @@ class SettingsBridge(QObject):
         self._swap_xy    = bool(config.get("input.swap_xy", is_pi()))
         self._invert_x   = bool(config.get("input.invert_x", False))
         self._invert_y   = bool(config.get("input.invert_y", False))
+        self._joystick_backlash_compensation = bool(
+            config.get("input.joystick_backlash_compensation_enabled", True)
+        )
         self._z_encoder_sensitivity = max(25, min(400, int(config.get("input.z_encoder_sensitivity_pct", 100))))
         self._max_pan_speed = max(10, min(4000, int(config.get("input.max_pan_speed_px_per_sec", 400))))
         self._z_enc_mult    = max(0.25, min(4.0, float(config.get("input.z_encoder_step_multiplier", 1.0))))
@@ -140,6 +144,7 @@ class SettingsBridge(QObject):
         self.joystick_swap_xy_changed.emit(self._swap_xy)
         self.joystick_invert_x_changed.emit(self._invert_x)
         self.joystick_invert_y_changed.emit(self._invert_y)
+        self.joystick_backlash_compensation_changed.emit(self._joystick_backlash_compensation)
         self.z_encoder_sensitivity_changed.emit(self._z_encoder_sensitivity)
         self.max_pan_speed_changed.emit(self._max_pan_speed)
         self.z_encoder_step_multiplier_changed.emit(self._z_enc_mult)
@@ -216,6 +221,19 @@ class SettingsBridge(QObject):
         self._sensitivity = v
         self._config.set("input.sensitivity_pct", v)
         self.joystick_sensitivity_changed.emit(v)
+
+    @Property(bool, notify=joystick_backlash_compensation_changed)
+    def joystickBacklashCompensationEnabled(self) -> bool:
+        return self._joystick_backlash_compensation
+
+    @Slot(bool)
+    def setJoystickBacklashCompensationEnabled(self, v: bool) -> None:
+        enabled = bool(v)
+        if enabled == self._joystick_backlash_compensation:
+            return
+        self._joystick_backlash_compensation = enabled
+        self._config.set("input.joystick_backlash_compensation_enabled", enabled)
+        self.joystick_backlash_compensation_changed.emit(enabled)
 
     @Property(bool, notify=joystick_swap_xy_changed)
     def joystickSwapXY(self) -> bool:

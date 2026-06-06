@@ -166,6 +166,11 @@ class MotionController(QObject):
             0.25,
             min(4.0, float(config.get("input.z_encoder_step_multiplier", 1.0) if config is not None else 1.0)),
         )
+        self._joystick_backlash_compensation_enabled = bool(
+            config.get("input.joystick_backlash_compensation_enabled", True)
+            if config is not None
+            else True
+        )
         self._center_x: float | None = None
         self._center_y: float | None = None
         self._calibration_samples = 0
@@ -285,6 +290,12 @@ class MotionController(QObject):
         self._max_pan_speed_px_per_sec = max(
             10,
             min(4000, int(self._config.get("input.max_pan_speed_px_per_sec", self._max_pan_speed_px_per_sec))),
+        )
+        self._joystick_backlash_compensation_enabled = bool(
+            self._config.get(
+                "input.joystick_backlash_compensation_enabled",
+                self._joystick_backlash_compensation_enabled,
+            )
         )
 
     def _on_config_changed(self, key: str) -> None:
@@ -748,7 +759,13 @@ class MotionController(QObject):
         if not should_send:
             return
 
-        blocked = not self._move_rel_checked(dx, dy, 0, apply_backlash=False, coalesce=True)
+        blocked = not self._move_rel_checked(
+            dx,
+            dy,
+            0,
+            apply_backlash=self._joystick_backlash_compensation_enabled,
+            coalesce=True,
+        )
         if blocked:
             self._dx_accum = 0.0
             self._dy_accum = 0.0
@@ -793,6 +810,10 @@ class MotionController(QObject):
     @Slot(int)
     def setJoystickSensitivityPct(self, value: int) -> None:
         self._joystick_sensitivity_pct = max(10, min(300, int(value)))
+
+    @Slot(bool)
+    def setJoystickBacklashCompensationEnabled(self, value: bool) -> None:
+        self._joystick_backlash_compensation_enabled = bool(value)
 
     @Slot(int)
     def setMaxPanSpeedPxPerSec(self, value: int) -> None:

@@ -313,6 +313,7 @@ Rectangle {
                             SSlider { value: App.settings.joystickDeadzonePct; from: 0; to: 50; stepSize: 1; onValueEdited: function(v) { App.settings.setJoystickDeadzonePct(v) } }
                             SRow { label: "Sensitivity"; value: App.settings.joystickSensitivityPct + "%" }
                             SSlider { value: App.settings.joystickSensitivityPct; from: 10; to: 300; stepSize: 5; onValueEdited: function(v) { App.settings.setJoystickSensitivityPct(v) } }
+                            SRow { label: "Backlash compensation"; SToggle { checked: App.settings.joystickBacklashCompensationEnabled; onToggled: function(v) { App.settings.setJoystickBacklashCompensationEnabled(v) } } }
                             Text { text: "AXIS MAPPING"; color: root.colorTextSub; font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0; Layout.topMargin: 6 }
                             SRow { label: "Swap X/Y axes"; SToggle { checked: App.settings.joystickSwapXY; onToggled: function(v) { App.settings.setJoystickSwapXY(v) } } }
                             SRow { label: "Invert X axis"; SToggle { checked: App.settings.joystickInvertX; onToggled: function(v) { App.settings.setJoystickInvertX(v) } } }

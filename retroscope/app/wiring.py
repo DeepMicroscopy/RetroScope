@@ -90,6 +90,9 @@ def wire_signals(
     bridges.settings.joystick_curve_changed.connect(services.motion_ctrl.setJoystickCurve)
     bridges.settings.joystick_expo_changed.connect(services.motion_ctrl.setJoystickExpoStrength)
     bridges.settings.joystick_sensitivity_changed.connect(services.motion_ctrl.setJoystickSensitivityPct)
+    bridges.settings.joystick_backlash_compensation_changed.connect(
+        services.motion_ctrl.setJoystickBacklashCompensationEnabled
+    )
     bridges.settings.z_encoder_sensitivity_changed.connect(
         services.motion_ctrl.setZEncoderSensitivityPct
     )
@@ -114,6 +117,9 @@ def wire_signals(
     services.motion_ctrl.setJoystickCurve(bridges.settings.joystickCurve)
     services.motion_ctrl.setJoystickExpoStrength(bridges.settings.joystickExpoStrength)
     services.motion_ctrl.setJoystickSensitivityPct(bridges.settings.joystickSensitivityPct)
+    services.motion_ctrl.setJoystickBacklashCompensationEnabled(
+        bridges.settings.joystickBacklashCompensationEnabled
+    )
     services.motion_ctrl.setZEncoderSensitivityPct(bridges.settings.zEncoderSensitivityPct)
     services.motion_ctrl.setMaxPanSpeedPxPerSec(bridges.settings.maxPanSpeedPxPerSec)
     services.motion_ctrl.setZEncoderStepMultiplier(bridges.settings.zEncoderStepMultiplier)

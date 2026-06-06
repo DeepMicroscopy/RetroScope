@@ -79,7 +79,8 @@
     "z_encoder_sensitivity_pct": 100,
     "max_pan_speed_px_per_sec": 290,
     "z_encoder_step_multiplier": 1.0,
-    "joystick_smoothing_pct": 0
+    "joystick_smoothing_pct": 0,
+    "joystick_backlash_compensation_enabled": true
   },
   "motor": {
     "soft_limits": {

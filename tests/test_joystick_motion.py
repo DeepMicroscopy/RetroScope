@@ -36,15 +36,20 @@ class _Config:
 
 
 class _ObjectiveManager:
+    def __init__(self, backlash_x: int = 0, backlash_y: int = 0, backlash_z: int = 0) -> None:
+        self._backlash_x = backlash_x
+        self._backlash_y = backlash_y
+        self._backlash_z = backlash_z
+
     active_objective = "4x"
 
     def current_profile(self):
         return SimpleNamespace(
             name="4x",
             display_name="4x",
-            backlash_x=0,
-            backlash_y=0,
-            backlash_z=0,
+            backlash_x=self._backlash_x,
+            backlash_y=self._backlash_y,
+            backlash_z=self._backlash_z,
             um_per_pixel=1.0,
             focus_stack_step=10,
         )
@@ -58,12 +63,24 @@ class _Sangaboard:
         self.moves.append((dx, dy, dz, coalesce))
 
 
-def _controller(config: _Config | None = None) -> tuple[MotionController, _Sangaboard]:
+def _controller(
+    config: _Config | None = None,
+    objective: _ObjectiveManager | None = None,
+) -> tuple[MotionController, _Sangaboard]:
     _app()
     sb = _Sangaboard()
-    ctrl = MotionController(sb, _ObjectiveManager(), config or _Config())
+    ctrl = MotionController(sb, objective or _ObjectiveManager(), config or _Config())
     ctrl._set_joystick_center(0.0, 0.0)
     return ctrl, sb
+
+
+def _dispatch_x(ctrl: MotionController, now: float, norm: float) -> None:
+    ctrl._deadzone = 0.0
+    ctrl._joystick_sample_ready = True
+    ctrl._joystick_sample_t = now
+    ctrl._joystick_norm_x = norm
+    ctrl._joystick_norm_y = 0.0
+    ctrl._dispatch_joystick_at(now)
 
 
 def test_joystick_dispatch_uses_fixed_low_latency_parameters() -> None:
@@ -109,6 +126,63 @@ def test_low_speed_joystick_emits_small_frequent_commands() -> None:
     sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
     assert sizes
     assert max(sizes) <= 2
+
+
+def test_joystick_backlash_compensation_enabled_by_default() -> None:
+    ctrl, _ = _controller()
+
+    assert ctrl._joystick_backlash_compensation_enabled is True
+
+
+def test_joystick_backlash_compensation_takes_up_initial_slack() -> None:
+    ctrl, sb = _controller(
+        _Config(**{"input.max_pan_speed_px_per_sec": 400}),
+        _ObjectiveManager(backlash_x=100),
+    )
+
+    _dispatch_x(ctrl, 100.0, 1.0)
+
+    assert sb.moves == [(140, 0, 0, True)]
+    assert ctrl._slack_x == pytest.approx(50.0)
+
+
+def test_joystick_backlash_compensation_traverses_band_on_reversal() -> None:
+    ctrl, sb = _controller(
+        _Config(**{"input.max_pan_speed_px_per_sec": 400}),
+        _ObjectiveManager(backlash_x=100),
+    )
+
+    _dispatch_x(ctrl, 100.0, 1.0)
+    _dispatch_x(ctrl, 100.0 + joystick_dispatch_params().interval_s, -1.0)
+
+    assert sb.moves == [(140, 0, 0, True), (-190, 0, 0, True)]
+    assert ctrl._slack_x == pytest.approx(-50.0)
+
+
+def test_joystick_backlash_compensation_can_be_disabled() -> None:
+    ctrl, sb = _controller(
+        _Config(
+            **{
+                "input.max_pan_speed_px_per_sec": 400,
+                "input.joystick_backlash_compensation_enabled": False,
+            }
+        ),
+        _ObjectiveManager(backlash_x=100),
+    )
+
+    _dispatch_x(ctrl, 100.0, 1.0)
+
+    assert sb.moves == [(90, 0, 0, True)]
+    assert ctrl._slack_x == pytest.approx(50.0)
+
+
+def test_joystick_zero_backlash_profile_is_unchanged_with_compensation_enabled() -> None:
+    ctrl, sb = _controller(_Config(**{"input.max_pan_speed_px_per_sec": 400}))
+
+    _dispatch_x(ctrl, 100.0, 1.0)
+
+    assert sb.moves == [(90, 0, 0, True)]
+    assert ctrl._slack_x == 0.0
 
 
 def test_ads_updates_do_not_move_until_dispatch() -> None:
