@@ -15,12 +15,6 @@ Item {
     property bool   _objSwitchVisible: false
     readonly property bool cameraLive: App.cameraFrameTap.cameraConnected
 
-    // Touch stage movement state
-    property real  _dragLastX: 0
-    property real  _dragLastY: 0
-    property bool  _dragActive: false
-    property bool  _dragBlocked: false
-
     function _pointInItem(point, item, margin) {
         if (!item || !item.visible)
             return false
@@ -164,60 +158,25 @@ Item {
         umPerPixel: App.objective.umPerPixel
     }
 
-    // Touch stage movement, drag to pan, single tap to move to point
+    // Touch stage movement, single tap to bring the tapped point to the centre
     Item {
         id: stageInputSurface
         anchors.fill: parent
         enabled: root.cameraLive
-
-        DragHandler {
-            id: stageDrag
-            target: null
-
-            onActiveChanged: {
-                if (active) {
-                    root._dragBlocked = root._stageInputBlockedAt(centroid.position)
-                    if (root._dragBlocked) {
-                        root._dragActive = false
-                        return
-                    }
-                    root._dragLastX = centroid.position.x
-                    root._dragLastY = centroid.position.y
-                    root._dragActive = true
-                } else {
-                    root._dragActive = false
-                    root._dragBlocked = false
-                }
-            }
-
-            onCentroidChanged: {
-                if (!active) return
-                if (root._dragBlocked) return
-                var pixDx = centroid.position.x - root._dragLastX
-                var pixDy = centroid.position.y - root._dragLastY
-                root._dragLastX = centroid.position.x
-                root._dragLastY = centroid.position.y
-                var scale = App.objective.activeUmPerPixel
-                var stepsX = Math.round(pixDx * scale)
-                var stepsY = Math.round(pixDy * scale)
-                if (stepsX !== 0 || stepsY !== 0)
-                    App.motion.moveRelXY(stepsX, stepsY)
-            }
-        }
 
         TapHandler {
             id: stageTap
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.WithinBounds
             onTapped: function(eventPoint) {
-                // Only when no drag just ended and tap is in the image area
-                if (root._dragActive) return
                 if (root._stageInputBlockedAt(eventPoint.position)) return
-                var cx = root.width  / 2
-                var cy = root.height / 2
-                var scale = App.objective.activeUmPerPixel
-                var stepsX = Math.round((eventPoint.position.x - cx) * scale)
-                var stepsY = Math.round((eventPoint.position.y - cy) * scale)
+                var fr = directVideoOutput.sourceRect
+                var cover = (fr.width > 0 && fr.height > 0)
+                            ? Math.max(root.width / fr.width, root.height / fr.height)
+                            : 1
+                var scale = App.objective.activeUmPerPixel / cover
+                var stepsX = Math.round((eventPoint.position.x - root.width  / 2) * scale)
+                var stepsY = Math.round((eventPoint.position.y - root.height / 2) * scale)
                 if (stepsX !== 0 || stepsY !== 0)
                     App.motion.moveRelXY(stepsX, stepsY)
             }
