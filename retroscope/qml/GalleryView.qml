@@ -342,8 +342,11 @@ Item {
                                     model: App.gallery.items
                                     cacheBuffer: Math.round(height)   // prefetch one screen of cells
                                     boundsBehavior: Flickable.StopAtBounds
-                                    cellWidth: Math.max(126, Math.floor(width / 5))
-                                    cellHeight: Math.round(cellWidth * 0.75)
+                                    // Pick a column count from a target cell size, then divide the width
+                                    // exactly so the cells fill the full container (no right-edge gap).
+                                    property int columns: Math.max(2, Math.round(width / 210))
+                                    cellWidth: width / columns
+                                    cellHeight: cellWidth * 0.75
 
                                     delegate: Item {
                                         id: gridItemRoot
