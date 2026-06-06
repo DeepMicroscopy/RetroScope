@@ -44,11 +44,15 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
 
-                // Live dot
-                Rectangle {
-                    width: 7; height: 7; radius: 3.5
-                    color: App.status.sangaboardConnected ? theme.colorSuccess : theme.colorDanger
+                // Logo mark
+                Image {
+                    source: "icons/logo.svg"
+                    width: 16; height: 16
+                    sourceSize.width: 32; sourceSize.height: 32
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
                     anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -1
                 }
 
                 // Live text
@@ -166,7 +170,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
-                Rectangle { width: 7; height: 7; radius: 3.5; color: theme.colorAccent; anchors.verticalCenter: parent.verticalCenter }
+                Image { source: "icons/logo.svg"; width: 16; height: 16; sourceSize.width: 32; sourceSize.height: 32; fillMode: Image.PreserveAspectFit; smooth: true; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -1 }
                 Text { text: "Gallery"; color: theme.colorText; font.pixelSize: 12; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
                 Rectangle { width: 1; height: 14; color: theme.colorBorder; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: App.gallery.captureCount + " captures"; color: theme.colorTextSub; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
@@ -246,7 +250,7 @@ Rectangle {
             Row {
                 anchors.left: parent.left; anchors.leftMargin: 16; anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
-                Rectangle { width: 7; height: 7; radius: 3.5; color: theme.colorAccent; anchors.verticalCenter: parent.verticalCenter }
+                Image { source: "icons/logo.svg"; width: 16; height: 16; sourceSize.width: 32; sourceSize.height: 32; fillMode: Image.PreserveAspectFit; smooth: true; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -1 }
                 Text { text: "Automation"; color: theme.colorText; font.pixelSize: 12; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
                 Rectangle { width: 1; height: 14; color: theme.colorBorder; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: "Objective: " + App.objective.activeDisplayName; color: theme.colorTextSub; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
@@ -298,7 +302,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
 
-                Rectangle { width: 7; height: 7; radius: 3.5; color: theme.colorAccent; anchors.verticalCenter: parent.verticalCenter }
+                Image { source: "icons/logo.svg"; width: 16; height: 16; sourceSize.width: 32; sourceSize.height: 32; fillMode: Image.PreserveAspectFit; smooth: true; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -1 }
                 Text { text: "Measure"; color: theme.colorText; font.pixelSize: 12; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
                 Rectangle { width: 1; height: 14; color: theme.colorBorder; anchors.verticalCenter: parent.verticalCenter }
                 Text {
@@ -372,7 +376,7 @@ Rectangle {
         Item {
             Row {
                 anchors.left: parent.left; anchors.leftMargin: 16; anchors.verticalCenter: parent.verticalCenter; spacing: 10
-                Rectangle { width: 7; height: 7; radius: 3.5; color: theme.colorAccent; anchors.verticalCenter: parent.verticalCenter }
+                Image { source: "icons/logo.svg"; width: 16; height: 16; sourceSize.width: 32; sourceSize.height: 32; fillMode: Image.PreserveAspectFit; smooth: true; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -1 }
                 Text { text: "Settings"; color: theme.colorText; font.pixelSize: 12; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
             }
         }
