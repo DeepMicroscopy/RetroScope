@@ -823,10 +823,15 @@ class DirectCameraBridge(QObject):
         if not self._camera_connected:
             self._set_camera_connected(True)
 
-        should_tap = self._frame_analysis_enabled and now - self._last_tap_s >= self._tap_interval_s
+        recording_active = self._camera_service_recording_active()
+        should_tap = (
+            (self._frame_analysis_enabled or recording_active)
+            and now - self._last_tap_s >= self._tap_interval_s
+        )
         if should_tap:
             self._last_tap_s = now
-            self._enqueue_analysis_frame(frame, self._copy_focus_plane_from_frame(frame))
+            focus_plane = self._copy_focus_plane_from_frame(frame) if self._frame_analysis_enabled else None
+            self._enqueue_analysis_frame(frame, focus_plane)
 
         if self._live_video_enabled and self._output_sink is not None:
             try:
@@ -840,6 +845,15 @@ class DirectCameraBridge(QObject):
             return int(frame.width()), int(frame.height())
         except Exception:
             return None
+
+    def _camera_service_recording_active(self) -> bool:
+        checker = getattr(self._camera_service, "is_recording", None)
+        if checker is None:
+            return False
+        try:
+            return bool(checker())
+        except Exception:
+            return False
 
     def _enqueue_analysis_frame(self, frame: object, focus_plane: np.ndarray | None) -> None:
         try:
@@ -862,12 +876,16 @@ class DirectCameraBridge(QObject):
                 frame, focus_plane = self._analysis_frame
                 self._analysis_frame = None
 
-            if not self._frame_analysis_enabled:
+            analysis_enabled = self._frame_analysis_enabled
+            recording_active = self._camera_service_recording_active()
+            if not analysis_enabled and not recording_active:
                 continue
-            if focus_plane is not None:
+            if analysis_enabled and focus_plane is not None:
                 self._publish_focus_plane(focus_plane)
             arr, _focus_score = self._frame_to_rgb_array_and_focus(frame, compute_focus=False)
-            if not self._frame_analysis_enabled:
+            analysis_enabled = self._frame_analysis_enabled
+            recording_active = self._camera_service_recording_active()
+            if not analysis_enabled and not recording_active:
                 continue
 
             if arr is None:

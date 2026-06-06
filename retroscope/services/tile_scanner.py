@@ -259,7 +259,7 @@ class _TileScannerWorker(QThread):
         speed_x, speed_y = self._derived_pan_steps_per_second_xy(profile)
         x_seconds = abs(int(dx)) / max(1.0, speed_x) if dx else 0.0
         y_seconds = abs(int(dy)) / max(1.0, speed_y) if dy else 0.0
-        time.sleep(max(self._settle, x_seconds, y_seconds))
+        time.sleep(max(x_seconds, y_seconds))
 
     def _derived_pan_steps_per_second_xy(self, profile) -> tuple[float, float]:
         config = getattr(self._obj, "_config", None)

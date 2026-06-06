@@ -107,6 +107,7 @@ def test_camera_disconnect_clears_stale_frames_focus_and_native_recording(tmp_pa
             service._recording_objective = "10x"
             service._recording_position = {"x": 1, "y": 2, "z": 3}
             service._recording_dims = (1920, 1080)
+        (tmp_path / "recording.mp4").write_bytes(b"video")
 
         service.on_camera_disconnected()
 
@@ -163,6 +164,29 @@ def test_direct_camera_bridge_marks_connected_on_first_valid_frame() -> None:
         assert bridge.cameraConnected is True
         assert seen == [True]
         assert sink.frames == [frame]
+    finally:
+        bridge.stop()
+
+
+def test_direct_camera_bridge_taps_frames_for_recording_when_analysis_disabled() -> None:
+    _app()
+    from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
+
+    class FakeCameraService:
+        def is_recording(self) -> bool:
+            return True
+
+    service = FakeCameraService()
+    bridge = DirectCameraBridge(service, enabled=True)
+    bridge.setFrameAnalysisEnabled(False)
+    calls: list[tuple[object, object]] = []
+    bridge._enqueue_analysis_frame = lambda frame, focus: calls.append((frame, focus))
+
+    try:
+        frame = FakeFrame()
+        bridge._on_video_frame(frame)
+
+        assert calls == [(frame, None)]
     finally:
         bridge.stop()
 

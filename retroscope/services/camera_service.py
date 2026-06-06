@@ -460,44 +460,13 @@ class CameraService(QObject):
             if self._recording:
                 return
             frame = self._latest_frame
-        backend = self._recording_backend
-        backend_dims = (0, 0)
-        if backend is not None and hasattr(backend, "recording_dimensions"):
-            try:
-                backend_dims = backend.recording_dimensions()
-            except Exception:
-                backend_dims = (0, 0)
-        if frame is None and backend_dims == (0, 0):
+        if frame is None:
             print("[recording] no frame available yet")
             return
 
-        if backend_dims != (0, 0):
-            w, h = backend_dims
-        else:
-            h, w = frame.shape[:2]
+        h, w = frame.shape[:2]
         objective = self._safe_objective()
         position = self._safe_position()
-        native_path = self._recording_path_for("video", objective, ".mp4", datetime.now().strftime("%Y%m%d_%H%M%S"))
-        if backend is not None and hasattr(backend, "start_recording_to"):
-            try:
-                if backend.start_recording_to(str(native_path)):
-                    with self._lock:
-                        if self._recording:
-                            backend.stop_recording()
-                            return
-                        self._native_recording = True
-                        self._recording = True
-                        self._recording_path = native_path
-                        self._recording_started_at = datetime.now()
-                        self._recording_started_monotonic = time.monotonic()
-                        self._recording_objective = objective
-                        self._recording_position = position
-                        self._recording_dims = (int(w), int(h))
-                    self.recording_changed.emit(True)
-                    print(f"[recording] started (Qt native) -> {native_path}")
-                    return
-            except Exception as e:
-                print(f"[recording] native recorder unavailable: {e}")
 
         if cv2 is None:
             print("[recording] cv2 not available")
@@ -572,7 +541,7 @@ class CameraService(QObject):
             except Exception as e:
                 print(f"[recording] release failed: {e}")
         self.recording_changed.emit(False)
-        if path is not None:
+        if path is not None and self._valid_recording_file(path):
             self._write_video_metadata(
                 path,
                 captured_at=captured_at,
@@ -582,7 +551,31 @@ class CameraService(QObject):
                 position=position,
             )
             self.recording_saved.emit(str(path))
+        elif path is not None:
+            self._remove_invalid_recording(path)
         print("[recording] stopped")
+
+    def _valid_recording_file(self, path: Path) -> bool:
+        try:
+            return path.exists() and path.stat().st_size > 0
+        except OSError:
+            return False
+
+    def _remove_invalid_recording(self, path: Path) -> None:
+        try:
+            size = path.stat().st_size if path.exists() else 0
+        except OSError:
+            size = 0
+        print(f"[recording] discarded invalid video ({size}B) -> {path}")
+        try:
+            path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        if self._image_store is not None:
+            try:
+                self._image_store.sidecar_path(path).unlink(missing_ok=True)
+            except Exception:
+                pass
 
     def _open_recording_writer(
         self,
