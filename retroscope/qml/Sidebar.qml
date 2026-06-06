@@ -204,7 +204,7 @@ Rectangle {
             Item {
                 id: backlashViz
                 Layout.fillWidth: true
-                Layout.preferredHeight: 136
+                Layout.preferredHeight: 180
 
                 property real xNorm: root.normalizedSlack(App.motion.backlashSlackX, App.objective.activeBacklashX)
                 property real yNorm: root.normalizedSlack(App.motion.backlashSlackY, App.objective.activeBacklashY)
@@ -254,7 +254,7 @@ Rectangle {
                             border.color: theme.dark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.8)
                             border.width: 1
                             x: (xyBand.width - width) / 2 + backlashViz.xNorm * ((xyBand.width - width - 14) / 2)
-                            y: (xyBand.height - height) / 2 - backlashViz.yNorm * ((xyBand.height - height - 14) / 2)
+                            y: (xyBand.height - height) / 2 + backlashViz.yNorm * ((xyBand.height - height - 14) / 2)
 
                             Behavior on x { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
                             Behavior on y { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
