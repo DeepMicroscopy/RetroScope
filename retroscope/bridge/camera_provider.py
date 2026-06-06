@@ -54,8 +54,14 @@ class OmeTiffImageProvider(QQuickImageProvider):
             frame = None
         if frame is None:
             return _BLANK_RGB.copy()
-        if requestedSize.width() > 0 and requestedSize.height() > 0:
-            frame = _resize_rgb(frame, requestedSize.width(), requestedSize.height())
+        rw, rh = requestedSize.width(), requestedSize.height()
+        if rw > 0 or rh > 0:
+            h, w = frame.shape[:2]
+            scale_w = rw / w if rw > 0 else float("inf")
+            scale_h = rh / h if rh > 0 else float("inf")
+            scale = min(scale_w, scale_h, 1.0)
+            if scale < 1.0:
+                frame = _resize_rgb(frame, max(1, round(w * scale)), max(1, round(h * scale)))
         h, w = frame.shape[:2]
         img = QImage(frame.data, w, h, w * 3, QImage.Format.Format_RGB888)
         return img.copy()
