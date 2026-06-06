@@ -218,11 +218,10 @@ class _TileScannerWorker(QThread):
                 if self._cancel:
                     break
                 if dx != 0 or dy != 0:
-                    move_ok = self._motion.move_rel(dx, dy, 0, source="automation")
+                    move_ok = self._move_rel_blocking(dx, dy, 0)
                     if move_ok is False:
                         self._cancel = True
                         break
-                    self._sleep_for_video_segment(dx, dy)
                 completed = min(total, completed + tile_equivalent)
                 self.progress.emit(completed / max(1, total))
                 self._pause_event.wait()
@@ -253,36 +252,6 @@ class _TileScannerWorker(QThread):
                 if row < self._rows - 1:
                     segments.append((-step_x * (self._cols - 1), step_y, 0))
         return segments
-
-    def _sleep_for_video_segment(self, dx: int, dy: int) -> None:
-        profile = self._obj.current_profile()
-        speed_x, speed_y = self._derived_pan_steps_per_second_xy(profile)
-        x_seconds = abs(int(dx)) / max(1.0, speed_x) if dx else 0.0
-        y_seconds = abs(int(dy)) / max(1.0, speed_y) if dy else 0.0
-        time.sleep(max(x_seconds, y_seconds))
-
-    def _derived_pan_steps_per_second_xy(self, profile) -> tuple[float, float]:
-        config = getattr(self._obj, "_config", None)
-        px_per_sec = 400.0
-        if config is not None:
-            try:
-                px_per_sec = max(1.0, float(config.get("input.max_pan_speed_px_per_sec", 400)))
-            except Exception:
-                pass
-        stage_x, stage_y = self._stage_scale_um_per_step()
-        if stage_x <= 0.0 and stage_y > 0.0:
-            stage_x = stage_y
-        if stage_y <= 0.0 and stage_x > 0.0:
-            stage_y = stage_x
-        if stage_x <= 0.0:
-            stage_x = 1.0
-        if stage_y <= 0.0:
-            stage_y = 1.0
-        um_per_pixel = max(1e-6, float(profile.um_per_pixel))
-        return (
-            px_per_sec * um_per_pixel / max(1e-6, stage_x),
-            px_per_sec * um_per_pixel / max(1e-6, stage_y),
-        )
 
     def _save_scan(self, tiles: list[dict]) -> str:
         self.stitch_started.emit()

@@ -473,14 +473,12 @@ def test_video_tile_scan_records_only_and_uses_continuous_row_moves() -> None:
         record_video=True,
         stitch_after=True,
     )
-    worker._sleep_for_video_segment = lambda dx, dy: None
-
     worker.run()
 
     assert camera.started == 1
     assert camera.stopped == 1
     assert camera.captures == 0
-    assert motion.moves == [
+    assert motion.blocking_moves == [
         (2048, 0, 0, "automation"),
         (0, 576, 0, "automation"),
         (-2048, 0, 0, "automation"),

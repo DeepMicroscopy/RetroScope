@@ -20,6 +20,7 @@ from PySide6.QtCore import (
     Property,
     Qt,
     QTimer,
+    QThread,
     QUrl,
     Signal,
     Slot,
@@ -111,6 +112,8 @@ class DirectCameraBridge(QObject):
         # Hi-res capture queue
         self._hires_queue: deque[dict] = deque()
         self._hires_lock = threading.Lock()
+        self._thread_call_queue: deque[dict] = deque()
+        self._thread_call_lock = threading.Lock()
 
     @Property(int, notify=frame_tap_changed)
     def frameTapCount(self) -> int:
@@ -494,7 +497,47 @@ class DirectCameraBridge(QObject):
         except Exception:
             pass
 
+    def _call_on_camera_thread(self, func, timeout_s: float = 3.0):
+        if QThread.currentThread() == self.thread():
+            return func()
+
+        done = threading.Event()
+        call = {"func": func, "done": done, "result": None, "error": None}
+        with self._thread_call_lock:
+            self._thread_call_queue.append(call)
+        QMetaObject.invokeMethod(
+            self,
+            "_drain_thread_calls",
+            Qt.ConnectionType.QueuedConnection,
+        )
+        if not done.wait(max(0.0, timeout_s)):
+            raise TimeoutError("camera thread call timed out")
+        if call["error"] is not None:
+            raise call["error"]
+        return call["result"]
+
+    @Slot()
+    def _drain_thread_calls(self) -> None:
+        while True:
+            with self._thread_call_lock:
+                if not self._thread_call_queue:
+                    return
+                call = self._thread_call_queue.popleft()
+            try:
+                call["result"] = call["func"]()
+            except Exception as exc:
+                call["error"] = exc
+            finally:
+                call["done"].set()
+
     def start_recording_to(self, path: str) -> bool:
+        try:
+            return bool(self._call_on_camera_thread(lambda: self._start_recording_to_in_thread(path)))
+        except Exception as e:
+            logger.warning("[recording] native Qt recorder failed to start: %s", e)
+            return False
+
+    def _start_recording_to_in_thread(self, path: str) -> bool:
         if not self._enabled:
             return False
         self._ensure_started()
@@ -504,19 +547,27 @@ class DirectCameraBridge(QObject):
             self._media_recorder.setOutputLocation(QUrl.fromLocalFile(path))
             self._media_recorder.record()
             return True
-        except Exception as e:
-            logger.warning("[recording] native Qt recorder failed to start: %s", e)
-            return False
+        except Exception:
+            raise
 
     def stop_recording(self) -> None:
-        if self._media_recorder is None:
-            return
         try:
-            self._media_recorder.stop()
+            self._call_on_camera_thread(self._stop_recording_in_thread)
         except Exception as e:
             logger.warning("[recording] native Qt recorder failed to stop: %s", e)
 
+    def _stop_recording_in_thread(self) -> None:
+        if self._media_recorder is None:
+            return
+        self._media_recorder.stop()
+
     def recording_dimensions(self) -> tuple[int, int]:
+        try:
+            return tuple(self._call_on_camera_thread(self._recording_dimensions_in_thread))
+        except Exception:
+            return (0, 0)
+
+    def _recording_dimensions_in_thread(self) -> tuple[int, int]:
         if self._active_resolution:
             parsed = self._parse_resolution(self._active_resolution)
             if parsed is not None:
