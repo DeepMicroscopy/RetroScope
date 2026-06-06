@@ -1,6 +1,7 @@
 {
   "objectives": {
     "4x": {
+      "display_name": "4x",
       "numerical_aperture": 0.1,
       "backlash_x": 100,
       "backlash_y": 200,
@@ -10,9 +11,9 @@
       "focus_stack_step": 402,
       "autofocus_range_steps": 8030
     },
-    "10x": {
+    "20x": {
       "display_name": "20x",
-      "numerical_aperture": 0.25,
+      "numerical_aperture": 0.4,
       "backlash_x": 100,
       "backlash_y": 200,
       "backlash_z": 20,
@@ -21,9 +22,9 @@
       "focus_stack_step": 64,
       "autofocus_range_steps": 1280
     },
-    "20x": {
+    "40x": {
       "display_name": "40x",
-      "numerical_aperture": 0.4,
+      "numerical_aperture": 0.65,
       "backlash_x": 100,
       "backlash_y": 200,
       "backlash_z": 20,
@@ -32,9 +33,9 @@
       "focus_stack_step": 25,
       "autofocus_range_steps": 500
     },
-    "40x": {
+    "63x": {
       "display_name": "63x",
-      "numerical_aperture": 0.65,
+      "numerical_aperture": 1.4,
       "backlash_x": 100,
       "backlash_y": 200,
       "backlash_z": 20,
@@ -44,6 +45,7 @@
       "autofocus_range_steps": 200
     },
     "100x": {
+      "display_name": "100x",
       "numerical_aperture": 1.25,
       "backlash_x": 100,
       "backlash_y": 200,
