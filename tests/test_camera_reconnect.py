@@ -168,12 +168,12 @@ def test_direct_camera_bridge_marks_connected_on_first_valid_frame() -> None:
         bridge.stop()
 
 
-def test_direct_camera_bridge_taps_frames_for_recording_when_analysis_disabled() -> None:
+def test_direct_camera_bridge_taps_frames_for_fallback_recording_when_analysis_disabled() -> None:
     _app()
     from retroscope.bridge.direct_camera_bridge import DirectCameraBridge
 
     class FakeCameraService:
-        def is_recording(self) -> bool:
+        def needs_recording_frame_tap(self) -> bool:
             return True
 
     service = FakeCameraService()

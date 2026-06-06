@@ -823,7 +823,7 @@ class DirectCameraBridge(QObject):
         if not self._camera_connected:
             self._set_camera_connected(True)
 
-        recording_active = self._camera_service_recording_active()
+        recording_active = self._camera_service_needs_recording_frame_tap()
         should_tap = (
             (self._frame_analysis_enabled or recording_active)
             and now - self._last_tap_s >= self._tap_interval_s
@@ -846,8 +846,8 @@ class DirectCameraBridge(QObject):
         except Exception:
             return None
 
-    def _camera_service_recording_active(self) -> bool:
-        checker = getattr(self._camera_service, "is_recording", None)
+    def _camera_service_needs_recording_frame_tap(self) -> bool:
+        checker = getattr(self._camera_service, "needs_recording_frame_tap", None)
         if checker is None:
             return False
         try:
@@ -877,14 +877,14 @@ class DirectCameraBridge(QObject):
                 self._analysis_frame = None
 
             analysis_enabled = self._frame_analysis_enabled
-            recording_active = self._camera_service_recording_active()
+            recording_active = self._camera_service_needs_recording_frame_tap()
             if not analysis_enabled and not recording_active:
                 continue
             if analysis_enabled and focus_plane is not None:
                 self._publish_focus_plane(focus_plane)
             arr, _focus_score = self._frame_to_rgb_array_and_focus(frame, compute_focus=False)
             analysis_enabled = self._frame_analysis_enabled
-            recording_active = self._camera_service_recording_active()
+            recording_active = self._camera_service_needs_recording_frame_tap()
             if not analysis_enabled and not recording_active:
                 continue
 

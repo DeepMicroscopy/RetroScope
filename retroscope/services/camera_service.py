@@ -124,6 +124,7 @@ class CameraService(QObject):
         self._recording_backend = None
         self._native_capture_backend = None
         self._native_recording = False
+        self._recording_stop_pending = False
         self._frame_analysis_enabled = True
         self._shutdown_event = threading.Event()
 
@@ -450,6 +451,10 @@ class CameraService(QObject):
         with self._lock:
             return self._recording
 
+    def needs_recording_frame_tap(self) -> bool:
+        with self._lock:
+            return self._recording and self._recorder is not None
+
     def start_recording(self) -> None:
         """Start recording frames to a timestamped video file."""
         try:
@@ -460,13 +465,51 @@ class CameraService(QObject):
             if self._recording:
                 return
             frame = self._latest_frame
-        if frame is None:
+        backend = self._recording_backend
+        backend_dims = (0, 0)
+        if backend is not None and hasattr(backend, "recording_dimensions"):
+            try:
+                backend_dims = backend.recording_dimensions()
+            except Exception:
+                backend_dims = (0, 0)
+        if frame is None and backend_dims == (0, 0):
             print("[recording] no frame available yet")
             return
 
-        h, w = frame.shape[:2]
+        if backend_dims != (0, 0):
+            w, h = backend_dims
+        else:
+            h, w = frame.shape[:2]
         objective = self._safe_objective()
         position = self._safe_position()
+        native_path = self._recording_path_for("video", objective, ".mp4", datetime.now().strftime("%Y%m%d_%H%M%S"))
+        if backend is not None and hasattr(backend, "start_recording_to"):
+            try:
+                native_path.parent.mkdir(parents=True, exist_ok=True)
+                if backend.start_recording_to(str(native_path)):
+                    with self._lock:
+                        if self._recording:
+                            backend.stop_recording()
+                            return
+                        self._native_recording = True
+                        self._recording = True
+                        self._recording_stop_pending = False
+                        self._recording_path = native_path
+                        self._recording_started_at = datetime.now()
+                        self._recording_started_monotonic = time.monotonic()
+                        self._recording_objective = objective
+                        self._recording_position = position
+                        self._recording_dims = (int(w), int(h))
+                    self.recording_changed.emit(True)
+                    print(f"[recording] started (Qt native) -> {native_path}")
+                    return
+            except Exception as e:
+                print(f"[recording] native recorder unavailable: {e}")
+
+        if frame is None:
+            print("[recording] no frame available yet")
+            return
+        h, w = frame.shape[:2]
 
         if cv2 is None:
             print("[recording] cv2 not available")
@@ -483,6 +526,7 @@ class CameraService(QObject):
             self._writer = writer
             self._recorder = _AsyncVideoRecorder(writer)
             self._recording = True
+            self._recording_stop_pending = False
             self._recording_path = path
             self._recording_started_at = datetime.now()
             self._recording_started_monotonic = time.monotonic()
@@ -494,6 +538,25 @@ class CameraService(QObject):
 
     def stop_recording(self) -> None:
         """Stop and finalise the current recording."""
+        with self._lock:
+            native_backend = (
+                self._native_recording
+                and self._recording_backend is not None
+                and self._writer is None
+                and self._recorder is None
+            )
+            already_pending = self._recording_stop_pending
+            if native_backend:
+                self._recording_stop_pending = True
+        if native_backend:
+            if already_pending:
+                return
+            try:
+                self._recording_backend.stop_recording()
+            except Exception as e:
+                print(f"[recording] native recorder stop failed: {e}")
+                self._finish_recording(stop_backend=False)
+            return
         self._finish_recording(stop_backend=True)
 
     def _finish_recording(self, stop_backend: bool) -> None:
@@ -516,6 +579,7 @@ class CameraService(QObject):
 
             self._recording = False
             self._native_recording = False
+            self._recording_stop_pending = False
             self._writer = None
             self._recorder = None
             self._recording_path = None
@@ -541,7 +605,7 @@ class CameraService(QObject):
             except Exception as e:
                 print(f"[recording] release failed: {e}")
         self.recording_changed.emit(False)
-        if path is not None and self._valid_recording_file(path):
+        if path is not None and self._valid_recording_file(path, wait_s=1.5 if was_native else 0.0):
             self._write_video_metadata(
                 path,
                 captured_at=captured_at,
@@ -555,11 +619,17 @@ class CameraService(QObject):
             self._remove_invalid_recording(path)
         print("[recording] stopped")
 
-    def _valid_recording_file(self, path: Path) -> bool:
-        try:
-            return path.exists() and path.stat().st_size > 0
-        except OSError:
-            return False
+    def _valid_recording_file(self, path: Path, wait_s: float = 0.0) -> bool:
+        deadline = time.monotonic() + max(0.0, wait_s)
+        while True:
+            try:
+                if path.exists() and path.stat().st_size > 0:
+                    return True
+            except OSError:
+                pass
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.05)
 
     def _remove_invalid_recording(self, path: Path) -> None:
         try:
