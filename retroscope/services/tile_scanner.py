@@ -11,22 +11,14 @@ from typing import Callable
 import numpy as np
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
-from retroscope.domain import flat_field, tile_stitch
+from retroscope.domain import tile_stitch
 from retroscope.services import ome_tiff
-from retroscope.services.config_store import _CONFIG_DIR
 from retroscope.services.stage_calibration import tile_steps_for_frame
 
 _MOVE_START_S  = 0.50   # seconds to wait after moving to first tile
 _AF_TIMEOUT_S  = 30.0   # max seconds to wait for per-tile autofocus
 _OUTPUT_MOSAIC = "mosaic"
 _OUTPUT_STITCH = "stitch"
-_FLATFIELD_DIR = _CONFIG_DIR / "flatfield"
-
-
-def _flatfield_reference_path(objective: str) -> Path:
-    """Reference is keyed by objective: the vignette depends on the optical path."""
-    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(objective)) or "default"
-    return _FLATFIELD_DIR / f"{safe}.npy"
 
 
 def _serpentine_order(cols: int, rows: int) -> list[tuple[int, int]]:
@@ -71,7 +63,6 @@ class _TileScannerWorker(QThread):
         session_dir: Path | None = None,
         stitch_after: bool = False,
         settle_ms: int = 300,
-        flatfield_enabled: bool = False,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -90,8 +81,6 @@ class _TileScannerWorker(QThread):
         self._session_dir   = session_dir
         self._stitch_after  = stitch_after
         self._settle        = settle_ms / 1000.0
-        self._flatfield_enabled = flatfield_enabled
-        self._flatfield_gain: np.ndarray | None = None
         self._cancel        = False
         self._pause_event   = threading.Event()
         self._pause_event.set()
@@ -113,7 +102,6 @@ class _TileScannerWorker(QThread):
 
     def run(self) -> None:
         profile = self._obj.current_profile()
-        self._load_flatfield_gain()
         calibration_frame_w, calibration_frame_h = self._calibration_frame_size_px()
         stage_x, stage_y = self._stage_scale_um_per_step()
         tile_step = tile_steps_for_frame(
@@ -179,8 +167,6 @@ class _TileScannerWorker(QThread):
             if not self._cancel:
                 frame = self._capture_frame()
                 if frame is not None:
-                    if self._flatfield_gain is not None:
-                        frame = flat_field.apply_flat_field(frame, self._flatfield_gain)
                     tiles.append(
                         {
                             "col": col,
@@ -351,17 +337,6 @@ class _TileScannerWorker(QThread):
         except Exception:
             return 0.0, 0.0
 
-    def _load_flatfield_gain(self) -> None:
-        self._flatfield_gain = None
-        if not self._flatfield_enabled:
-            return
-        objective = self._obj.active_objective if self._obj is not None else ""
-        reference = flat_field.load_reference(_flatfield_reference_path(objective))
-        if reference is None:
-            print(f"[flatfield] no reference for objective '{objective}'. Scanning uncorrected.")
-            return
-        self._flatfield_gain = flat_field.normalize_reference(reference)
-
     def _move_rel_blocking(self, dx: int, dy: int, dz: int) -> bool:
         if hasattr(self._motion, "move_rel_blocking"):
             try:
@@ -399,13 +374,19 @@ class _TileScannerWorker(QThread):
             return None
 
     def _grid_mosaic(self, tiles: list[dict]) -> np.ndarray:
-        # Overlap-honouring placement without sub-pixel refinement.
-        out = tile_stitch.stitch(
-            tiles,
-            overlap=self._overlap,
-            refine=False,
-            progress=self.stitch_progress.emit,
-        )
+        if not tiles:
+            return np.zeros((1, 1, 3), dtype=np.uint8)
+        sample = tiles[0]["frame"]
+        tile_h, tile_w = sample.shape[:2]
+        out = np.zeros((tile_h * self._rows, tile_w * self._cols, 3), dtype=np.uint8)
+        for tile in tiles:
+            col = int(tile.get("col", 0))
+            row = int(tile.get("row", 0))
+            frame = tile["frame"]
+            y = row * tile_h
+            x = col * tile_w
+            out[y:y + tile_h, x:x + tile_w] = frame[:tile_h, :tile_w, :3]
+        self.stitch_progress.emit(0.8)
         return out
 
     def _scan_metadata(
@@ -541,7 +522,6 @@ class TileScannerService(QObject):
         record_video: bool = False,
         stitch_after: bool = False,
         settle_ms: int = 300,
-        flatfield_enabled: bool = False,
     ) -> None:
         if self._busy:
             return
@@ -563,7 +543,6 @@ class TileScannerService(QObject):
             session_dir=None,
             stitch_after=stitch_after,
             settle_ms=settle_ms,
-            flatfield_enabled=flatfield_enabled,
         )
         self._worker.progress.connect(self.progress)
         self._worker.tile_done.connect(self.tile_done)
@@ -575,29 +554,6 @@ class TileScannerService(QObject):
         self._busy = True
         self.busy_changed.emit(True)
         self._worker.start()
-
-    @Slot(result=bool)
-    def captureFlatFieldReference(self) -> bool:
-        """Capture the current (empty, evenly lit) field as the flat-field reference
-        for the active objective. Returns True on success."""
-        if self._busy:
-            return False
-        frame = None
-        if hasattr(self._camera, "capture_native_frame"):
-            frame = self._camera.capture_native_frame(allow_tap_fallback=True)
-        elif hasattr(self._camera, "get_latest_frame"):
-            latest = self._camera.get_latest_frame()
-            frame = latest.copy() if latest is not None else None
-        if frame is None:
-            print("[flatfield] capture failed: no frame available")
-            return False
-        objective = self._obj.active_objective if self._obj is not None else ""
-        try:
-            flat_field.save_reference(_flatfield_reference_path(objective), frame)
-        except Exception as e:
-            print(f"[flatfield] save failed: {e}")
-            return False
-        return True
 
     @Slot()
     def cancel(self) -> None:

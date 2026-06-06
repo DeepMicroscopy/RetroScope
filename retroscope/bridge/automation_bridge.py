@@ -172,7 +172,7 @@ class AutomationBridge(QObject):
             z_end_abs=z_end,
         )
 
-    @Slot(int, int, float, str, bool, bool, bool, int, bool)
+    @Slot(int, int, float, str, bool, bool, bool, int)
     def startTileScan(
         self,
         cols: int = 4,
@@ -183,7 +183,6 @@ class AutomationBridge(QObject):
         record_video: bool = False,
         stitch_after: bool = False,
         settle_ms: int = 300,
-        flatfield_enabled: bool = False,
     ) -> None:
         if self._busy:
             return
@@ -193,15 +192,7 @@ class AutomationBridge(QObject):
         )
         self._stitch_pending = self._tile_save_mode == "stitch"
         self._start_task(f"Tile scan {cols}×{rows}", total_steps=automation_plan.tile_count(cols, rows))
-        self._ts.start(
-            cols, rows, overlap, pattern, autofocus_each, record_video,
-            stitch_after, settle_ms, flatfield_enabled,
-        )
-
-    @Slot(result=bool)
-    def captureFlatFieldReference(self) -> bool:
-        """Capture the current field as the flat-field reference for the active objective."""
-        return bool(self._ts.captureFlatFieldReference())
+        self._ts.start(cols, rows, overlap, pattern, autofocus_each, record_video, stitch_after, settle_ms)
 
     @Slot()
     def cancelTask(self) -> None:

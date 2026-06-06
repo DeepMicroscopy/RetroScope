@@ -62,7 +62,6 @@ def _compute_positions(
     clamp_y = max(4.0, ov_y * 0.5)
 
     positions: dict[tuple[int, int], tuple[int, int]] = {}
-    # Row-major so left/up neighbours are already placed when we reach a tile.
     for col, row in sorted(frames, key=lambda cr: (cr[1], cr[0])):
         cur = frames[(col, row)]
         candidates: list[tuple[float, float]] = []
@@ -118,7 +117,7 @@ def stitch(
 ) -> np.ndarray:
     """Stitch grid tiles into a single RGB image using known positions.
 
-    `tiles` are dicts with int 'col'/'row' and an RGB uint8 'frame'. With
+    'tiles' are dicts with int 'col'/'row' and an RGB uint8 'frame'. With
     refine=False this is a plain overlap-honouring mosaic.
     """
     frames = {
