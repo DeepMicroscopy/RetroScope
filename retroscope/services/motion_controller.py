@@ -855,6 +855,19 @@ class MotionController(QObject):
         """Wrapper for XY-only relative moves (used by touch input)."""
         return self.move_rel(dx, dy, 0)
 
+    @Slot(float, float)
+    def move_by_frame_pixels(self, dx_px: float, dy_px: float) -> bool:
+        """Move the stage by an offset given in camera-frame pixels (e.g. tap-to-move)."""
+        profile = self._obj.current_profile()
+        um_per_pixel = max(1e-6, float(getattr(profile, "um_per_pixel", 0.0)))
+        sx = max(1e-6, self._stage_um_per_step("x"))
+        sy = max(1e-6, self._stage_um_per_step("y"))
+        steps_x = int(round(float(dx_px) * um_per_pixel / sx))
+        steps_y = int(round(float(dy_px) * um_per_pixel / sy))
+        if steps_x == 0 and steps_y == 0:
+            return False
+        return self.move_rel(steps_x, steps_y, 0)
+
     @Slot(int)
     def move_z(self, steps: int) -> bool:
         """Move Z by raw steps, used by encoder, UI and automation routines."""

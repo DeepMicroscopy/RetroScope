@@ -60,6 +60,7 @@ def wire_signals(
     services.motion_ctrl.motion_blocked.connect(bridges.motion.motion_blocked)
     bridges.motion.z_move_requested.connect(services.motion_ctrl.move_z)
     bridges.motion.xy_move_requested.connect(services.motion_ctrl.move_rel_xy)
+    bridges.motion.frame_move_requested.connect(services.motion_ctrl.move_by_frame_pixels)
     bridges.motion.motors_deenergize_requested.connect(services.motion_ctrl.deenergize_motors)
     bridges.motion.joystick_cal_requested.connect(services.motion_ctrl.startJoystickCal)
     services.motion_ctrl.joystick_cal_done.connect(bridges.motion.joystickCalDone)

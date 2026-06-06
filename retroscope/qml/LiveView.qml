@@ -171,14 +171,11 @@ Item {
             onTapped: function(eventPoint) {
                 if (root._stageInputBlockedAt(eventPoint.position)) return
                 var fr = directVideoOutput.sourceRect
-                var cover = (fr.width > 0 && fr.height > 0)
-                            ? Math.max(root.width / fr.width, root.height / fr.height)
-                            : 1
-                var scale = App.objective.activeUmPerPixel / cover
-                var stepsX = Math.round((eventPoint.position.x - root.width  / 2) * scale)
-                var stepsY = Math.round((eventPoint.position.y - root.height / 2) * scale)
-                if (stepsX !== 0 || stepsY !== 0)
-                    App.motion.moveRelXY(stepsX, stepsY)
+                if (!(fr.width > 0 && fr.height > 0)) return
+                var cover = Math.max(root.width / fr.width, root.height / fr.height)
+                var frameDx = (eventPoint.position.x - root.width  / 2) / cover
+                var frameDy = (eventPoint.position.y - root.height / 2) / cover
+                App.motion.moveByFramePixels(frameDx, frameDy)
             }
         }
     }

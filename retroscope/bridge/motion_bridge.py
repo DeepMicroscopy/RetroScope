@@ -12,6 +12,7 @@ class MotionBridge(QObject):
     stageLimitWizardChanged = Signal()
     z_move_requested = Signal(int)
     xy_move_requested = Signal(int, int)
+    frame_move_requested = Signal(float, float)   # tap-to-move offset in camera-frame pixels
     motors_deenergize_requested = Signal()
     joystick_cal_requested = Signal()
     joystickCalDone = Signal()
@@ -184,6 +185,11 @@ class MotionBridge(QObject):
     @Slot(int, int)
     def moveRelXY(self, dx: int, dy: int) -> None:
         self.xy_move_requested.emit(dx, dy)
+
+    @Slot(float, float)
+    def moveByFramePixels(self, dx_px: float, dy_px: float) -> None:
+        """Tap-to-move: offset is in camera-frame pixels, the controller converts to steps."""
+        self.frame_move_requested.emit(float(dx_px), float(dy_px))
 
     @Slot()
     def deenergizeMotors(self) -> None:

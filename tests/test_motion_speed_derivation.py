@@ -121,6 +121,32 @@ def test_pan_speed_uses_axis_specific_stage_calibration():
     assert y_sps == pytest.approx(200.0 * _JOYSTICK_PAN_COMMAND_BOOST)
 
 
+def test_move_by_frame_pixels_converts_pixels_to_steps(monkeypatch):
+    """Tap-to-move: steps = frame_pixels * um_per_pixel / stage_um_per_step (per axis)."""
+    ctrl = _ctrl(
+        um_per_pixel=2.0,
+        **{"motor.stage_um_per_step_x": 1.0, "motor.stage_um_per_step_y": 4.0},
+    )
+    captured = {}
+    monkeypatch.setattr(ctrl, "move_rel", lambda dx, dy, dz: captured.update(dx=dx, dy=dy, dz=dz) or True)
+
+    ctrl.move_by_frame_pixels(100, 100)
+    # X: 100 * 2.0 / 1.0 = 200 steps, Y: 100 * 2.0 / 4.0 = 50 steps
+    assert captured == {"dx": 200, "dy": 50, "dz": 0}
+
+
+def test_move_by_frame_pixels_ignores_sub_step_offsets(monkeypatch):
+    ctrl = _ctrl(
+        um_per_pixel=2.0,
+        **{"motor.stage_um_per_step_x": 1.0, "motor.stage_um_per_step_y": 1.0},
+    )
+    calls = {"n": 0}
+    monkeypatch.setattr(ctrl, "move_rel", lambda *a: calls.update(n=calls["n"] + 1) or True)
+
+    assert ctrl.move_by_frame_pixels(0.1, 0.1) is False  # rounds to 0 steps
+    assert calls["n"] == 0
+
+
 def test_joystick_normalizer_is_responsive_before_full_span_is_seen():
     norm = JoystickAxisNormalizer()
     norm.set_center(12000)
