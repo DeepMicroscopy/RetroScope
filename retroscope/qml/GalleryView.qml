@@ -342,9 +342,10 @@ Item {
                                     model: App.gallery.items
                                     cacheBuffer: Math.round(height)   // prefetch one screen of cells
                                     boundsBehavior: Flickable.StopAtBounds
-                                    // Pick a column count from a target cell size, then divide the width
-                                    // exactly so the cells fill the full container (no right-edge gap).
-                                    property int columns: Math.max(2, Math.round(width / 210))
+                                    // Fixed column count; dividing the width exactly keeps the cells
+                                    // filling the full container (no right-edge gap). Change `columns`
+                                    // to taste (e.g. 3 or 5).
+                                    property int columns: 4
                                     cellWidth: width / columns
                                     cellHeight: cellWidth * 0.75
 
