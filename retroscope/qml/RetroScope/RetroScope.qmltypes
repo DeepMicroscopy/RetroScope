@@ -590,8 +590,6 @@ Module {
         Method { name: "setFocusStackStep"
             Parameter { name: "arg0"; type: "int" }
         }
-        Method { name: "resetActiveToDefaults"
-        }
         Method { name: "normalizedPixelDistance"; type: "double"
             Parameter { name: "arg0"; type: "double" }
             Parameter { name: "arg1"; type: "double" }
@@ -878,6 +876,8 @@ Module {
         Method { name: "refreshStorage"
         }
         Method { name: "clearAllCaptures"
+        }
+        Method { name: "resetToDefaults"
         }
         Method { name: "setJoystickDeadzonePct"
             Parameter { name: "arg0"; type: "int" }

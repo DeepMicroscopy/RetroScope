@@ -14,6 +14,8 @@ class ButtonBridge(QObject):
         super().__init__(parent)
         self._mgr = manager
         manager.action_executed.connect(lambda idx, _: self.button_pressed.emit(idx))
+        if hasattr(manager, "mapping_changed"):
+            manager.mapping_changed.connect(self.mapping_changed)
 
     @Property(list, notify=mapping_changed)
     def mappingModel(self) -> list:
@@ -31,4 +33,3 @@ class ButtonBridge(QObject):
     @Slot(int, str)
     def setAction(self, button_index: int, action_id: str) -> None:
         self._mgr.set_action(button_index, action_id)
-        self.mapping_changed.emit()

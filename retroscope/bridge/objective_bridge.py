@@ -112,7 +112,3 @@ class ObjectiveBridge(QObject):
     @Slot(int)
     def setFocusStackStep(self, v: int) -> None:
         self._mgr.apply_scaled_focus_stack_step(self._mgr.active_objective, max(1, v))
-
-    @Slot()
-    def resetActiveToDefaults(self) -> None:
-        self._mgr.reset_to_defaults(self._mgr.active_objective)

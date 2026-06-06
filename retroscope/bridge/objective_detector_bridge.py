@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from retroscope.bridge.config_helpers import ConfigBackedBridgeMixin
+from retroscope.services.config_store import CONFIG_RESET_KEY
 from retroscope.services.objective_detector import ObjectiveDetector
 
 
@@ -26,6 +27,8 @@ class ObjectiveDetectorBridge(ConfigBackedBridgeMixin, QObject):
         self._det    = detector
         self._config = config
         self._autofocus_on_switch = bool(config.get("detection.autofocus_on_switch", True))
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
 
         # Forward service signal to QML
         detector.switch_detected.connect(self.switchDetected)
@@ -100,3 +103,13 @@ class ObjectiveDetectorBridge(ConfigBackedBridgeMixin, QObject):
 
     def suppress_for_camera_change(self, duration_ms: float = 1500.0) -> None:
         self._det.suppress_temporarily(duration_ms)
+
+    def _on_config_changed(self, key: str) -> None:
+        if key != CONFIG_RESET_KEY:
+            return
+        self._autofocus_on_switch = bool(self._config.get("detection.autofocus_on_switch", True))
+        self.enabled_changed.emit(self._det.enabled)
+        self.dark_threshold_changed.emit(self._det.dark_threshold_pct)
+        self.dark_duration_changed.emit(self._det.dark_duration_ms)
+        self.recovery_threshold_changed.emit(self._det.recovery_threshold_pct)
+        self.autofocus_on_switch_changed.emit(self._autofocus_on_switch)

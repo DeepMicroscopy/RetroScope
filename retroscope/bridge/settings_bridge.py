@@ -11,6 +11,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from retroscope.platform import is_pi
+from retroscope.services.config_store import CONFIG_RESET_KEY
 
 class SettingsBridge(QObject):
     # Joystick signals
@@ -54,7 +55,12 @@ class SettingsBridge(QObject):
         super().__init__(parent)
         self._config = config
         self._store  = image_store
+        self._load_from_config()
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
 
+    def _load_from_config(self) -> None:
+        config = self._config
         # Joystick
         self._deadzone   = int(config.get("input.deadzone_pct", 8))
         self._curve      = str(config.get("input.curve", "exponential"))
@@ -113,6 +119,49 @@ class SettingsBridge(QObject):
         self._disk_total = 1
         self._cap_count  = 0
         self._refresh_storage()
+
+    @Slot()
+    def resetToDefaults(self) -> None:
+        if hasattr(self._config, "reset_to_defaults"):
+            self._config.reset_to_defaults()
+
+    def _on_config_changed(self, key: str) -> None:
+        if key != CONFIG_RESET_KEY:
+            return
+        self._load_from_config()
+        self._emit_all_settings_changed()
+        self.applySangaboardTimingOverrides()
+
+    def _emit_all_settings_changed(self) -> None:
+        self.joystick_deadzone_changed.emit(self._deadzone)
+        self.joystick_curve_changed.emit(self._curve)
+        self.joystick_expo_changed.emit(self._expo)
+        self.joystick_sensitivity_changed.emit(self._sensitivity)
+        self.joystick_swap_xy_changed.emit(self._swap_xy)
+        self.joystick_invert_x_changed.emit(self._invert_x)
+        self.joystick_invert_y_changed.emit(self._invert_y)
+        self.z_encoder_sensitivity_changed.emit(self._z_encoder_sensitivity)
+        self.max_pan_speed_changed.emit(self._max_pan_speed)
+        self.z_encoder_step_multiplier_changed.emit(self._z_enc_mult)
+        self.sangaboard_step_time_changed.emit(self._sangaboard_step_time_us)
+        self.sangaboard_ramp_time_changed.emit(self._sangaboard_ramp_time_us)
+        self.autofocus_speed_preset_changed.emit(self._af_preset)
+        self.autofocus_settle_ms_changed.emit(self._af_settle_ms)
+        self.autofocus_move_start_ms_changed.emit(self._af_move_start_ms)
+        self.autofocus_coarse_positions_changed.emit(self._af_coarse_pos)
+        self.autofocus_fine_positions_changed.emit(self._af_fine_pos)
+        self.autofocus_samples_per_position_changed.emit(self._af_samples)
+        self.autofocus_min_confidence_changed.emit(self._af_min_conf)
+        self.camera_device_changed.emit(self._cam_dev)
+        self.camera_resolution_changed.emit(self._cam_res)
+        self.camera_fps_changed.emit(self._cam_fps)
+        self.camera_format_changed.emit(self._cam_fmt)
+        self.camera_naming_changed.emit(self._cam_name)
+        self.camera_frame_analysis_changed.emit(self._cam_frame_analysis)
+        self.camera_live_video_changed.emit(self._cam_live_video)
+        self.capture_root_changed.emit(self.captureRoot)
+        self.storage_changed.emit()
+        self.restart_after_update_changed.emit(self._restart_after_update)
 
     # Joystick properties
     @Property(int, notify=joystick_deadzone_changed)

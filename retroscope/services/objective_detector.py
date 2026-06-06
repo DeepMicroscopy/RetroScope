@@ -6,7 +6,7 @@ import time
 from PySide6.QtCore import QObject, Signal
 
 from retroscope.domain.objective_detection import DetectorState, Event, Phase, step
-from retroscope.services.config_store import ConfigStore
+from retroscope.services.config_store import CONFIG_RESET_KEY, ConfigStore
 
 _CAMERA_WARMUP_IGNORE_MS = 1500.0
 
@@ -21,13 +21,25 @@ class ObjectiveDetector(QObject):
         self._config = config
         self._lock   = threading.Lock()
 
-        self._enabled                = bool(config.get("detection.enabled", True))
-        self._dark_threshold_pct     = float(config.get("detection.dark_threshold_pct", 15.0))
-        self._dark_duration_ms       = int(config.get("detection.dark_duration_ms", 200))
-        self._recovery_threshold_pct = float(config.get("detection.recovery_threshold_pct", 40.0))
-
         self._state = DetectorState()
         self._ignore_until_ms = time.monotonic() * 1000.0 + _CAMERA_WARMUP_IGNORE_MS
+        self.reload_from_config()
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
+
+    def reload_from_config(self) -> None:
+        with self._lock:
+            self._enabled = bool(self._config.get("detection.enabled", True))
+            self._dark_threshold_pct = float(self._config.get("detection.dark_threshold_pct", 15.0))
+            self._dark_duration_ms = int(self._config.get("detection.dark_duration_ms", 200))
+            self._recovery_threshold_pct = float(
+                self._config.get("detection.recovery_threshold_pct", 40.0)
+            )
+            self._state = DetectorState()
+
+    def _on_config_changed(self, key: str) -> None:
+        if key == CONFIG_RESET_KEY:
+            self.reload_from_config()
 
     # Called from camera analysis thread (direct connection)
     def on_brightness_updated(self, brightness: float) -> None:

@@ -22,6 +22,11 @@ Rectangle {
         return Math.max(-1.0, Math.min(1.0, Number(slack) / halfBand))
     }
 
+    function motionNumber(name) {
+        var value = App.motion[name]
+        return value === undefined ? 0.0 : Number(value)
+    }
+
     Connections {
         target: App
         function onHistogram_updated(bins) { root.histBins = bins }
@@ -202,9 +207,9 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 180
 
-                property real xNorm: root.normalizedSlack(App.motion.backlashSlackX, App.objective.activeBacklashX)
-                property real yNorm: root.normalizedSlack(App.motion.backlashSlackY, App.objective.activeBacklashY)
-                property real zNorm: root.normalizedSlack(App.motion.backlashSlackZ, App.objective.activeBacklashZ)
+                property real xNorm: root.normalizedSlack(root.motionNumber("backlashSlackX"), App.objective.activeBacklashX)
+                property real yNorm: root.normalizedSlack(root.motionNumber("backlashSlackY"), App.objective.activeBacklashY)
+                property real zNorm: root.normalizedSlack(root.motionNumber("backlashSlackZ"), App.objective.activeBacklashZ)
 
                 Row {
                     id: backlashRow

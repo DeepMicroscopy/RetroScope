@@ -1,5 +1,6 @@
 """Persistent JSON config store"""
 
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,7 @@ from PySide6.QtCore import QObject, QTimer, Signal
 _CONFIG_DIR = Path.home() / ".config" / "retroscope"
 _CONFIG_FILE = _CONFIG_DIR / "config.json"
 _DEFAULT_CONFIG = Path(__file__).parent.parent / "config" / "default_config.json"
+CONFIG_RESET_KEY = "__reset__"
 
 
 class ConfigStore(QObject):
@@ -28,7 +30,7 @@ class ConfigStore(QObject):
     def load(self) -> None:
         """Load config, merging with defaults on first run."""
         defaults = self._load_defaults()
-        self._data = dict(defaults)
+        self._data = deepcopy(defaults)
 
         _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         if _CONFIG_FILE.exists():
@@ -56,6 +58,15 @@ class ConfigStore(QObject):
     def flush(self) -> None:
         """Synchronously save any pending config changes."""
         self.save()
+
+    def reset_to_defaults(self) -> None:
+        """Replace the entire config with bundled defaults and persist it."""
+        if self._save_timer.isActive():
+            self._save_timer.stop()
+        self._data = deepcopy(self._load_defaults())
+        self._dirty = True
+        self.save()
+        self.config_changed.emit(CONFIG_RESET_KEY)
 
     # Access
     def get(self, key: str, default: Any = None) -> Any:

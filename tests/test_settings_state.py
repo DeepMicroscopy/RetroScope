@@ -102,6 +102,23 @@ def _real_settings_bridge(tmp_path, monkeypatch):
     return SettingsBridge(cfg, ImageStore(cfg))
 
 
+def _real_settings_context(tmp_path, monkeypatch):
+    _app()
+    import retroscope.services.config_store as config_store
+    from retroscope.bridge.settings_bridge import SettingsBridge
+    from retroscope.services.config_store import ConfigStore
+    from retroscope.services.image_store import ImageStore
+    from retroscope.services.objective_manager import ObjectiveManager
+
+    monkeypatch.setattr(config_store, "_CONFIG_DIR", tmp_path)
+    monkeypatch.setattr(config_store, "_CONFIG_FILE", tmp_path / "config.json")
+    cfg = ConfigStore(autosave_delay_ms=0)
+    cfg.load()
+    objectives = ObjectiveManager(cfg)
+    bridge = SettingsBridge(cfg, ImageStore(cfg))
+    return cfg, objectives, bridge
+
+
 def test_settings_bridge_autofocus_speed_preset_balanced_sets_defaults(tmp_path, monkeypatch) -> None:
     bridge = _real_settings_bridge(tmp_path, monkeypatch)
 
@@ -139,3 +156,29 @@ def test_settings_bridge_autofocus_fine_positions_force_odd(tmp_path, monkeypatc
 
     bridge.setAutofocusFinePositions(40)
     assert bridge.autofocusFinePositions == 41
+
+
+def test_settings_bridge_reset_defaults_resets_full_config_and_live_state(tmp_path, monkeypatch) -> None:
+    cfg, objectives, bridge = _real_settings_context(tmp_path, monkeypatch)
+    defaults = cfg._load_defaults()
+    deadzone_seen: list[int] = []
+    analysis_seen: list[bool] = []
+    bridge.joystick_deadzone_changed.connect(deadzone_seen.append)
+    bridge.camera_frame_analysis_changed.connect(analysis_seen.append)
+
+    objectives.set_param("4x", "backlash_x", 999)
+    objectives.set_active("100x")
+    bridge.setJoystickDeadzonePct(44)
+    bridge.setCameraFrameAnalysisEnabled(False)
+
+    bridge.resetToDefaults()
+
+    assert cfg.get("objectives.4x.backlash_x") == defaults["objectives"]["4x"]["backlash_x"]
+    assert cfg.get("ui.active_objective") == defaults["ui"]["active_objective"]
+    assert cfg.get("input.deadzone_pct") == defaults["input"]["deadzone_pct"]
+    assert bridge.joystickDeadzonePct == defaults["input"]["deadzone_pct"]
+    assert bridge.cameraFrameAnalysisEnabled is defaults["camera"]["frame_analysis_enabled"]
+    assert objectives.active_objective == defaults["ui"]["active_objective"]
+    assert objectives.profile("4x").backlash_x == defaults["objectives"]["4x"]["backlash_x"]
+    assert deadzone_seen[-1] == defaults["input"]["deadzone_pct"]
+    assert analysis_seen[-1] is defaults["camera"]["frame_analysis_enabled"]

@@ -100,7 +100,7 @@ Rectangle {
             else if (actionId === "quit")          App.system.quitApp()
             else if (actionId === "update")        App.update.applyUpdate()
             else if (actionId === "clearCaptures") App.settings.clearAllCaptures()
-            else if (actionId === "resetDefaults") App.objective.resetActiveToDefaults()
+            else if (actionId === "resetDefaults") App.settings.resetToDefaults()
             else if (actionId === "deenergizeMotors") App.motion.deenergizeMotors()
         }
     }
@@ -150,7 +150,7 @@ Rectangle {
                             Layout.preferredHeight: 28; Layout.preferredWidth: _rdLbl.implicitWidth + 24; radius: 6
                             color: Qt.rgba(root.colorDanger.r,root.colorDanger.g,root.colorDanger.b,0.08)
                             Text { id: _rdLbl; anchors.centerIn: parent; text: "Reset defaults"; color: root.colorDanger; font.pixelSize: 11 }
-                            TapHandler { onTapped: { confirmDialog.actionId = "resetDefaults"; confirmDialog.promptText = "Reset '" + App.objective.activeDisplayName + "' to factory defaults?"; confirmDialog.open() } }
+                            TapHandler { onTapped: { confirmDialog.actionId = "resetDefaults"; confirmDialog.promptText = "Reset all settings to factory defaults?"; confirmDialog.open() } }
                         }
                     }
 

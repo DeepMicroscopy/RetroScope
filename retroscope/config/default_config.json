@@ -2,63 +2,66 @@
   "objectives": {
     "4x": {
       "numerical_aperture": 0.1,
-      "backlash_x": 300,
-      "backlash_y": 600,
-      "backlash_z": 10,
-      "um_per_pixel": 3.686795982763792,
-      "dof_steps": 1041,
-      "focus_stack_step": 521,
-      "autofocus_range_steps": 10410
+      "backlash_x": 100,
+      "backlash_y": 200,
+      "backlash_z": 20,
+      "um_per_pixel": 3.672704687965688,
+      "dof_steps": 803,
+      "focus_stack_step": 402,
+      "autofocus_range_steps": 8030
     },
     "10x": {
       "display_name": "20x",
       "numerical_aperture": 0.25,
-      "backlash_x": 300,
-      "backlash_y": 600,
-      "backlash_z": 10,
-      "um_per_pixel": 0.7373591965527584,
-      "dof_steps": 167,
-      "focus_stack_step": 84,
-      "autofocus_range_steps": 1670
+      "backlash_x": 100,
+      "backlash_y": 200,
+      "backlash_z": 20,
+      "um_per_pixel": 0.7345409375931375,
+      "dof_steps": 128,
+      "focus_stack_step": 64,
+      "autofocus_range_steps": 1280
     },
     "20x": {
       "display_name": "40x",
       "numerical_aperture": 0.4,
-      "backlash_x": 300,
-      "backlash_y": 600,
-      "backlash_z": 10,
-      "um_per_pixel": 0.3686795982763792,
-      "dof_steps": 65,
-      "focus_stack_step": 33,
-      "autofocus_range_steps": 650
+      "backlash_x": 100,
+      "backlash_y": 200,
+      "backlash_z": 20,
+      "um_per_pixel": 0.36727046879656877,
+      "dof_steps": 50,
+      "focus_stack_step": 25,
+      "autofocus_range_steps": 500
     },
     "40x": {
       "display_name": "63x",
       "numerical_aperture": 0.65,
-      "backlash_x": 300,
-      "backlash_y": 600,
-      "backlash_z": 10,
-      "um_per_pixel": 0.2340822846199233,
-      "dof_steps": 25,
-      "focus_stack_step": 13,
-      "autofocus_range_steps": 250
+      "backlash_x": 100,
+      "backlash_y": 200,
+      "backlash_z": 20,
+      "um_per_pixel": 0.2331875992359167,
+      "dof_steps": 19,
+      "focus_stack_step": 10,
+      "autofocus_range_steps": 200
     },
     "100x": {
       "numerical_aperture": 1.25,
-      "backlash_x": 300,
-      "backlash_y": 600,
-      "backlash_z": 10,
-      "um_per_pixel": 0.1474718393105517,
-      "dof_steps": 7,
-      "focus_stack_step": 4,
+      "backlash_x": 100,
+      "backlash_y": 200,
+      "backlash_z": 20,
+      "um_per_pixel": 0.14690818751862753,
+      "dof_steps": 5,
+      "focus_stack_step": 3,
       "autofocus_range_steps": 200
     }
   },
   "ui": {
     "dark_theme": false,
     "crosshair_visible": true,
-    "active_objective": "10x",
-    "grid_visible": false
+    "active_objective": "4x",
+    "grid_visible": false,
+    "bookmarks": [],
+    "scale_bar_visible": true,
+    "histogram_visible": false
   },
   "captures": {
     "root": ""
@@ -72,8 +75,9 @@
     "invert_x": false,
     "invert_y": false,
     "z_encoder_sensitivity_pct": 100,
-    "max_pan_speed_px_per_sec": 590,
-    "z_encoder_step_multiplier": 1.0
+    "max_pan_speed_px_per_sec": 290,
+    "z_encoder_step_multiplier": 1.0,
+    "joystick_smoothing_pct": 0
   },
   "motor": {
     "soft_limits": {
@@ -84,19 +88,20 @@
       "y_min": 0,
       "y_max": 0
     },
-    "stage_um_per_step_x": 2.208711384630534,
-    "stage_um_per_step_y": 3.113619429052156,
+    "stage_um_per_step_x": 2.2647613696231015,
+    "stage_um_per_step_y": 3.2719607095945618,
     "sangaboard_step_time_us": 1000,
-    "sangaboard_ramp_time_us": 0
+    "sangaboard_ramp_time_us": 25000
   },
   "camera": {
     "device": "/dev/video0",
     "resolution": "640x360",
-    "fps": 30,
+    "fps": 2,
     "image_format": "OME-TIFF",
     "naming_pattern": "{date}_{time}_{obj}",
     "frame_analysis_enabled": true,
-    "live_video_enabled": true
+    "live_video_enabled": true,
+    "embed_metadata": true
   },
   "system": {
     "restart_after_update": true

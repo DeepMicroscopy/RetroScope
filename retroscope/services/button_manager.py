@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from retroscope.services.config_store import ConfigStore
+from retroscope.services.config_store import CONFIG_RESET_KEY, ConfigStore
 
 NUM_BUTTONS = 4
 DEFAULT_MAPPING = ["none"] * NUM_BUTTONS
@@ -17,6 +17,7 @@ class ButtonManager(QObject):
     """Listens to button_pressed events and dispatches registered actions."""
 
     action_executed = Signal(int, str)  # (button_index, action_id)
+    mapping_changed = Signal()
 
     def __init__(
         self,
@@ -27,13 +28,10 @@ class ButtonManager(QObject):
         super().__init__(parent)
         self._config = config
         self._actions: dict[str, ActionDefinition] = {}
-        self._mapping: list[str] = list(
-            config.get("buttons.mapping", DEFAULT_MAPPING)
-        )
-
-        while len(self._mapping) < NUM_BUTTONS:
-            self._mapping.append("none")
-        self._mapping = self._mapping[:NUM_BUTTONS]
+        self._mapping: list[str] = []
+        self._load_mapping()
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
 
         self.register_action("none", "- None -", lambda: None)
 
@@ -64,6 +62,19 @@ class ButtonManager(QObject):
             return
         self._mapping[button_index] = action_id
         self._config.set("buttons.mapping", list(self._mapping))
+        self.mapping_changed.emit()
+
+    def _load_mapping(self) -> None:
+        self._mapping = list(self._config.get("buttons.mapping", DEFAULT_MAPPING))
+        while len(self._mapping) < NUM_BUTTONS:
+            self._mapping.append("none")
+        self._mapping = self._mapping[:NUM_BUTTONS]
+
+    def _on_config_changed(self, key: str) -> None:
+        if key != CONFIG_RESET_KEY:
+            return
+        self._load_mapping()
+        self.mapping_changed.emit()
 
     # Dispatch
     @Slot(int)

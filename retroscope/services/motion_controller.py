@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import QCoreApplication, QObject, Property, QTimer, Signal, Slot
 
+from retroscope.services.config_store import CONFIG_RESET_KEY
 from retroscope.services.objective_manager import ObjectiveManager
 
 DEADZONE = 0.05                     # inner dead-zone
@@ -211,6 +212,8 @@ class MotionController(QObject):
         self._soft_y_min = 0
         self._soft_y_max = 0
         self._load_soft_limits()
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
 
     @staticmethod
     def _take_whole_steps(value: float) -> tuple[int, float]:
@@ -283,6 +286,15 @@ class MotionController(QObject):
             10,
             min(4000, int(self._config.get("input.max_pan_speed_px_per_sec", self._max_pan_speed_px_per_sec))),
         )
+
+    def _on_config_changed(self, key: str) -> None:
+        if key != CONFIG_RESET_KEY:
+            return
+        self._refresh_motion_settings_from_config()
+        self._load_soft_limits()
+        self.soft_limits_changed.emit()
+        self._clear_joystick_motion_state(clear_sample=True)
+        self.invalidate_backlash_history()
 
     def _clear_joystick_motion_state(self, *, clear_sample: bool = False) -> None:
         self._joystick_x_active = False

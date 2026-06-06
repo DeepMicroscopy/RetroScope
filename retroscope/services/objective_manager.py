@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from retroscope.services.config_store import ConfigStore
+from retroscope.services.config_store import CONFIG_RESET_KEY, ConfigStore
 
 
 OBJECTIVES = ["4x", "10x", "20x", "40x", "100x"]
@@ -83,8 +83,11 @@ class ObjectiveManager(QObject):
         self._active = "4x"
         self._profiles: dict[str, ObjectiveProfile] = {}
         self._load_profiles()
+        if hasattr(config, "config_changed"):
+            config.config_changed.connect(self._on_config_changed)
 
     def _load_profiles(self) -> None:
+        self._profiles = {}
         for name in OBJECTIVES:
             key = f"objectives.{name}"
             data = self._config.get(key, {})
@@ -106,6 +109,13 @@ class ObjectiveManager(QObject):
         saved = self._config.get("ui.active_objective", "4x")
         if saved in OBJECTIVES:
             self._active = saved
+
+    def _on_config_changed(self, key: str) -> None:
+        if key != CONFIG_RESET_KEY:
+            return
+        self._load_profiles()
+        self.names_changed.emit()
+        self.objective_changed.emit(self._active)
 
     @property
     def active_objective(self) -> str:
@@ -149,37 +159,6 @@ class ObjectiveManager(QObject):
         "backlash_x", "backlash_y", "backlash_z",
         "um_per_pixel", "dof_steps", "focus_stack_step", "autofocus_range_steps",
     }
-
-    def reset_to_defaults(self, name: str) -> None:
-        """Revert an objective profile to factory defaults from default_config.json."""
-        import json
-        from pathlib import Path
-        defaults_path = Path(__file__).parent.parent / "config" / "default_config.json"
-        try:
-            with open(defaults_path, encoding="utf-8") as f:
-                data = json.load(f).get("objectives", {}).get(name, {})
-        except Exception:
-            data = {}
-        fallback = _default_profile(name)
-        # Preserve user-set display name, only reset motion/calibration params
-        current_display_name = self._profiles[name].display_name
-        profile = ObjectiveProfile(
-            name=name,
-            display_name    = current_display_name,
-            numerical_aperture=float(data.get("numerical_aperture", fallback.numerical_aperture)),
-            backlash_x      = data.get("backlash_x",       fallback.backlash_x),
-            backlash_y      = data.get("backlash_y",       fallback.backlash_y),
-            backlash_z      = data.get("backlash_z",       fallback.backlash_z),
-            um_per_pixel    = data.get("um_per_pixel",     fallback.um_per_pixel),
-            dof_steps       = int(data.get("dof_steps",    data.get("dof_um", fallback.dof_steps))),
-            focus_stack_step= data.get("focus_stack_step", fallback.focus_stack_step),
-            autofocus_range_steps=int(data.get("autofocus_range_steps", fallback.autofocus_range_steps)),
-        )
-        self._profiles[name] = profile
-        for param in self._SETTABLE_PARAMS:
-            self._config.set(f"objectives.{name}.{param}", getattr(profile, param))
-        if name == self._active:
-            self.objective_changed.emit(name)
 
     def set_param(self, name: str, param: str, value) -> None:
         """Update a single profile parameter and persist to config."""
