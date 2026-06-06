@@ -125,6 +125,9 @@
     "samples_per_position": 1,
     "min_confidence": 70.0
   },
+  "scan": {
+    "flatfield_enabled": false
+  },
   "buttons": {
     "mapping": [
       "snapshot",

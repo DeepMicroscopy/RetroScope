@@ -30,6 +30,8 @@ Item {
     property bool   tsAutofocusEach:  false
     property bool   tsRecordVideo:    false
     property string tsSaveMode:       "stitch"
+    property bool   tsFlatField:      false
+    property string tsFlatRefStatus:  ""
     property int    tsSettleMs:       1000
 
     // Estimate display values
@@ -464,7 +466,7 @@ Item {
 
                             // Per-Tile Options Card
                             Rectangle {
-                                Layout.fillWidth: true; implicitHeight: 150
+                                Layout.fillWidth: true; implicitHeight: 215
                                 color: theme.colorSurface; radius: 8; border.color: theme.colorBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 14; spacing: 10
@@ -516,6 +518,34 @@ Item {
                                         }
                                     }
                                     ToggleRow { label: "Record as video";       checked: root.tsRecordVideo;    onCheckedChanged: root.tsRecordVideo    = checked }
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        enabled: !root.tsRecordVideo
+                                        opacity: enabled ? 1.0 : 0.45
+                                        spacing: 8
+                                        ToggleRow {
+                                            Layout.fillWidth: true
+                                            label: "Flat-field correction"
+                                            checked: root.tsFlatField
+                                            onCheckedChanged: root.tsFlatField = checked
+                                        }
+                                        Rectangle {
+                                            Layout.preferredWidth: 120; Layout.preferredHeight: 26; radius: 5
+                                            color: theme.bgSecondary
+                                            border.color: Qt.rgba(theme.colorAccent.r, theme.colorAccent.g, theme.colorAccent.b, 0.3)
+                                            Text {
+                                                text: root.tsFlatRefStatus !== "" ? root.tsFlatRefStatus : "Capture reference"
+                                                color: theme.colorTextSub
+                                                font.pixelSize: 10
+                                                anchors.centerIn: parent
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: root.tsFlatRefStatus =
+                                                    App.automation.captureFlatFieldReference() ? "Reference saved ✓" : "Capture failed ✕"
+                                            }
+                                        }
+                                    }
                                     Item { Layout.fillHeight: true }
                                 }
                             }
@@ -802,7 +832,7 @@ Item {
                                 if (root.currentSubTab === 0) {
                                     App.automation.startFocusStackAbsolute(root.fsZStart, root.fsZEnd, root.fsStepSize, root.fsSettleMs, root.fsBlending)
                                 } else {
-                                    App.automation.startTileScan(root.tsCols, root.tsRows, root.tsOverlapPct / 100.0, root.tsPattern, root.tsAutofocusEach, root.tsRecordVideo, !root.tsRecordVideo && root.tsSaveMode === "stitch", root.tsSettleMs)
+                                    App.automation.startTileScan(root.tsCols, root.tsRows, root.tsOverlapPct / 100.0, root.tsPattern, root.tsAutofocusEach, root.tsRecordVideo, !root.tsRecordVideo && root.tsSaveMode === "stitch", root.tsSettleMs, root.tsFlatField)
                                 }
                             }
                         }
