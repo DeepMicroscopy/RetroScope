@@ -227,6 +227,8 @@ Module {
         name: "DirectCameraBridge"
         prototype: "QObject"
         Property { name: "frameTapCount"; type: "int"; isReadonly: true }
+        Property { name: "frameWidth"; type: "int"; isReadonly: true }
+        Property { name: "frameHeight"; type: "int"; isReadonly: true }
         Property { name: "activeResolution"; type: "QString"; isReadonly: true }
         Property { name: "activeFps"; type: "double"; isReadonly: true }
         Property { name: "availableResolutions"; type: "QVariantList"; isReadonly: true }
@@ -506,6 +508,10 @@ Module {
         Method { name: "moveRelXY"
             Parameter { name: "arg0"; type: "int" }
             Parameter { name: "arg1"; type: "int" }
+        }
+        Method { name: "moveByFramePixels"
+            Parameter { name: "arg0"; type: "double" }
+            Parameter { name: "arg1"; type: "double" }
         }
         Method { name: "deenergizeMotors"
         }
@@ -1000,7 +1006,12 @@ Module {
         Property { name: "pyside6Version"; type: "QString"; isReadonly: true }
         Property { name: "opencvVersion"; type: "QString"; isReadonly: true }
         Property { name: "configPath"; type: "QString"; isReadonly: true }
+        Property { name: "currentIpAddress"; type: "QString"; isReadonly: true }
+        Property { name: "apiBaseUrl"; type: "QString"; isReadonly: true }
+        Property { name: "apiDocsUrl"; type: "QString"; isReadonly: true }
         Signal { name: "shutdown_initiated"
+        }
+        Signal { name: "network_info_changed"
         }
         Method { name: "restartApp"
         }
@@ -1009,6 +1020,8 @@ Module {
         Method { name: "quitApp"
         }
         Method { name: "showInputPanel"
+        }
+        Method { name: "refreshNetworkInfo"
         }
     }
     Component {
