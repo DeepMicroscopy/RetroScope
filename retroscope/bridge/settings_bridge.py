@@ -52,10 +52,10 @@ class SettingsBridge(QObject):
     # System signals
     restart_after_update_changed = Signal(bool)
 
-    def __init__(self, config, image_store, parent: QObject | None = None) -> None:
+    def __init__(self, config, storage_service, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._config = config
-        self._store  = image_store
+        self._store  = storage_service
         self._load_from_config()
         if hasattr(config, "config_changed"):
             config.config_changed.connect(self._on_config_changed)
@@ -598,12 +598,20 @@ class SettingsBridge(QObject):
         clean = str(v).strip()
         if clean == "":
             return
-        expanded = str(Path(clean).expanduser())
-        if expanded == str(self._store.capture_root()):
-            return
-        self._config.set("captures.root", expanded)
-        self._config.save()
-        self._store.ensure_directories()
+
+        setter = getattr(self._store, "set_capture_root", None)
+        if callable(setter):
+            expanded = setter(clean)
+            if expanded is None:
+                return
+        else:
+            expanded = str(Path(clean).expanduser())
+            if expanded == str(self._store.capture_root()):
+                return
+            self._config.set("captures.root", expanded)
+            self._config.save()
+            self._store.ensure_directories()
+
         self.capture_root_changed.emit(expanded)
         self.refreshStorage()
 
@@ -630,8 +638,12 @@ class SettingsBridge(QObject):
 
     @Slot()
     def clearAllCaptures(self) -> None:
-        self._store.clear_all()
-        self._refresh_storage()
+        clearer = getattr(self._store, "clear_all_captures", None)
+        if callable(clearer):
+            self._apply_storage_stats(clearer())
+        else:
+            self._store.clear_all()
+            self._refresh_storage()
         self.storage_changed.emit()
 
 
@@ -669,6 +681,11 @@ class SettingsBridge(QObject):
         return cls._clamp_sangaboard_ramp_time(v)
 
     def _refresh_storage(self) -> None:
+        refresher = getattr(self._store, "refresh_stats", None)
+        if callable(refresher):
+            self._apply_storage_stats(refresher())
+            return
+
         try:
             usage = shutil.disk_usage(self._store.capture_root())
             self._disk_used  = usage.used
@@ -680,3 +697,8 @@ class SettingsBridge(QObject):
             self._cap_count = self._store.total_count()
         except Exception:
             self._cap_count = 0
+
+    def _apply_storage_stats(self, stats) -> None:
+        self._disk_used = int(getattr(stats, "disk_used", 0))
+        self._disk_total = max(1, int(getattr(stats, "disk_total", 1)))
+        self._cap_count = max(0, int(getattr(stats, "capture_count", 0)))
