@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
@@ -59,6 +60,7 @@ class ImageStore:
         # Incremental scan cache: resolved path -> (mtime, size, built item).
         # Lets scan_items() skip metadata/thumbnail work for unchanged files.
         self._item_cache: dict[str, tuple[float, int, dict[str, Any]]] = {}
+        self._cache_lock = threading.RLock()
 
     # Paths
     def capture_root(self) -> Path:
@@ -203,42 +205,45 @@ class ImageStore:
 
     # Gallery item operations
     def scan_items(self) -> list[dict[str, Any]]:
-        self.ensure_directories()
-        items: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for path in self._iter_capture_files():
-            key = str(path.resolve())
-            try:
-                stat = path.stat()
-            except OSError:
-                continue
-            seen.add(key)
-            cached = self._item_cache.get(key)
-            if cached is not None and cached[0] == stat.st_mtime and cached[1] == stat.st_size:
-                items.append(cached[2])
-                continue
-            item = self._build_item(path)
-            if item:
-                self._item_cache[key] = (stat.st_mtime, stat.st_size, item)
-                items.append(item)
-        # Drop cache entries for files that disappeared.
-        for stale in self._item_cache.keys() - seen:
-            self._item_cache.pop(stale, None)
-        return items
+        with self._cache_lock:
+            self.ensure_directories()
+            items: list[dict[str, Any]] = []
+            seen: set[str] = set()
+            for path in self._iter_capture_files():
+                key = str(path.resolve())
+                try:
+                    stat = path.stat()
+                except OSError:
+                    continue
+                seen.add(key)
+                cached = self._item_cache.get(key)
+                if cached is not None and cached[0] == stat.st_mtime and cached[1] == stat.st_size:
+                    items.append(cached[2])
+                    continue
+                item = self._build_item(path)
+                if item:
+                    self._item_cache[key] = (stat.st_mtime, stat.st_size, item)
+                    items.append(item)
+            # Drop cache entries for files that disappeared.
+            for stale in self._item_cache.keys() - seen:
+                self._item_cache.pop(stale, None)
+            return items
 
     def invalidate(self, media_path: Path) -> None:
-        self._item_cache.pop(str(media_path.resolve()), None)
+        with self._cache_lock:
+            self._item_cache.pop(str(media_path.resolve()), None)
 
     def persist_tags(self, media_path: Path, tags: list[str]) -> bool:
-        item = self._build_item(media_path)
-        if item is None:
-            return False
-        md = item["metadata"]
-        md["tags"] = tags
-        ok = self.write_metadata(media_path, md)
-        if ok:
-            self.invalidate(media_path)
-        return ok
+        with self._cache_lock:
+            item = self._build_item(media_path)
+            if item is None:
+                return False
+            md = item["metadata"]
+            md["tags"] = tags
+            ok = self.write_metadata(media_path, md)
+            if ok:
+                self.invalidate(media_path)
+            return ok
 
     def total_count(self) -> int:
         """Return number of captured files (images + videos)."""
