@@ -8,11 +8,23 @@ import RetroScope 1.0
 
 ApplicationWindow {
     id: root
-    visible: true
     width: 1280
     height: 800
     title: "RetroScope"
     visibility: App.isMockMode ? Window.AutomaticVisibility : Window.FullScreen
+    visible: false
+
+    function centerMockWindow() {
+        if (!App.isMockMode)
+            return
+        root.x = Math.max(0, Math.round((Screen.width - root.width) / 2))
+        root.y = Math.max(0, Math.round((Screen.height - root.height) / 2))
+    }
+
+    Component.onCompleted: {
+        centerMockWindow()
+        visible = true
+    }
 
     FontLoader { source: "fonts/Font Awesome 7 Free-Solid-900.otf" }
     Theme { id: appTheme }

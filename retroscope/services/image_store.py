@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -601,66 +600,20 @@ class ImageStore:
                 pass
 
         self._remove_thumbnails(media_path)
-        os.environ.setdefault("OPENCV_FFMPEG_LOGLEVEL", "16")
-        os.environ.setdefault("OPENCV_VIDEOIO_DEBUG", "0")
         try:
             import cv2
         except Exception:
             self._mark_thumbnail_failure(media_path)
             return None
 
-        old_log_level = None
-        log_api = ""
-        try:
-            if hasattr(cv2, "utils") and hasattr(cv2.utils, "logging"):
-                clog = cv2.utils.logging
-                if hasattr(clog, "getLogLevel"):
-                    old_log_level = clog.getLogLevel()
-                if hasattr(clog, "setLogLevel") and hasattr(clog, "LOG_LEVEL_ERROR"):
-                    clog.setLogLevel(clog.LOG_LEVEL_ERROR)
-                log_api = "utils"
-            elif hasattr(cv2, "getLogLevel") and hasattr(cv2, "setLogLevel"):
-                old_log_level = cv2.getLogLevel()
-                if hasattr(cv2, "LOG_LEVEL_ERROR"):
-                    cv2.setLogLevel(cv2.LOG_LEVEL_ERROR)
-                log_api = "root"
-        except Exception:
-            old_log_level = None
-            log_api = ""
-
-        # Silence ffmpeg direct stderr writes to keep the logs clean.
-        _devnull = os.open(os.devnull, os.O_WRONLY)
-        _saved_stderr = os.dup(2)
-        os.dup2(_devnull, 2)
-        os.close(_devnull)
-        try:
-            cap = cv2.VideoCapture(str(media_path))
-        finally:
-            os.dup2(_saved_stderr, 2)
-            os.close(_saved_stderr)
+        cap = self._open_video_capture(cv2, media_path)
 
         if not cap.isOpened():
             cap.release()
             self._mark_thumbnail_failure(media_path)
-            try:
-                if old_log_level is not None:
-                    if log_api == "utils":
-                        cv2.utils.logging.setLogLevel(old_log_level)
-                    elif log_api == "root":
-                        cv2.setLogLevel(old_log_level)
-            except Exception:
-                pass
             return None
         ok, frame = cap.read()
         cap.release()
-        try:
-            if old_log_level is not None:
-                if log_api == "utils":
-                    cv2.utils.logging.setLogLevel(old_log_level)
-                elif log_api == "root":
-                    cv2.setLogLevel(old_log_level)
-        except Exception:
-            pass
         if not ok or frame is None:
             self._mark_thumbnail_failure(media_path)
             return None
@@ -680,14 +633,62 @@ class ImageStore:
         self._mark_thumbnail_failure(media_path)
         return None
 
+    def _open_video_capture(self, cv2, media_path: Path):
+        """Open a video with CPU decoding to avoid failed hardware-accel setup warnings."""
+        params: list[int] = []
+        if hasattr(cv2, "CAP_PROP_HW_ACCELERATION") and hasattr(cv2, "VIDEO_ACCELERATION_NONE"):
+            params = [
+                int(cv2.CAP_PROP_HW_ACCELERATION),
+                int(cv2.VIDEO_ACCELERATION_NONE),
+            ]
+        if params and hasattr(cv2, "CAP_FFMPEG"):
+            try:
+                cap = cv2.VideoCapture(str(media_path), cv2.CAP_FFMPEG, params)
+                if cap.isOpened():
+                    return cap
+                cap.release()
+            except Exception:
+                pass
+        return cv2.VideoCapture(str(media_path))
+
+    def _video_codec_name(self, media_path: Path) -> str:
+        ffprobe = shutil.which("ffprobe")
+        if not ffprobe:
+            return ""
+        try:
+            result = subprocess.run(
+                [
+                    ffprobe,
+                    "-v", "error",
+                    "-select_streams", "v:0",
+                    "-show_entries", "stream=codec_name",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    str(media_path),
+                ],
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=15,
+            )
+        except Exception:
+            return ""
+        if result.returncode != 0:
+            return ""
+        return result.stdout.strip().lower()
+
+    def _needs_video_playback_proxy(self, media_path: Path) -> bool:
+        if media_path.suffix.lower() != ".mp4":
+            return True
+        return self._video_codec_name(media_path) in {"mpeg4", "msmpeg4v1", "msmpeg4v2", "msmpeg4v3"}
+
     def _ensure_video_playback_proxy(
         self,
         media_path: Path,
         mtime: float,
         size: int,
     ) -> Path | None:
-        # MP4 plays cleanly in QtMultimedia on macOS, no proxy needed.
-        if media_path.suffix.lower() == ".mp4":
+        if not self._needs_video_playback_proxy(media_path):
             return media_path
 
         proxy = self._playback_proxy_path(media_path, mtime, size)
@@ -711,12 +712,12 @@ class ImageStore:
 
         commands = [
             [
-                ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(media_path),
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-hwaccel", "none", "-i", str(media_path),
                 "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", str(proxy),
             ],
             [
-                ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(media_path),
-                "-an", "-c:v", "mpeg4", "-q:v", "5", "-pix_fmt", "yuv420p", str(proxy),
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-hwaccel", "none", "-i", str(media_path),
+                "-an", "-c:v", "h264_videotoolbox", "-b:v", "4M", "-pix_fmt", "yuv420p", str(proxy),
             ],
         ]
         for cmd in commands:

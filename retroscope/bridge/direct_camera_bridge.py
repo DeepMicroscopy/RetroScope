@@ -30,7 +30,6 @@ from PySide6.QtMultimedia import (
     QCamera,
     QMediaCaptureSession,
     QMediaDevices,
-    QMediaRecorder,
     QVideoFrame,
     QVideoSink,
 )
@@ -71,7 +70,7 @@ class DirectCameraBridge(QObject):
         self._media_devices = QMediaDevices(self)
         self._input_sink: QVideoSink | None = None
         self._image_capture: QObject | None = None
-        self._media_recorder: QMediaRecorder | None = None
+        self._media_recorder: QObject | None = None
         self._output_sink: QObject | None = None
         self._camera_connected = False
         self._active_device_key = ""
@@ -376,16 +375,6 @@ class DirectCameraBridge(QObject):
         self._clear_output_sink()
         self._input_sink = QVideoSink(self)
         self._input_sink.videoFrameChanged.connect(self._on_video_frame)
-        # QImageCapture is the only path to native-resolution stills
-        from PySide6.QtMultimedia import QImageCapture
-
-        self._image_capture = QImageCapture(self)
-        self._image_capture.imageCaptured.connect(self._on_image_captured)
-        self._image_capture.errorOccurred.connect(self._on_image_capture_error)
-        self._media_recorder = QMediaRecorder(self)
-        self._media_recorder.recorderStateChanged.connect(self._on_recorder_state_changed)
-        self._media_recorder.errorOccurred.connect(self._on_recorder_error)
-
         self._camera = QCamera(device, self)
         self._camera.errorOccurred.connect(self._on_camera_error)
         self._camera.activeChanged.connect(self._on_camera_active_changed)
@@ -395,10 +384,6 @@ class DirectCameraBridge(QObject):
         self._session = QMediaCaptureSession(self)
         self._session.setCamera(self._camera)
         self._session.setVideoSink(self._input_sink)
-        if self._image_capture is not None:
-            self._session.setImageCapture(self._image_capture)
-        if self._media_recorder is not None:
-            self._session.setRecorder(self._media_recorder)
         self._camera.start()
         self._active_device_key = self._device_key(device)
         self._camera_started_s = time.monotonic()
@@ -473,6 +458,8 @@ class DirectCameraBridge(QObject):
     @Slot(object)
     def _on_recorder_state_changed(self, state: object) -> None:
         try:
+            from PySide6.QtMultimedia import QMediaRecorder
+
             stopped = state == QMediaRecorder.RecorderState.StoppedState
         except Exception:
             stopped = "Stopped" in str(state)
@@ -551,7 +538,7 @@ class DirectCameraBridge(QObject):
         if not self._enabled:
             return False
         self._ensure_started()
-        if self._media_recorder is None:
+        if not self._ensure_media_recorder():
             return False
         try:
             self._media_recorder.setOutputLocation(QUrl.fromLocalFile(path))
@@ -688,9 +675,6 @@ class DirectCameraBridge(QObject):
     ) -> np.ndarray | None:
         """Capture one native-resolution frame as an RGB ndarray."""
 
-        if self._image_capture is None:
-            logger.info("[camera] hi-res capture unavailable: QImageCapture not created")
-            return None
         entry: dict = {"event": threading.Event(), "image": None}
         with self._hires_lock:
             self._hires_queue.append(entry)
@@ -729,7 +713,8 @@ class DirectCameraBridge(QObject):
     @Slot()
     def _trigger_hires_internal(self) -> None:
         """Runs on the bridge thread. Triggers QImageCapture.capture()."""
-        if self._image_capture is None:
+        self._ensure_started()
+        if not self._ensure_image_capture():
             self._fail_oldest_hires("image capture unavailable")
             return
         try:
@@ -1221,3 +1206,32 @@ class DirectCameraBridge(QObject):
             + 0.114 * arr[:, :, 2].astype(np.float32)
         ).astype(np.uint8)
         return grayscale_focus_score(gray, roi=0.15)
+
+    def _ensure_image_capture(self) -> bool:
+        """Create the native still-capture backend only when a still is requested."""
+        if self._image_capture is not None:
+            return True
+        if self._session is None:
+            return False
+        # QImageCapture is the only path to native-resolution stills.
+        from PySide6.QtMultimedia import QImageCapture
+
+        self._image_capture = QImageCapture(self)
+        self._image_capture.imageCaptured.connect(self._on_image_captured)
+        self._image_capture.errorOccurred.connect(self._on_image_capture_error)
+        self._session.setImageCapture(self._image_capture)
+        return True
+
+    def _ensure_media_recorder(self) -> bool:
+        """Create the native recorder only when recording is requested."""
+        if self._media_recorder is not None:
+            return True
+        if self._session is None:
+            return False
+        from PySide6.QtMultimedia import QMediaRecorder
+
+        self._media_recorder = QMediaRecorder(self)
+        self._media_recorder.recorderStateChanged.connect(self._on_recorder_state_changed)
+        self._media_recorder.errorOccurred.connect(self._on_recorder_error)
+        self._session.setRecorder(self._media_recorder)
+        return True

@@ -340,7 +340,7 @@ Item {
                                     visible: App.gallery.viewMode === "grid"
                                     clip: true
                                     model: App.gallery.items
-                                    cacheBuffer: Math.round(height)   // prefetch one screen of cells
+                                    cacheBuffer: Math.max(0, Math.round(height))   // prefetch one screen of cells
                                     boundsBehavior: Flickable.StopAtBounds
                                     // Fixed column count; dividing the width exactly keeps the cells
                                     // filling the full container (no right-edge gap). Change `columns`
@@ -457,7 +457,7 @@ Item {
                                     clip: true
                                     model: App.gallery.items
                                     spacing: 6
-                                    cacheBuffer: Math.round(height)
+                                    cacheBuffer: Math.max(0, Math.round(height))
                                     boundsBehavior: Flickable.StopAtBounds
 
                                     delegate: Rectangle {
