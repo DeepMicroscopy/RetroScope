@@ -172,14 +172,18 @@ The following plugins, libraries and frameworks are used:
 
 Name                    | Version           
 ------------------------|-------------------
-PySide6                 | >=6.11.1          
-numpy                   | >=2.4.6           
-opencv-python-headless  | >=4.7.0.72       
-Pillow                  | >=12.2.0          
-tifffile                | >=2026.5.15       
-sangaboard              | >=0.3.3           
-smbus2 (only on Pi)     | >=0.6.1           
-gpiod (only on Pi)      | >=2.4.2           
+PySide6                 | 6.11.1
+fastapi                 | 0.136.3
+httpx2                  | 2.3.0
+uvicorn                 | 0.49.0
+numpy                   | 2.4.6
+pytest                  | 9.0.3
+opencv-python-headless  | 4.13.0.92
+Pillow                  | 12.2.0
+tifffile                | 2026.5.15
+sangaboard              | 0.3.3
+smbus2 (only on Pi)     | 0.6.1           
+gpiod (only on Pi)      | 2.4.2   
 
 ## Additional Sources
 
