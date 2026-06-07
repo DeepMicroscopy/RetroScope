@@ -27,6 +27,8 @@ def create_services(config, drivers: Drivers) -> Services:
     from retroscope.services.storage_service import StorageService
     from retroscope.services.system_service import SystemService
     from retroscope.services.update_service import UpdateService
+    from retroscope.api.dispatcher import QtCommandDispatcher
+    from retroscope.api.service import RestApiService
 
     objective_mgr = ObjectiveManager(config)
     motion_ctrl = MotionController(drivers.sangaboard, objective_mgr, config)
@@ -41,6 +43,13 @@ def create_services(config, drivers: Drivers) -> Services:
     objective_detector = ObjectiveDetector(config)
     measurement_capture_svc = MeasurementCaptureService()
     storage_svc = StorageService(config, image_store)
+    api_dispatcher = QtCommandDispatcher()
+    rest_api_svc = RestApiService(
+        config,
+        image_store=image_store,
+        autofocus_svc=autofocus_svc,
+        dispatcher=api_dispatcher,
+    )
 
     return Services(
         config=config,
@@ -56,6 +65,7 @@ def create_services(config, drivers: Drivers) -> Services:
         objective_detector=objective_detector,
         measurement_capture_svc=measurement_capture_svc,
         storage_svc=storage_svc,
+        rest_api_svc=rest_api_svc,
     )
 
 def create_automation_services(services: Services, get_position) -> None:

@@ -30,6 +30,7 @@ class Services:
     objective_detector: Any
     measurement_capture_svc: Any
     storage_svc: Any
+    rest_api_svc: Any | None = None
     focus_stacker_svc: Any | None = None
     tile_scanner_svc: Any | None = None
 

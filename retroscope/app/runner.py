@@ -34,6 +34,7 @@ def run_application(args) -> None:
     config = load_config()
     drivers = create_drivers()
     services = create_services(config, drivers)
+    api_service = services.rest_api_svc
     bridges, providers = create_bridges(services)
     register_button_actions(services)
     wire_signals(drivers, services, bridges)
@@ -57,10 +58,18 @@ def run_application(args) -> None:
     if not engine.rootObjects():
         print("ERROR: Failed to load QML root", file=sys.stderr)
         app_controller.shutdown()
+        if api_service is not None:
+            api_service.stop()
         shutdown_and_exit(drivers, config, 1)
 
     install_keyboard_shortcuts(app, services, drivers)
 
+    if api_service is not None:
+        api_service.start()
+        app.aboutToQuit.connect(api_service.stop)
+
     exit_code = app.exec()
     app_controller.shutdown()
+    if api_service is not None:
+        api_service.stop()
     shutdown_and_exit(drivers, config, exit_code)

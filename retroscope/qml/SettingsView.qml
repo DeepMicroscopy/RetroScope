@@ -29,6 +29,7 @@ Rectangle {
 
     property int  currentPage: 0
     property int  motorJogStep: 100
+    onCurrentPageChanged: if (currentPage === 7) App.system.refreshNetworkInfo()
     function showInputPanel() {
         Qt.callLater(function() { App.system.showInputPanel() })
     }
@@ -1022,6 +1023,8 @@ Rectangle {
                             SRow { label: "PySide6";  value: App.system.pyside6Version }
                             SRow { label: "OpenCV";   value: App.system.opencvVersion }
                             SRow { label: "Mock mode"; value: App.isMockMode ? "Yes" : "No" }
+                            SRow { label: "API URL"; value: App.system.apiBaseUrl }
+                            SRow { label: "API Docs";   value: App.system.apiDocsUrl }
                         }
                         SCard {
                             title: "HARDWARE"

@@ -68,6 +68,12 @@
   "captures": {
     "root": ""
   },
+  "api": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 8765,
+    "docs_enabled": true
+  },
   "input": {
     "deadzone_pct": 10,
     "curve": "exponential",
