@@ -113,11 +113,6 @@ Item {
                                         Layout.fillWidth: true
                                         Text { text: "Z RANGE"; color: theme.colorTextSub; font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.7 }
                                         Item { Layout.fillWidth: true }
-                                        Text {
-                                            text: root.fsTotalSteps + " steps · " + root.fsFrameCount + " frames"
-                                            color: theme.colorAccent
-                                            font.pixelSize: 10; font.weight: Font.Medium; font.family: "Courier New"
-                                        }
                                     }
 
                                     // START row

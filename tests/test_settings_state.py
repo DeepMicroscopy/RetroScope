@@ -35,6 +35,42 @@ class StoreStub:
         return 0
 
 
+class StorageStatsStub:
+    def __init__(self, disk_used=0, disk_total=1, capture_count=0):
+        self.disk_used = disk_used
+        self.disk_total = disk_total
+        self.capture_count = capture_count
+
+
+class StorageServiceStub:
+    def __init__(self, root, count=0):
+        self._root = root
+        self.count = count
+        self.cleared = False
+
+    def capture_root(self):
+        return self._root
+
+    def set_capture_root(self, value):
+        expanded = type(self._root)(value).expanduser()
+        if expanded == self._root:
+            return None
+        self._root = expanded
+        return str(expanded)
+
+    def refresh_stats(self):
+        return StorageStatsStub(
+            disk_used=12_345,
+            disk_total=98_765,
+            capture_count=self.count,
+        )
+
+    def clear_all_captures(self):
+        self.cleared = True
+        self.count = 0
+        return self.refresh_stats()
+
+
 def test_settings_bridge_camera_performance_toggles_persist(tmp_path):
     from retroscope.bridge.settings_bridge import SettingsBridge
 
@@ -54,6 +90,33 @@ def test_settings_bridge_camera_performance_toggles_persist(tmp_path):
     assert config.values["camera.live_video_enabled"] is False
     assert analysis_seen == [False]
     assert video_seen == [False]
+
+
+def test_settings_bridge_storage_uses_storage_service_stats(tmp_path):
+    from retroscope.bridge.settings_bridge import SettingsBridge
+
+    config = ConfigStub()
+    storage = StorageServiceStub(tmp_path / "captures", count=5)
+    bridge = SettingsBridge(config, storage)
+    roots_seen: list[str] = []
+    bridge.capture_root_changed.connect(roots_seen.append)
+
+    assert bridge.captureCount == 5
+
+    storage.count = 7
+    bridge.refreshStorage()
+    assert bridge.captureCount == 7
+
+    new_root = tmp_path / "new-captures"
+    bridge.setCaptureRoot(str(new_root))
+
+    assert bridge.captureRoot == str(new_root)
+    assert roots_seen == [str(new_root)]
+
+    bridge.clearAllCaptures()
+
+    assert storage.cleared
+    assert bridge.captureCount == 0
 
 
 def test_settings_bridge_joystick_backlash_compensation_persists_and_emits(tmp_path):

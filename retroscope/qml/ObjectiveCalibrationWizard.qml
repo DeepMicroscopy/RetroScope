@@ -391,12 +391,8 @@ Dialog {
             }
             Text {
                 visible: calibWizard.calibResult > 0
-                text: "->  " + calibWizard.calibResult.toFixed(4) + " µm/px on this objective, other profiles will be scaled by magnification."
-                color: "#5DCAA5"; font.pixelSize: 12; font.weight: Font.Medium
-            }
-            Text {
-                text: "Stage scale is measured in the next step with a live camera reference."
-                color: theme.colorTextSub; font.pixelSize: 11; wrapMode: Text.WordWrap; Layout.fillWidth: true
+                text: calibWizard.calibResult.toFixed(4) + " µm/px on this objective, other profiles will be scaled by magnification."
+                color: "#592178"; font.pixelSize: 12; font.weight: Font.Medium
             }
             Item { Layout.fillHeight: true }
             RowLayout {
@@ -614,7 +610,7 @@ Dialog {
             Text { text: "Depth of field"; color: theme.colorText; font.pixelSize: 14; font.weight: Font.Medium }
             WizardDots { total: calibWizard.totalSteps; current: calibWizard.step }
             Text {
-                text: "Find peak sharpness with the encoder. Move up until focus quality drops to ~50%, tap Mark upper. Move back through peak and down until quality drops to ~50%, tap Mark lower. This measured DoF is saved in motor steps and the other profiles are scaled by numerical aperture."
+                text: "Find peak sharpness with the encoder. Move up until focus quality drops to ~50%, tap 'Mark upper'. Move back through peak and down until quality drops to ~50% again, tap 'Mark lower'. This measured DoF is saved in motor steps and the other profiles are scaled by numerical aperture."
                 color: theme.colorTextSub; font.pixelSize: 11; wrapMode: Text.WordWrap; Layout.fillWidth: true
             }
             // Live frame with focus quality bar
@@ -659,7 +655,7 @@ Dialog {
                     border.color: calibWizard.dofUpperSet ? theme.colorAccent : "transparent"; border.width: 1
                     ColumnLayout {
                         anchors.centerIn: parent; spacing: 0
-                        Text { text: calibWizard.dofUpperSet ? "Upper: " + calibWizard.dofUpperZ + " st" : "Mark upper edge"
+                        Text { text: calibWizard.dofUpperSet ? "Upper: " + calibWizard.dofUpperZ + " st" : "Mark upper"
                                color: theme.colorAccent; font.pixelSize: 12; font.weight: Font.Medium
                                horizontalAlignment: Text.AlignHCenter; Layout.alignment: Qt.AlignHCenter }
                     }
@@ -672,7 +668,7 @@ Dialog {
                     border.color: calibWizard.dofLowerSet ? theme.colorAccent : "transparent"; border.width: 1
                     ColumnLayout {
                         anchors.centerIn: parent; spacing: 0
-                        Text { text: calibWizard.dofLowerSet ? "Lower: " + calibWizard.dofLowerZ + " st" : "Mark lower edge"
+                        Text { text: calibWizard.dofLowerSet ? "Lower: " + calibWizard.dofLowerZ + " st" : "Mark lower"
                                color: theme.colorAccent; font.pixelSize: 12; font.weight: Font.Medium
                                horizontalAlignment: Text.AlignHCenter; Layout.alignment: Qt.AlignHCenter }
                     }

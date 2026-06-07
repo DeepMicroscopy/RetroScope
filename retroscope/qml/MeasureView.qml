@@ -231,11 +231,6 @@ Rectangle {
                                           : "transparent"
                             border.width: cardRoot.modelData.id === App.measurement.selectedId ? 1 : 0
 
-                            Rectangle {
-                                width: 3; height: parent.height
-                                color: cardRoot.modelData.color; anchors.left: parent.left; radius: 3
-                            }
-
                             ColumnLayout {
                                 id: cardCol
                                 anchors.fill: parent; anchors.margins: 10; spacing: 3

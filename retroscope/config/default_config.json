@@ -120,7 +120,7 @@
     "dark_threshold_pct": 40.0,
     "dark_duration_ms": 200,
     "recovery_threshold_pct": 40.0,
-    "autofocus_on_switch": true
+    "autofocus_on_switch": false
   },
   "autofocus": {
     "speed_preset": "fast",

@@ -594,7 +594,7 @@ Rectangle {
                         model: App.buttons.mappingModel
                         delegate: Rectangle {
                             id: _btnRow
-                            Layout.fillWidth: true; height: 52; radius: 8
+                            Layout.fillWidth: true; height: 55; radius: 8
                             color: root.colorSurface; border.color: root.colorBorder; border.width: 1
                             required property int index
                             required property var modelData
@@ -823,7 +823,7 @@ Rectangle {
                             onValueEdited: function(v) { App.settings.setAutofocusMinConfidence(v) }
                         }
                         Text {
-                            text: "Refuse to commit when best peak's raw variance is below this. 0 disables."
+                            text: "Refuse to commit when focus score is below this. 0 disables."
                             color: root.colorTextSub; font.pixelSize: 10; wrapMode: Text.WordWrap
                             Layout.fillWidth: true; Layout.topMargin: 2
                         }
