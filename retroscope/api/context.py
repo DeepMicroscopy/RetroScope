@@ -12,6 +12,7 @@ from fastapi import Request
 class ApiContext:
     image_store: Any
     autofocus_svc: Any
+    camera_svc: Any
     dispatcher: Any
 
 

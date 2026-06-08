@@ -56,6 +56,19 @@ class FakeAutofocus:
         self.busy = True
 
 
+class FakeCamera:
+    def __init__(self) -> None:
+        self.capture_busy = False
+        self.captures = 0
+
+    def capture_snapshot(self) -> bool:
+        if self.capture_busy:
+            return False
+        self.capture_busy = True
+        self.captures += 1
+        return True
+
+
 def _mk_ome(path: Path, *, captured_at: datetime, media_type: str = "snapshot") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     rgb = np.asarray(Image.new("RGB", (32, 24), color="green"))
@@ -81,11 +94,16 @@ def _mk_ome(path: Path, *, captured_at: datetime, media_type: str = "snapshot") 
         )
 
 
-def _client(tmp_path: Path, autofocus: FakeAutofocus | None = None) -> tuple[TestClient, ImageStore]:
+def _client(
+    tmp_path: Path,
+    autofocus: FakeAutofocus | None = None,
+    camera: FakeCamera | None = None,
+) -> tuple[TestClient, ImageStore]:
     store = ImageStore(FakeConfig(tmp_path / "captures"))
     context = ApiContext(
         image_store=store,
         autofocus_svc=autofocus or FakeAutofocus(),
+        camera_svc=camera or FakeCamera(),
         dispatcher=ImmediateDispatcher(),
     )
     return TestClient(create_api_app(context)), store
@@ -100,6 +118,7 @@ def test_openapi_and_docs_include_routes(tmp_path: Path) -> None:
     assert "/api/v1/captures" in paths
     assert "/api/v1/captures/{capture_id}/download" in paths
     assert "/api/v1/actions/autofocus" in paths
+    assert "/api/v1/actions/capture" in paths
 
     assert client.get("/docs").status_code == 200
 
@@ -164,12 +183,28 @@ def test_autofocus_action_starts_once_and_reports_busy(tmp_path: Path) -> None:
     assert autofocus.starts == 1
 
 
+def test_capture_action_starts_once_and_reports_busy(tmp_path: Path) -> None:
+    camera = FakeCamera()
+    client, _store = _client(tmp_path, camera=camera)
+
+    started = client.post("/api/v1/actions/capture")
+    assert started.status_code == 202
+    assert started.json()["state"] == "started"
+    assert camera.captures == 1
+
+    busy = client.post("/api/v1/actions/capture")
+    assert busy.status_code == 409
+    assert busy.json()["state"] == "busy"
+    assert camera.captures == 1
+
+
 def test_rest_api_service_respects_disabled_config(tmp_path: Path) -> None:
     config = FakeConfig(tmp_path / "captures", {"api.enabled": False})
     svc = RestApiService(
         config,
         image_store=ImageStore(config),
         autofocus_svc=FakeAutofocus(),
+        camera_svc=FakeCamera(),
         dispatcher=ImmediateDispatcher(),
     )
 
@@ -185,6 +220,7 @@ def test_rest_api_service_skips_unavailable_port(monkeypatch, tmp_path: Path) ->
         config,
         image_store=ImageStore(config),
         autofocus_svc=FakeAutofocus(),
+        camera_svc=FakeCamera(),
         dispatcher=ImmediateDispatcher(),
     )
 
@@ -229,6 +265,7 @@ def test_rest_api_service_start_and_stop(monkeypatch, tmp_path: Path) -> None:
         config,
         image_store=ImageStore(config),
         autofocus_svc=FakeAutofocus(),
+        camera_svc=FakeCamera(),
         dispatcher=ImmediateDispatcher(),
     )
 

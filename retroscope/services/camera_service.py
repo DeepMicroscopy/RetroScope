@@ -123,6 +123,7 @@ class CameraService(QObject):
         self._focus_source: str = ""
         self._recording_backend = None
         self._native_capture_backend = None
+        self._capture_busy = False
         self._native_recording = False
         self._recording_stop_pending = False
         self._frame_analysis_enabled = True
@@ -182,6 +183,28 @@ class CameraService(QObject):
 
     def set_native_capture_backend(self, backend) -> None:
         self._native_capture_backend = backend
+
+    @property
+    def capture_busy(self) -> bool:
+        with self._lock:
+            return bool(self._capture_busy)
+
+    def _set_capture_busy(self, busy: bool) -> bool:
+        state = bool(busy)
+        with self._lock:
+            if self._capture_busy == state:
+                return False
+            self._capture_busy = state
+        self.capture_busy_changed.emit(state)
+        return True
+
+    def _try_begin_capture(self) -> bool:
+        with self._lock:
+            if self._capture_busy:
+                return False
+            self._capture_busy = True
+        self.capture_busy_changed.emit(True)
+        return True
 
     @Slot(bool)
     def set_frame_analysis_enabled(self, enabled: bool) -> None:
@@ -751,34 +774,41 @@ class CameraService(QObject):
         self.frame_available.emit()
 
     # Snapshot
-    @Slot()
-    def capture_snapshot(self) -> None:
+    @Slot(result=bool)
+    def capture_snapshot(self) -> bool:
         """Capture a full-resolution frame and save as a timestamped OME-TIFF."""
-        snap_dir = self._snapshot_dir()
-        snap_dir.mkdir(parents=True, exist_ok=True)
-        now = datetime.now()
-        if self._image_store is not None:
-            filename = self._image_store.new_image_path(
-                "snapshot",
-                "capture",
-                objective=self._safe_objective(),
-                captured_at=now,
-            )
-        else:
-            ts = now.strftime("%Y%m%d_%H%M%S_%f")[:19]
-            filename = snap_dir / f"microscope_{ts}.ome.tiff"
-        self.capture_busy_changed.emit(True)
+        if not self._try_begin_capture():
+            return False
+        try:
+            snap_dir = self._snapshot_dir()
+            snap_dir.mkdir(parents=True, exist_ok=True)
+            now = datetime.now()
+            if self._image_store is not None:
+                filename = self._image_store.new_image_path(
+                    "snapshot",
+                    "capture",
+                    objective=self._safe_objective(),
+                    captured_at=now,
+                )
+            else:
+                ts = now.strftime("%Y%m%d_%H%M%S_%f")[:19]
+                filename = snap_dir / f"microscope_{ts}.ome.tiff"
+        except Exception as exc:
+            self._set_capture_busy(False)
+            self.snapshot_failed.emit(str(exc))
+            return False
         threading.Thread(
             target=self._do_hires_snapshot_with_busy,
             args=(filename, now),
             daemon=True,
         ).start()
+        return True
 
     def _do_hires_snapshot_with_busy(self, filename: Path, captured_at: datetime) -> None:
         try:
             self._do_hires_snapshot(filename, captured_at)
         finally:
-            self.capture_busy_changed.emit(False)
+            self._set_capture_busy(False)
 
     def _do_hires_snapshot(self, filename: Path, captured_at: datetime) -> None:
         frame = self.capture_native_frame()

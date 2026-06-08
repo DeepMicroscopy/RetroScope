@@ -22,12 +22,14 @@ class RestApiService:
         *,
         image_store,
         autofocus_svc,
+        camera_svc,
         dispatcher,
     ) -> None:
         self._config = config
         self._context = ApiContext(
             image_store=image_store,
             autofocus_svc=autofocus_svc,
+            camera_svc=camera_svc,
             dispatcher=dispatcher,
         )
         self._server: uvicorn.Server | None = None

@@ -48,6 +48,7 @@ def create_services(config, drivers: Drivers) -> Services:
         config,
         image_store=image_store,
         autofocus_svc=autofocus_svc,
+        camera_svc=camera_svc,
         dispatcher=api_dispatcher,
     )
 

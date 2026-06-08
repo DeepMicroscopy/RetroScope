@@ -74,3 +74,83 @@ def start_autofocus(request: Request) -> JSONResponse:
         status_code=response_status,
         content=jsonable_encoder(result),
     )
+
+
+@router.post(
+    "/actions/capture",
+    response_model=ActionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_409_CONFLICT: {"model": ActionResponse},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ActionResponse},
+        status.HTTP_504_GATEWAY_TIMEOUT: {"model": ActionResponse},
+    },
+)
+def trigger_capture(request: Request) -> JSONResponse:
+    context = get_api_context(request)
+
+    def _start() -> ActionResponse:
+        camera = context.camera_svc
+        busy = bool(getattr(camera, "capture_busy", False))
+        if busy:
+            return ActionResponse(
+                action="capture",
+                state="busy",
+                busy=True,
+                cancelling=False,
+                message="Capture is already running",
+            )
+
+        started = camera.capture_snapshot()
+        if started is False:
+            busy_now = bool(getattr(camera, "capture_busy", False))
+            if not busy_now:
+                return ActionResponse(
+                    action="capture",
+                    state="failed",
+                    busy=False,
+                    cancelling=False,
+                    message="Capture could not be started",
+                )
+            return ActionResponse(
+                action="capture",
+                state="busy",
+                busy=True,
+                cancelling=False,
+                message="Capture is already running",
+            )
+        return ActionResponse(
+            action="capture",
+            state="started",
+            busy=True,
+            cancelling=False,
+            message="Capture started",
+        )
+
+    try:
+        result = context.dispatcher.call(_start)
+    except FutureTimeoutError:
+        result = ActionResponse(
+            action="capture",
+            state="timeout",
+            busy=False,
+            cancelling=False,
+            message="Timed out",
+        )
+        return JSONResponse(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            content=jsonable_encoder(result),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if result.state == "started":
+        response_status = status.HTTP_202_ACCEPTED
+    elif result.state == "busy":
+        response_status = status.HTTP_409_CONFLICT
+    else:
+        response_status = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return JSONResponse(
+        status_code=response_status,
+        content=jsonable_encoder(result),
+    )
