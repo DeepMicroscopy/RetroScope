@@ -544,8 +544,18 @@ class MotionController(QObject):
         source: str = "manual",
         apply_backlash: bool = True,
         coalesce: bool = False,
+        protect_backlash_extra: bool = False,
     ) -> bool:
         moves, new_slack = self._planned_moves(int(dx), int(dy), int(dz), apply_backlash=apply_backlash)
+        protect_move = bool(
+            protect_backlash_extra
+            and moves
+            and (
+                sum(move[0] for move in moves) != int(dx)
+                or sum(move[1] for move in moves) != int(dy)
+                or sum(move[2] for move in moves) != int(dz)
+            )
+        )
         tx, ty = self._expected_x, self._expected_y
         for mx, my, mz in moves:
             if self._endstop and mz < 0:
@@ -557,13 +567,30 @@ class MotionController(QObject):
                 return False
 
         for mx, my, mz in moves:
-            self._sb.move_rel(mx, my, mz, coalesce=coalesce)
+            self._queue_move_rel(mx, my, mz, coalesce=coalesce, protected=protect_move)
             self._expected_x += mx
             self._expected_y += my
             self._expected_z += mz
 
         self._commit_backlash_slack(dx, dy, dz, new_slack)
         return True
+
+    def _queue_move_rel(
+        self,
+        dx: int,
+        dy: int,
+        dz: int,
+        *,
+        coalesce: bool,
+        protected: bool,
+    ) -> None:
+        if protected:
+            try:
+                self._sb.move_rel(dx, dy, dz, coalesce=coalesce, protected=True)
+                return
+            except TypeError:
+                pass
+        self._sb.move_rel(dx, dy, dz, coalesce=coalesce)
 
     def _blocking_move_timeout_s(self, dx: int, dy: int, dz: int) -> float:
         distance = max(abs(int(dx)), abs(int(dy)), abs(int(dz)))
@@ -763,8 +790,10 @@ class MotionController(QObject):
             dx,
             dy,
             0,
+            source="joystick",
             apply_backlash=self._joystick_backlash_compensation_enabled,
             coalesce=True,
+            protect_backlash_extra=self._joystick_backlash_compensation_enabled,
         )
         if blocked:
             self._dx_accum = 0.0

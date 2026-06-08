@@ -23,7 +23,7 @@ class SangaboardDriver(QThread):
     """Sangaboard serial driver thread. Uses pysangaboard's low-level query() for fire-and-forget (lower latency)
 
     Commands are pushed onto _queue as:
-    ("move", dx, dy, dz)      fire-and-forget relative move
+    ("move", dx, dy, dz, protected) fire-and-forget relative move
     ("read_motion_timing", )  read Sangaboard step/ramp timing
     ("set_step_time", us)     set board minimum step delay
     ("set_ramp_time", us)     set board acceleration ramp time
@@ -43,14 +43,15 @@ class SangaboardDriver(QThread):
         self._queue: queue.Queue = queue.Queue(maxsize=64)
         self._running = True
 
-    def _drop_pending_moves(self) -> int:
-        """Remove pending moves from the queue. Returns the number of dropped moves."""
+    def _drop_pending_moves(self, *, preserve_protected: bool = False) -> int:
+        """Remove pending moves. Returns the number of dropped moves."""
         preserved = []
         dropped = 0
         try:
             while True:
                 item = self._queue.get_nowait()
-                if item[0] != "move":
+                protected_move = item[0] == "move" and len(item) >= 5 and bool(item[4])
+                if item[0] != "move" or (preserve_protected and protected_move):
                     preserved.append(item)
                 else:
                     dropped += 1
@@ -63,16 +64,24 @@ class SangaboardDriver(QThread):
                 break
         return dropped
 
-    def move_rel(self, dx: int, dy: int, dz: int, coalesce: bool = False) -> None:
+    def move_rel(
+        self,
+        dx: int,
+        dy: int,
+        dz: int,
+        coalesce: bool = False,
+        protected: bool = False,
+    ) -> None:
         """Queue a relative move.
 
         'coalesce=True' Replaces any pending moves with this one, commands don't pile up
         'coalesce=False' Queues every move additively (used for jog buttons and automation)
+        'protected=True' Preserves this move from later coalescing.
         """
         if coalesce:
-            self._drop_pending_moves()
+            self._drop_pending_moves(preserve_protected=True)
         try:
-            self._queue.put_nowait(("move", dx, dy, dz))
+            self._queue.put_nowait(("move", dx, dy, dz, bool(protected)))
         except queue.Full:
             pass
 
@@ -196,7 +205,7 @@ class SangaboardDriver(QThread):
                     if cmd[0] == "quit":
                         break
                     elif cmd[0] == "move":
-                        _, dx, dy, dz = cmd
+                        _, dx, dy, dz, *_ = cmd
                         try:
                             # Fire-and-forget relative move via raw board query.
                             sb.query(f"mr {int(dx)} {int(dy)} {int(dz)}\n")
@@ -276,9 +285,16 @@ class MockSangaboard(QThread):
         self._step_time_us = 1000
         self._ramp_time_us = 0
 
-    def move_rel(self, dx: int, dy: int, dz: int, coalesce: bool = False) -> None:
+    def move_rel(
+        self,
+        dx: int,
+        dy: int,
+        dz: int,
+        coalesce: bool = False,
+        protected: bool = False,
+    ) -> None:
         # Mock accumulates targets directly, coalesce flag has no effect here.
-        del coalesce
+        del coalesce, protected
         with self._lock:
             self._target[0] += dx
             self._target[1] += dy

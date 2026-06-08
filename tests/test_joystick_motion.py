@@ -57,10 +57,17 @@ class _ObjectiveManager:
 
 class _Sangaboard:
     def __init__(self) -> None:
-        self.moves: list[tuple[int, int, int, bool]] = []
+        self.moves: list[tuple[int, int, int, bool, bool]] = []
 
-    def move_rel(self, dx: int, dy: int, dz: int, coalesce: bool = False) -> None:
-        self.moves.append((dx, dy, dz, coalesce))
+    def move_rel(
+        self,
+        dx: int,
+        dy: int,
+        dz: int,
+        coalesce: bool = False,
+        protected: bool = False,
+    ) -> None:
+        self.moves.append((dx, dy, dz, coalesce, protected))
 
 
 def _controller(
@@ -123,7 +130,7 @@ def test_low_speed_joystick_emits_small_frequent_commands() -> None:
     for i in range(12):
         ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce, _protected in sb.moves]
     assert sizes
     assert max(sizes) <= 2
 
@@ -142,7 +149,7 @@ def test_joystick_backlash_compensation_takes_up_initial_slack() -> None:
 
     _dispatch_x(ctrl, 100.0, 1.0)
 
-    assert sb.moves == [(140, 0, 0, True)]
+    assert sb.moves == [(140, 0, 0, True, True)]
     assert ctrl._slack_x == pytest.approx(50.0)
 
 
@@ -155,8 +162,21 @@ def test_joystick_backlash_compensation_traverses_band_on_reversal() -> None:
     _dispatch_x(ctrl, 100.0, 1.0)
     _dispatch_x(ctrl, 100.0 + joystick_dispatch_params().interval_s, -1.0)
 
-    assert sb.moves == [(140, 0, 0, True), (-190, 0, 0, True)]
+    assert sb.moves == [(140, 0, 0, True, True), (-190, 0, 0, True, True)]
     assert ctrl._slack_x == pytest.approx(-50.0)
+
+
+def test_joystick_backlash_same_direction_continuation_stays_coalescible() -> None:
+    ctrl, sb = _controller(
+        _Config(**{"input.max_pan_speed_px_per_sec": 400}),
+        _ObjectiveManager(backlash_x=100),
+    )
+
+    _dispatch_x(ctrl, 100.0, 1.0)
+    _dispatch_x(ctrl, 100.0 + joystick_dispatch_params().interval_s, 1.0)
+
+    assert sb.moves[0] == (140, 0, 0, True, True)
+    assert sb.moves[1] == (99, 0, 0, True, False)
 
 
 def test_joystick_backlash_compensation_can_be_disabled() -> None:
@@ -172,7 +192,7 @@ def test_joystick_backlash_compensation_can_be_disabled() -> None:
 
     _dispatch_x(ctrl, 100.0, 1.0)
 
-    assert sb.moves == [(90, 0, 0, True)]
+    assert sb.moves == [(90, 0, 0, True, False)]
     assert ctrl._slack_x == pytest.approx(50.0)
 
 
@@ -181,7 +201,7 @@ def test_joystick_zero_backlash_profile_is_unchanged_with_compensation_enabled()
 
     _dispatch_x(ctrl, 100.0, 1.0)
 
-    assert sb.moves == [(90, 0, 0, True)]
+    assert sb.moves == [(90, 0, 0, True, False)]
     assert ctrl._slack_x == 0.0
 
 
@@ -207,7 +227,7 @@ def test_dispatch_sends_small_commands_without_batching() -> None:
         ctrl._joystick_sample_t = now + i * params.interval_s
         ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce, _protected in sb.moves]
     assert sizes
     assert max(sizes) <= 2
 
@@ -222,7 +242,7 @@ def test_tiny_deflection_emits_low_amplitude_commands() -> None:
         ctrl._joystick_sample_t = now + i * params.interval_s
         ctrl._dispatch_joystick_at(now + i * params.interval_s)
 
-    sizes = [abs(dx) for dx, _dy, _dz, _coalesce in sb.moves]
+    sizes = [abs(dx) for dx, _dy, _dz, _coalesce, _protected in sb.moves]
     assert sizes
     assert max(sizes) <= 1
 

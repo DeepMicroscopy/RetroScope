@@ -46,7 +46,41 @@ def test_sangaboard_coalesce_preserves_non_move_commands_and_drops_pending_moves
     except queue.Empty:
         pass
 
-    assert queued == [("zero",), ("move", 9, 0, 0)]
+    assert queued == [("zero",), ("move", 9, 0, 0, False)]
+
+
+def test_sangaboard_coalesce_preserves_protected_moves() -> None:
+    driver = SangaboardDriver()
+    driver.move_rel(50, 0, 0, coalesce=True, protected=True)
+    driver.move_rel(2, 0, 0, coalesce=False)
+    driver.move_rel(9, 0, 0, coalesce=True)
+
+    queued = []
+    try:
+        while True:
+            queued.append(driver._queue.get_nowait())
+    except queue.Empty:
+        pass
+
+    assert queued == [
+        ("move", 50, 0, 0, True),
+        ("move", 9, 0, 0, False),
+    ]
+
+
+def test_sangaboard_zero_drops_protected_moves() -> None:
+    driver = SangaboardDriver()
+    driver.move_rel(50, 0, 0, protected=True)
+    driver.zero_position()
+
+    queued = []
+    try:
+        while True:
+            queued.append(driver._queue.get_nowait())
+    except queue.Empty:
+        pass
+
+    assert queued == [("zero",)]
 
 
 def test_sangaboard_timing_commands_are_queued() -> None:

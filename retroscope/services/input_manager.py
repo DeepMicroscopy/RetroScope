@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from retroscope.services.motion_controller import MotionController
 
-_KBD_AXIS_VALUE = 20000
+_KBD_AXIS_VALUE = 2000
 _KBD_ENCODER_STEP = 100
 
 
