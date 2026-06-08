@@ -1,7 +1,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="retroscope/qml/icons/app_logo_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="retroscope/qml/icons/app_logo_light.png">
-  <img src="retroscope/qml/icons/app_logo_light.png" alt="RetroScope" width="500">
+  <img src="retroscope/qml/icons/app_logo_light.png" alt="RetroScope" width="300">
 </picture>
 
 ---
