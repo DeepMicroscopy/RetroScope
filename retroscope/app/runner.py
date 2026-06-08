@@ -68,7 +68,20 @@ def run_application(args) -> None:
         api_service.start()
         app.aboutToQuit.connect(api_service.stop)
 
+    eval_runner = None
+    if getattr(args, "eval", None):
+        from retroscope.evaluation.runner import EvaluationRunner, parse_eval_args
+
+        eval_runner = EvaluationRunner(
+            app, services, drivers.sangaboard, args.eval,
+            parse_eval_args(getattr(args, "eval_arg", [])),
+            getattr(args, "eval_out", "evaluation_output"),
+        )
+        eval_runner.start()
+
     exit_code = app.exec()
+    if eval_runner is not None:
+        eval_runner.wait(2000)
     app_controller.shutdown()
     if api_service is not None:
         api_service.stop()
