@@ -176,6 +176,28 @@ class SangaboardDriver(QThread):
         except Exception:
             pass
 
+    def _emit_position(self, sb) -> None:
+        try:
+            pos = list(sb.position)
+            self.position_updated.emit(*pos)
+        except Exception:
+            pass
+
+    def _execute_move(self, sb, dx: int, dy: int, dz: int, *, protected: bool) -> bool:
+        vec = [int(dx), int(dy), int(dz)]
+        try:
+            if protected:
+                if hasattr(sb, "flush_input_buffer"):
+                    sb.flush_input_buffer()
+                sb.move_rel(vec)
+                self._emit_position(sb)
+            else:
+                # Fire-and-forget relative move via raw board query.
+                sb.query(f"mr {vec[0]} {vec[1]} {vec[2]}\n")
+            return True
+        except Exception:
+            return False
+
     # Thread body
     def run(self) -> None:
         try:
@@ -214,24 +236,12 @@ class SangaboardDriver(QThread):
                     if cmd[0] == "quit":
                         break
                     elif cmd[0] == "move":
-                        _, dx, dy, dz, *_ = cmd
-                        try:
-                            # Fire-and-forget relative move via raw board query.
-                            sb.query(f"mr {int(dx)} {int(dy)} {int(dz)}\n")
-                        except Exception:
-                            pass
+                        _, dx, dy, dz, *rest = cmd
+                        self._execute_move(sb, dx, dy, dz, protected=bool(rest[0]) if rest else False)
                     elif cmd[0] == "move_blocking":
                         _, dx, dy, dz, done, result = cmd
                         try:
-                            if hasattr(sb, "flush_input_buffer"):
-                                sb.flush_input_buffer()
-                            sb.move_rel([int(dx), int(dy), int(dz)])
-                            try:
-                                pos = list(sb.position)
-                                self.position_updated.emit(*pos)
-                            except Exception:
-                                pass
-                            result["ok"] = True
+                            result["ok"] = self._execute_move(sb, dx, dy, dz, protected=True)
                         except Exception as e:
                             logger.warning("[sangaboard] blocking move %s failed: %s",
                                            [int(dx), int(dy), int(dz)], e)

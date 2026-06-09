@@ -68,6 +68,58 @@ def test_sangaboard_coalesce_preserves_protected_moves() -> None:
     ]
 
 
+class _FakeBoard:
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+        self.moves: list[list[int]] = []
+        self.flushes = 0
+        self.position = [11, 22, 33]
+
+    def query(self, command: str) -> None:
+        self.queries.append(command)
+
+    def move_rel(self, vec: list[int]) -> None:
+        self.moves.append(vec)
+        self.position = [
+            self.position[0] + vec[0],
+            self.position[1] + vec[1],
+            self.position[2] + vec[2],
+        ]
+
+    def flush_input_buffer(self) -> None:
+        self.flushes += 1
+
+
+def test_unprotected_move_uses_fire_and_forget_query() -> None:
+    driver = SangaboardDriver()
+    board = _FakeBoard()
+    seen: list[tuple[int, int, int]] = []
+    driver.position_updated.connect(lambda x, y, z: seen.append((x, y, z)))
+
+    ok = driver._execute_move(board, 1, -2, 3, protected=False)
+
+    assert ok is True
+    assert board.queries == ["mr 1 -2 3\n"]
+    assert board.moves == []
+    assert board.flushes == 0
+    assert seen == []
+
+
+def test_protected_move_blocks_and_emits_position_after_completion() -> None:
+    driver = SangaboardDriver()
+    board = _FakeBoard()
+    seen: list[tuple[int, int, int]] = []
+    driver.position_updated.connect(lambda x, y, z: seen.append((x, y, z)))
+
+    ok = driver._execute_move(board, 5, 0, -1, protected=True)
+
+    assert ok is True
+    assert board.queries == []
+    assert board.moves == [[5, 0, -1]]
+    assert board.flushes == 1
+    assert seen == [(16, 22, 32)]
+
+
 def test_sangaboard_zero_drops_protected_moves() -> None:
     driver = SangaboardDriver()
     driver.move_rel(50, 0, 0, protected=True)
