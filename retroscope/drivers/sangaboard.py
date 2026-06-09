@@ -148,6 +148,8 @@ class SangaboardDriver(QThread):
 
     def _read_motion_timing(self, sb) -> tuple[int, int] | None:
         try:
+            if hasattr(sb, "flush_input_buffer"):
+                sb.flush_input_buffer()
             step_time_us = int(sb.step_time)
             ramp_time_us = int(sb.ramp_time)
             self.motion_timing_updated.emit(step_time_us, ramp_time_us)
@@ -196,6 +198,8 @@ class SangaboardDriver(QThread):
                         if poll_counter >= position_poll_empty_ticks:
                             poll_counter = 0
                             try:
+                                if hasattr(sb, "flush_input_buffer"):
+                                    sb.flush_input_buffer()
                                 pos = list(sb.position)
                                 self.position_updated.emit(*pos)
                             except Exception:

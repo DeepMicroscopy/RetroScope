@@ -11,7 +11,6 @@ ApplicationWindow {
     width: 1280
     height: 800
     title: "RetroScope"
-    visibility: App.isMockMode ? Window.AutomaticVisibility : Window.FullScreen
     visible: false
 
     function centerMockWindow() {
@@ -23,6 +22,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         centerMockWindow()
+        visibility = App.isMockMode ? Window.AutomaticVisibility : Window.FullScreen
         visible = true
     }
 

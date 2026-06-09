@@ -1031,6 +1031,9 @@ class DirectCameraBridge(QObject):
         if width <= 0 or height <= 0:
             return None
 
+        if self._warned_map_failure:
+            return None
+
         try:
             map_mode = getattr(getattr(QVideoFrame, "MapMode", QVideoFrame), "ReadOnly")
             if not frame.map(map_mode):
