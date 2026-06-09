@@ -68,9 +68,25 @@ def test_mover_sends_compensated_single_axis_moves():
     assert sb.moves[-1] == (0, 1000, 0)
 
 
+def test_mover_return_to_start_undoes_actual_motor_net():
+    sb = _FakeSangaboard()
+    mover = CompensatedMover(sb, (100, 0, 0))
+    mover.move_axis(0, 1000, "hysteresis")
+    mover.return_to_start()
+    assert sb.moves == [(1050, 0, 0), (-1050, 0, 0)]
+
+
 def test_mover_excursion_guard():
     sb = _FakeSangaboard()
     mover = CompensatedMover(sb, (0, 0, 0), max_excursion=500)
     mover.move_axis(0, 400, "none")
     with pytest.raises(ExcursionGuard):
         mover.move_axis(0, 200, "none")
+
+
+def test_mover_excursion_guard_checks_compensated_motor_net():
+    sb = _FakeSangaboard()
+    mover = CompensatedMover(sb, (100, 0, 0), max_excursion=1000)
+    with pytest.raises(ExcursionGuard):
+        mover.move_axis(0, 960, "hysteresis")
+    assert sb.moves == []

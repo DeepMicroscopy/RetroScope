@@ -54,7 +54,8 @@ class CompensatedMover:
     def reset(self) -> None:
         self._slack = [0.0, 0.0, 0.0]
         self._last_dir = [0, 0, 0]
-        self._net = [0, 0, 0]
+        self._requested_net = [0, 0, 0]
+        self._motor_net = [0, 0, 0]
 
     def _send_axis(self, axis: int, motor_delta: int) -> None:
         vec = [0, 0, 0]
@@ -66,26 +67,41 @@ class CompensatedMover:
     def move_axis(self, axis: int, delta: int, mode: str) -> int:
         if mode not in MODES:
             raise ValueError(f"unknown mode {mode!r}")
-        if abs(self._net[axis] + delta) > self._max_excursion:
+        requested_next = self._requested_net[axis] + int(delta)
+        if abs(requested_next) > self._max_excursion:
             raise ExcursionGuard(
-                f"axis {axis}: net {self._net[axis] + delta} exceeds limit {self._max_excursion}"
+                f"axis {axis}: requested net {requested_next} exceeds limit {self._max_excursion}"
             )
+
         backlash = self._backlash[axis]
+        new_last_dir = self._last_dir[axis]
+        new_slack = self._slack[axis]
         if mode == "none":
             motor = plan_none(delta)
         elif mode == "sign":
-            motor, self._last_dir[axis] = plan_sign(delta, self._last_dir[axis], backlash)
+            motor, new_last_dir = plan_sign(delta, self._last_dir[axis], backlash)
         else:
-            motor, self._slack[axis] = plan_hysteresis(delta, self._slack[axis], backlash)
+            motor, new_slack = plan_hysteresis(delta, self._slack[axis], backlash)
+
+        motor_next = self._motor_net[axis] + int(motor)
+        if abs(motor_next) > self._max_excursion:
+            raise ExcursionGuard(
+                f"axis {axis}: motor net {motor_next} exceeds limit {self._max_excursion}"
+            )
+
         if motor != 0:
             self._send_axis(axis, motor)
-        self._net[axis] += int(delta)
+        self._requested_net[axis] = requested_next
+        self._motor_net[axis] = motor_next
+        self._last_dir[axis] = new_last_dir
+        self._slack[axis] = new_slack
         return int(motor)
 
     def return_to_start(self) -> None:
         for axis in range(3):
-            net = self._net[axis]
+            net = self._motor_net[axis]
             if net != 0:
                 self._send_axis(axis, -net)
-                self._net[axis] = 0
+                self._motor_net[axis] = 0
+                self._requested_net[axis] = 0
         self.reset()

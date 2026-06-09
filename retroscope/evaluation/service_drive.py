@@ -6,7 +6,11 @@ Note: Partially AI-generated.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEventLoop, QObject, Qt, QTimer, Signal, Slot
+from collections.abc import Callable
+from concurrent.futures import Future
+from typing import Any
+
+from PySide6.QtCore import QCoreApplication, QEventLoop, QObject, Qt, QThread, QTimer, Signal, Slot
 
 
 class MainThreadInvoker(QObject):
@@ -16,17 +20,35 @@ class MainThreadInvoker(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._trigger.connect(self._run)
+        self._trigger.connect(self._run, Qt.ConnectionType.QueuedConnection)
 
     @Slot(object)
-    def _run(self, fn) -> None:
+    def _run(self, payload) -> None:
+        if isinstance(payload, tuple) and len(payload) == 2:
+            fn, future = payload
+            if future.done():
+                return
+            try:
+                future.set_result(fn())
+            except BaseException as exc:
+                future.set_exception(exc)
+            return
+
+        fn = payload
         try:
             fn()
         except Exception as e:
             print(f"[eval] main-thread call failed: {e}")
 
-    def call(self, fn) -> None:
+    def call(self, fn: Callable[[], Any]) -> None:
         self._trigger.emit(fn)
+
+    def call_sync(self, fn: Callable[[], Any], timeout_s: float = 5.0) -> Any:
+        if QCoreApplication.instance() is None or QThread.currentThread() == self.thread():
+            return fn()
+        future: Future[Any] = Future()
+        self._trigger.emit((fn, future))
+        return future.result(timeout=timeout_s)
 
 
 class _Waiter(QObject):

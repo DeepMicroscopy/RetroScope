@@ -33,7 +33,7 @@ def _run_autofocus(ctx, rw, reps: int, offset: int) -> None:
     for rep in range(reps):
         # vary the starting Z position
         if offset and hasattr(ctx.motion_ctrl, "move_z_blocking"):
-            ctx.motion_ctrl.move_z_blocking(sign * offset)
+            C.call_main(ctx, lambda sign=sign: ctx.motion_ctrl.move_z_blocking(sign * offset))
         status, payload = run_async(
             ctx.invoker, af.start_autofocus,
             success_signals=[af.finished], failure_signals=[af.failed],

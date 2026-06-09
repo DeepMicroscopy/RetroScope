@@ -36,3 +36,15 @@ def test_result_writer_raw_and_summary(tmp_path):
         rows = list(csv.DictReader(f))
     assert any(r["row_type"] == "summary_std" for r in rows)
     assert {"axis", "value", "row_type"} <= set(rows[0].keys())
+
+
+def test_result_writer_excludes_invalid_trials_from_summary():
+    rw = ResultWriter("demo")
+    rw.add(axis="X", value=10.0, valid=True)
+    rw.add(axis="X", value=1000.0, valid=False, reason="bad_measurement")
+    rw.summarize(["axis"], ["value"])
+
+    mean = next(r for r in rw.rows if r["row_type"] == "summary_mean")
+    count = next(r for r in rw.rows if r["row_type"] == "summary_n")
+    assert mean["value"] == 10.0
+    assert count["value"] == 1

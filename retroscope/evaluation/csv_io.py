@@ -23,6 +23,15 @@ def mean_std(values: list[float]) -> tuple[float, float, int]:
     return (mean, math.sqrt(var), n)
 
 
+def _row_counts_for_summary(row: dict) -> bool:
+    valid = row.get("valid")
+    if valid is None:
+        return True
+    if isinstance(valid, str):
+        return valid.strip().lower() not in {"0", "false", "no", "invalid"}
+    return bool(valid)
+
+
 class ResultWriter:
     """Accumulates trial rows and computes grouped summary rows."""
 
@@ -36,7 +45,7 @@ class ResultWriter:
         self._rows.append(row)
 
     def summarize(self, group_keys: list[str], value_keys: list[str]) -> None:
-        """Append mean/std/n rows for each group of trial rows."""
+        """Append mean/std/n rows for each group of valid trial rows."""
         groups: dict[tuple, list[dict]] = {}
         for r in self._rows:
             if r.get("row_type") != "trial":
@@ -49,7 +58,10 @@ class ResultWriter:
                 row = {"row_type": f"summary_{stat}"}
                 row.update(base)
                 for vk in value_keys:
-                    vals = [m[vk] for m in members if m.get(vk) is not None]
+                    vals = [
+                        m[vk] for m in members
+                        if _row_counts_for_summary(m) and m.get(vk) is not None
+                    ]
                     mean, std, n = mean_std(vals)
                     row[vk] = {"mean": mean, "std": std, "n": n}[stat]
                 self._rows.append(row)

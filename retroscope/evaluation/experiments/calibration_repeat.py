@@ -17,6 +17,10 @@ from retroscope.evaluation.experiments import _common as C
 from retroscope.evaluation.experiments.stage_scale import measure_series
 
 
+def _round_or_none(value, digits: int):
+    return None if value is None else round(value, digits)
+
+
 def _pixel_scale_two_point(ctx, rw, marks: int) -> None:
     """Operator marks two points of a known separation on a saved frame, then repeat."""
     frame = measure.grab_frame(ctx.camera_svc, native=True)
@@ -71,9 +75,11 @@ def run(ctx) -> Path | None:
         # Stage-scale repeatability (per axis)
         for axis in axes:
             mover.reset()
-            for rep, val in enumerate(measure_series(ctx, mover, axis, stage_steps, reps, settle_s)):
+            for rep, item in enumerate(measure_series(ctx, mover, axis, stage_steps, reps, settle_s)):
                 rw.add(quantity=f"stage_scale_{C.AXIS_NAME[axis]}_um_per_step", rep=rep,
-                       value=round(val, 5))
+                       valid=item.get("valid", False),
+                       reason=item.get("reason", ""),
+                       value=_round_or_none(item.get("um_per_step"), 5))
 
         # Backlash repeatability
         for axis in axes:
@@ -82,8 +88,13 @@ def run(ctx) -> Path | None:
                 res = C.measure_reversal_residual(ctx, mover, axis, backlash_steps, "none", settle_s)
                 if res is None:
                     break
+                measurement = res["measurement"]
                 rw.add(quantity=f"backlash_{C.AXIS_NAME[axis]}_residual_um", rep=rep,
-                       value=round(res["residual_px"] * upp, 4))
+                       valid=measurement.valid,
+                       reason=measurement.reason,
+                       value=round(res["residual_px"] * upp, 4),
+                       phase_response=round(measurement.phase_response, 4),
+                       template_score=_round_or_none(measurement.template_score, 4))
                 mover.return_to_start()
                 time.sleep(settle_s)
     except (RuntimeError, ExcursionGuard) as e:

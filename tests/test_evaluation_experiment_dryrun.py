@@ -86,3 +86,18 @@ def test_stage_scale_dryrun(tmp_path):
     
     for r in means:
         assert abs(float(r["um_per_step"]) - 0.1) <= 0.02
+
+
+def test_stage_scale_invalid_trials_do_not_affect_summary(tmp_path):
+    ctx = _ctx(tmp_path, {"reps": "2", "steps": "100", "axes": "x",
+                          "settle_ms": "0", "frame_wait_s": "2",
+                          "min_phase_response": "2.0"})
+    path = stage_scale.run(ctx)
+    assert path is not None and path.exists()
+    rows = _read(path)
+    trials = [r for r in rows if r["row_type"] == "trial"]
+    assert trials
+    assert all(r["valid"] == "False" for r in trials)
+
+    count = next(r for r in rows if r["row_type"] == "summary_n")
+    assert float(count["um_per_step"]) == 0.0
