@@ -12,7 +12,8 @@ pytest.importorskip("cv2")
 pytest.importorskip("PySide6")
 
 from retroscope.evaluation.context import EvalContext
-from retroscope.evaluation.experiments import motion_accuracy, stage_scale
+from retroscope.evaluation.csv_io import ResultWriter
+from retroscope.evaluation.experiments import motion_accuracy, stage_scale, workflow_reliability
 
 PX_PER_STEP = 0.2  #  1 motor step = 0.2 px image shift
 
@@ -43,12 +44,17 @@ class FakeRig:
 
 def _ctx(tmp_path, args):
     rig = FakeRig()
-    profile = SimpleNamespace(name="4x", um_per_pixel=0.5, numerical_aperture=0.1,
-                              backlash_x=100, backlash_y=200, backlash_z=20)
+    profile = SimpleNamespace(name="4x", display_name="4x plan", um_per_pixel=0.5,
+                              numerical_aperture=0.1, backlash_x=100,
+                              backlash_y=200, backlash_z=20, dof_steps=12,
+                              focus_stack_step=6, autofocus_range_steps=200)
     config = SimpleNamespace(get=lambda k, d=None: {"motor.stage_um_per_step_x": 0.1,
                                                     "motor.stage_um_per_step_y": 0.1}.get(k, d))
     services = SimpleNamespace(
-        config=config, camera_svc=rig, objective_mgr=SimpleNamespace(current_profile=lambda: profile),
+        config=config, camera_svc=rig, objective_mgr=SimpleNamespace(
+            active_objective="4x",
+            current_profile=lambda: profile,
+        ),
         motion_ctrl=None, autofocus_svc=None, focus_stacker_svc=None, tile_scanner_svc=None,
         image_store=None,
     )
@@ -73,6 +79,11 @@ def test_motion_accuracy_dryrun(tmp_path):
     
     none_x = [r for r in trials if r["mode"] == "none" and r["axis"] == "X"]
     assert abs(float(none_x[0]["fwd_px"]) - 10.0) <= 1.5
+    assert none_x[0]["objective_slot"] == "4x"
+    assert none_x[0]["objective_display_name"] == "4x plan"
+    assert float(none_x[0]["objective_um_per_pixel"]) == pytest.approx(0.5)
+    assert int(none_x[0]["objective_backlash_x"]) == 100
+    assert float(none_x[0]["stage_um_per_step_x"]) == pytest.approx(0.1)
 
 
 def test_stage_scale_dryrun(tmp_path):
@@ -86,6 +97,8 @@ def test_stage_scale_dryrun(tmp_path):
     
     for r in means:
         assert abs(float(r["um_per_step"]) - 0.1) <= 0.02
+        assert r["objective_slot"] == "4x"
+        assert float(r["objective_um_per_pixel"]) == pytest.approx(0.5)
 
 
 def test_stage_scale_invalid_trials_do_not_affect_summary(tmp_path):
@@ -101,3 +114,29 @@ def test_stage_scale_invalid_trials_do_not_affect_summary(tmp_path):
 
     count = next(r for r in rows if r["row_type"] == "summary_n")
     assert float(count["um_per_step"]) == 0.0
+
+
+def test_workflow_autofocus_records_duration(monkeypatch):
+    class Autofocus:
+        finished = object()
+        failed = object()
+
+        def start_autofocus(self):
+            pass
+
+    ctx = SimpleNamespace(
+        autofocus_svc=Autofocus(),
+        motion_ctrl=None,
+        invoker=None,
+        arg=lambda _name, default=None, _cast=None: default,
+    )
+    rw = ResultWriter("workflow_reliability")
+    clock = iter([10.0, 12.3456])
+
+    monkeypatch.setattr(workflow_reliability.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(workflow_reliability, "run_async", lambda *args, **kwargs: ("success", None))
+
+    workflow_reliability._run_autofocus(ctx, rw, reps=1, offset=0)
+
+    assert rw.rows[0]["workflow"] == "autofocus"
+    assert rw.rows[0]["duration_s"] == pytest.approx(2.346)

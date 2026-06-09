@@ -48,3 +48,16 @@ def test_result_writer_excludes_invalid_trials_from_summary():
     count = next(r for r in rw.rows if r["row_type"] == "summary_n")
     assert mean["value"] == 10.0
     assert count["value"] == 1
+
+
+def test_result_writer_applies_default_fields_to_trial_and_summary():
+    rw = ResultWriter("demo", default_fields={
+        "objective_slot": "4x",
+        "objective_um_per_pixel": 0.5,
+    })
+    rw.add(axis="X", value=10.0)
+    rw.summarize(["axis"], ["value"])
+
+    for row in rw.rows:
+        assert row["objective_slot"] == "4x"
+        assert row["objective_um_per_pixel"] == 0.5

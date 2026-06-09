@@ -66,6 +66,28 @@ class EvalContext:
         except Exception:
             return 0.0
 
+    def result_metadata(self) -> dict[str, Any]:
+        """Return objective and calibration state to stamp onto evaluation CSV rows."""
+
+        profile = self.profile()
+        manager = self.objective_mgr
+        active = getattr(manager, "active_objective", getattr(profile, "name", ""))
+        return {
+            "objective_slot": str(active),
+            "objective_name": str(getattr(profile, "name", active)),
+            "objective_display_name": str(getattr(profile, "display_name", getattr(profile, "name", active))),
+            "objective_numerical_aperture": float(getattr(profile, "numerical_aperture", 0.0)),
+            "objective_um_per_pixel": float(getattr(profile, "um_per_pixel", 0.0)),
+            "objective_backlash_x": int(getattr(profile, "backlash_x", 0)),
+            "objective_backlash_y": int(getattr(profile, "backlash_y", 0)),
+            "objective_backlash_z": int(getattr(profile, "backlash_z", 0)),
+            "objective_dof_steps": int(getattr(profile, "dof_steps", 0)),
+            "objective_focus_stack_step": int(getattr(profile, "focus_stack_step", 0)),
+            "objective_autofocus_range_steps": int(getattr(profile, "autofocus_range_steps", 0)),
+            "stage_um_per_step_x": self.stage_um_per_step(0),
+            "stage_um_per_step_y": self.stage_um_per_step(1),
+        }
+
     def arg(self, name: str, default: Any = None, cast=None):
         val = self.args.get(name, default)
         if cast is not None and val is not None:

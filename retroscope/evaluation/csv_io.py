@@ -35,12 +35,14 @@ def _row_counts_for_summary(row: dict) -> bool:
 class ResultWriter:
     """Accumulates trial rows and computes grouped summary rows."""
 
-    def __init__(self, experiment: str) -> None:
+    def __init__(self, experiment: str, default_fields: dict | None = None) -> None:
         self.experiment = experiment
+        self._default_fields = dict(default_fields or {})
         self._rows: list[dict] = []
 
     def add(self, **fields) -> None:
         row = {"row_type": "trial"}
+        row.update(self._default_fields)
         row.update(fields)
         self._rows.append(row)
 
@@ -56,6 +58,7 @@ class ResultWriter:
             base = {k: v for k, v in zip(group_keys, key)}
             for stat in ("mean", "std", "n"):
                 row = {"row_type": f"summary_{stat}"}
+                row.update(self._default_fields)
                 row.update(base)
                 for vk in value_keys:
                     vals = [

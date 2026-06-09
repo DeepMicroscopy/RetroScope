@@ -47,7 +47,7 @@ def run(ctx) -> Path | None:
         ctx.sangaboard, ctx.backlash_xyz(),
         max_excursion=int(ctx.arg("max_excursion", 20000, int)),
     )
-    rw = ResultWriter("motion_accuracy")
+    rw = ResultWriter("motion_accuracy", default_fields=ctx.result_metadata())
 
     try:
         for axis in axes:
