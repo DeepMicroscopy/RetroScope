@@ -1,11 +1,14 @@
 """Sangaboard motor controller driver."""
 
+import logging
 import queue
 import threading
 
 from PySide6.QtCore import QObject, QThread, QTimer, Signal, Slot
 
 from retroscope.drivers import make_driver
+
+logger = logging.getLogger(__name__)
 
 # Hardware constants
 SERIAL_PORT = "/dev/ttyAMA0"
@@ -218,6 +221,8 @@ class SangaboardDriver(QThread):
                     elif cmd[0] == "move_blocking":
                         _, dx, dy, dz, done, result = cmd
                         try:
+                            if hasattr(sb, "flush_input_buffer"):
+                                sb.flush_input_buffer()
                             sb.move_rel([int(dx), int(dy), int(dz)])
                             try:
                                 pos = list(sb.position)
@@ -225,7 +230,9 @@ class SangaboardDriver(QThread):
                             except Exception:
                                 pass
                             result["ok"] = True
-                        except Exception:
+                        except Exception as e:
+                            logger.warning("[sangaboard] blocking move %s failed: %s",
+                                           [int(dx), int(dy), int(dz)], e)
                             result["ok"] = False
                         finally:
                             done.set()
