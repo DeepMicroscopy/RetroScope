@@ -24,7 +24,7 @@ def run(ctx) -> Path | None:
     modes = [m for m in str(ctx.arg("modes", "none,sign,hysteresis")).split(",") if m in MODES]
     steps_list = ctx.arg_list_int("steps", [200])
     reps = int(ctx.arg("reps", 5, int))
-    settle_s = float(ctx.arg("settle_ms", 300, int)) / 1000.0
+    settle_s = float(ctx.arg("settle_ms", 1500, int)) / 1000.0
     upp = ctx.um_per_pixel()
 
     mover = CompensatedMover(
@@ -47,7 +47,7 @@ def run(ctx) -> Path | None:
                         # reverse from current position back to start under the same mode
                         mover.move_axis(axis, -steps, mode)
                         time.sleep(settle_s)
-                        back = ctx.camera_svc.get_latest_frame()
+                        back = _m.grab_fresh(ctx.camera_svc)  # new, post-settle frame
                         resid_px = 0.0
                         if back is not None:
                             resid_px, _, _ = _m.displacement_px(fwd["ref"], back)

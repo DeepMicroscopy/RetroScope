@@ -58,7 +58,7 @@ def run(ctx) -> Path | None:
     stage_steps = int(ctx.arg("stage_steps", 300, int))
     backlash_steps = int(ctx.arg("backlash_steps", 300, int))
     reps = int(ctx.arg("reps", 5, int))
-    settle_s = float(ctx.arg("settle_ms", 300, int)) / 1000.0
+    settle_s = float(ctx.arg("settle_ms", 1500, int)) / 1000.0
     upp = ctx.um_per_pixel()
 
     mover = CompensatedMover(

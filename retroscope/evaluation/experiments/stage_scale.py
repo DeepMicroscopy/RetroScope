@@ -21,10 +21,10 @@ def measure_series(ctx, mover, axis: int, steps: int, reps: int, settle_s: float
     mover.move_axis(axis, steps, "none")
     time.sleep(settle_s)
     for _ in range(reps):
-        ref = measure.grab_frame(ctx.camera_svc)
+        ref = measure.grab_fresh(ctx.camera_svc)
         mover.move_axis(axis, steps, "none")
         time.sleep(settle_s)
-        after = measure.grab_frame(ctx.camera_svc)
+        after = measure.grab_fresh(ctx.camera_svc)  # guaranteed a new, post-settle frame
         if ref is None or after is None:
             break
         disp_px, _, _ = measure.displacement_px(ref, after)
@@ -41,7 +41,7 @@ def run(ctx) -> Path | None:
     axes = C.parse_axes(ctx, default="xy")
     steps = int(ctx.arg("steps", 300, int))
     reps = int(ctx.arg("reps", 8, int))
-    settle_s = float(ctx.arg("settle_ms", 300, int)) / 1000.0
+    settle_s = float(ctx.arg("settle_ms", 1500, int)) / 1000.0
 
     mover = CompensatedMover(
         ctx.sangaboard, ctx.backlash_xyz(),

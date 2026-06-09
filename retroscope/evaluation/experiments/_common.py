@@ -35,12 +35,12 @@ def parse_axes(ctx, default: str = "xy", allow_z: bool = False) -> list[int]:
 
 
 def measure_forward(ctx, mover, axis: int, steps: int, mode: str, settle_s: float):
-    ref = measure.grab_frame(ctx.camera_svc)
+    ref = measure.grab_fresh(ctx.camera_svc)
     if ref is None:
         return None
     mover.move_axis(axis, steps, mode)
     time.sleep(settle_s)
-    after = measure.grab_frame(ctx.camera_svc)
+    after = measure.grab_fresh(ctx.camera_svc)  # guaranteed a new, post-settle frame
     if after is None:
         return None
     disp_px, dx, dy = measure.displacement_px(ref, after)
@@ -48,14 +48,14 @@ def measure_forward(ctx, mover, axis: int, steps: int, mode: str, settle_s: floa
 
 
 def measure_reversal_residual(ctx, mover, axis: int, steps: int, mode: str, settle_s: float):
-    ref = measure.grab_frame(ctx.camera_svc)
+    ref = measure.grab_fresh(ctx.camera_svc)
     if ref is None:
         return None
     mover.move_axis(axis, steps, mode)
     time.sleep(settle_s)
     mover.move_axis(axis, -steps, mode)
     time.sleep(settle_s)
-    back = measure.grab_frame(ctx.camera_svc)
+    back = measure.grab_fresh(ctx.camera_svc)  # guaranteed a new, post-settle frame
     if back is None:
         return None
     resid_px, dx, dy = measure.displacement_px(ref, back)

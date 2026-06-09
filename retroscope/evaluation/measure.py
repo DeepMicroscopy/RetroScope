@@ -74,3 +74,20 @@ def grab_frame(camera_svc, *, native: bool = False, fresh: bool = True, timeout_
         if not fresh or time.monotonic() > deadline:
             return None
         time.sleep(0.02)
+
+
+def grab_fresh(camera_svc, *, discard: int = 1, timeout_s: float = 5.0):
+    waiter = getattr(camera_svc, "wait_for_next_frame", None)
+    if waiter is None:
+        f = camera_svc.get_latest_frame()
+        return np.asarray(f).copy() if f is not None else None
+    frame = None
+    for _ in range(max(1, discard + 1)):
+        f = waiter(timeout=timeout_s)
+        if f is None:
+            break
+        frame = np.asarray(f)
+    if frame is None:
+        f = camera_svc.get_latest_frame()
+        return np.asarray(f).copy() if f is not None else None
+    return frame
