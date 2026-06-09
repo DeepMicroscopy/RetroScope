@@ -209,6 +209,7 @@ class MotionController(QObject):
         self._slack_y: float = 0.0
         self._slack_z: float = 0.0
         self._last_block_reason = ""
+        self._external_motion_lock = False
         self._last_block_t = 0.0
         self._soft_enabled = False
         self._soft_calibrated = False
@@ -715,7 +716,16 @@ class MotionController(QObject):
         return previous + alpha * (target - previous)
 
     @Slot()
+    def set_external_motion_lock(self, locked: bool) -> None:
+        """Suppress manual joystick/encoder motion while others (e.g. the
+        evaluation) drives the stage directly."""
+        self._external_motion_lock = bool(locked)
+        if locked:
+            self._clear_joystick_motion_state(clear_sample=True)
+
     def _dispatch_joystick(self) -> None:
+        if self._external_motion_lock:
+            return
         self._dispatch_joystick_at(time.monotonic())
 
     def _dispatch_joystick_at(self, now: float) -> None:
@@ -807,6 +817,8 @@ class MotionController(QObject):
     def on_encoder_stepped(self, delta: int) -> None:
         """Converts encoder ticks into calibrated Z motor moves using the active objective focus-stack step size and encoder multiplier."""
 
+        if self._external_motion_lock:
+            return
         self._encoder_accum += delta
         if self._calibration_encoder_step_active:
             # During DoF calibration: temp fixed step size is used

@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 from retroscope.evaluation import measure
-from retroscope.evaluation.compensation import CompensatedMover
+from retroscope.evaluation.compensation import CompensatedMover, ExcursionGuard
 from retroscope.evaluation.csv_io import ResultWriter
 from retroscope.evaluation.experiments import _common as C
 from retroscope.services.stage_calibration import stage_um_per_step
@@ -49,12 +49,19 @@ def run(ctx) -> Path | None:
     )
     rw = ResultWriter("stage_scale")
 
-    for axis in axes:
-        mover.reset()
-        series = measure_series(ctx, mover, axis, steps, reps, settle_s)
-        for rep, val in enumerate(series):
-            rw.add(axis=C.AXIS_NAME[axis], commanded_steps=steps, rep=rep,
-                   um_per_step=round(val, 5))
+    try:
+        for axis in axes:
+            mover.reset()
+            series = measure_series(ctx, mover, axis, steps, reps, settle_s)
+            for rep, val in enumerate(series):
+                rw.add(axis=C.AXIS_NAME[axis], commanded_steps=steps, rep=rep,
+                       um_per_step=round(val, 5))
+    except (RuntimeError, ExcursionGuard) as e:
+        print(f"[eval] stage_scale: aborted after a move error: {e}")
+        try:
+            mover.return_to_start()
+        except Exception:
+            pass
 
     rw.summarize(["axis", "commanded_steps"], ["um_per_step"])
     path = rw.save(ctx.out_dir)

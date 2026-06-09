@@ -98,8 +98,10 @@ class SangaboardDriver(QThread):
         try:
             self._queue.put_nowait(("move_blocking", dx, dy, dz, done, result))
         except queue.Full:
+            logger.warning("[sangaboard] move_rel_blocking rejected: command queue full")
             return False
         if not done.wait(timeout):
+            logger.warning("[sangaboard] move_rel_blocking timed out after %.1fs waiting for [%d, %d, %d] (driver thread stalled?)", timeout or 0.0, dx, dy, dz)
             return False
         return bool(result["ok"])
 

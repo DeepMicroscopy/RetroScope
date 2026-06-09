@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from retroscope.evaluation import measure
-from retroscope.evaluation.compensation import CompensatedMover
+from retroscope.evaluation.compensation import CompensatedMover, ExcursionGuard
 from retroscope.evaluation.csv_io import ResultWriter
 from retroscope.evaluation.experiments import _common as C
 from retroscope.evaluation.experiments.stage_scale import measure_series
@@ -67,24 +67,31 @@ def run(ctx) -> Path | None:
     )
     rw = ResultWriter("calibration_repeat")
 
-    # Stage-scale repeatability (per axis)
-    for axis in axes:
-        mover.reset()
-        for rep, val in enumerate(measure_series(ctx, mover, axis, stage_steps, reps, settle_s)):
-            rw.add(quantity=f"stage_scale_{C.AXIS_NAME[axis]}_um_per_step", rep=rep,
-                   value=round(val, 5))
+    try:
+        # Stage-scale repeatability (per axis)
+        for axis in axes:
+            mover.reset()
+            for rep, val in enumerate(measure_series(ctx, mover, axis, stage_steps, reps, settle_s)):
+                rw.add(quantity=f"stage_scale_{C.AXIS_NAME[axis]}_um_per_step", rep=rep,
+                       value=round(val, 5))
 
-    # Backlash repeatability
-    for axis in axes:
-        mover.reset()
-        for rep in range(reps):
-            res = C.measure_reversal_residual(ctx, mover, axis, backlash_steps, "none", settle_s)
-            if res is None:
-                break
-            rw.add(quantity=f"backlash_{C.AXIS_NAME[axis]}_residual_um", rep=rep,
-                   value=round(res["residual_px"] * upp, 4))
+        # Backlash repeatability
+        for axis in axes:
+            mover.reset()
+            for rep in range(reps):
+                res = C.measure_reversal_residual(ctx, mover, axis, backlash_steps, "none", settle_s)
+                if res is None:
+                    break
+                rw.add(quantity=f"backlash_{C.AXIS_NAME[axis]}_residual_um", rep=rep,
+                       value=round(res["residual_px"] * upp, 4))
+                mover.return_to_start()
+                time.sleep(settle_s)
+    except (RuntimeError, ExcursionGuard) as e:
+        print(f"[eval] calibration_repeat: motor section aborted after a move error: {e}")
+        try:
             mover.return_to_start()
-            time.sleep(settle_s)
+        except Exception:
+            pass
 
     # Operator two-point pixel scale
     _pixel_scale_two_point(ctx, rw, marks=int(ctx.arg("pixel_marks", reps, int)))

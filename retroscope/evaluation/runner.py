@@ -36,6 +36,11 @@ class EvaluationRunner(QThread):
             out_dir=Path(out_dir), args=args,
         )
 
+    def _set_motion_lock(self, locked: bool) -> None:
+        mc = getattr(self._ctx.services, "motion_ctrl", None)
+        if mc is not None and hasattr(mc, "set_external_motion_lock"):
+            self._invoker.call(lambda: mc.set_external_motion_lock(locked))
+
     def run(self) -> None:  # executes in the worker thread
         try:
             fn = REGISTRY.get(self._experiment)
@@ -44,7 +49,13 @@ class EvaluationRunner(QThread):
                       f"Choices: {', '.join(sorted(REGISTRY))}")
             else:
                 print(f"[eval] starting '{self._experiment}' with args {self._ctx.args}")
-                fn(self._ctx)
+                # Suppress manual joystick/encoder motion so it does not compete with the
+                # experiment for the serial line.
+                self._set_motion_lock(True)
+                try:
+                    fn(self._ctx)
+                finally:
+                    self._set_motion_lock(False)
                 print(f"[eval] '{self._experiment}' done.")
         except Exception:
             traceback.print_exc()
