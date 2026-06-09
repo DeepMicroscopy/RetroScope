@@ -1,19 +1,19 @@
-"""Evaluation: Workflow Reliability (autofocus, focus stacking, tile scanning, measurement, gallery)
+"""Evaluation: Workflow Reliability (autofocus, focus stacking, tile scanning)
 
 Note: Partially AI-generated.
 """
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
-import numpy as np
-
-from retroscope.evaluation import measure
 from retroscope.evaluation.csv_io import ResultWriter
 from retroscope.evaluation.experiments import _common as C
 from retroscope.evaluation.service_drive import run_async
 from retroscope.services import ome_tiff
+
+WORKFLOWS = {"autofocus", "focus_stacking", "tile_scanning"}
 
 
 def _source_plane_count(path: str) -> int:
@@ -34,13 +34,16 @@ def _run_autofocus(ctx, rw, reps: int, offset: int) -> None:
         # vary the starting Z position
         if offset and hasattr(ctx.motion_ctrl, "move_z_blocking"):
             C.call_main(ctx, lambda sign=sign: ctx.motion_ctrl.move_z_blocking(sign * offset))
+        started_at = time.monotonic()
         status, payload = run_async(
             ctx.invoker, af.start_autofocus,
             success_signals=[af.finished], failure_signals=[af.failed],
             timeout_s=float(ctx.arg("af_timeout_s", 60, int)),
         )
+        duration_s = time.monotonic() - started_at
         ok = status == "success"
         rw.add(workflow="autofocus", rep=rep, success=int(ok), status=status,
+               duration_s=round(duration_s, 3),
                reason="" if ok else str(payload or status))
         sign *= -1
 
@@ -87,43 +90,15 @@ def _run_tile_scan(ctx, rw, reps: int) -> None:
         rw.add(workflow="tile_scanning", rep=rep, success=int(ok), status=status, reason=reason)
 
 
-def _run_measurement(ctx, rw, reps: int) -> None:
-    upp = ctx.um_per_pixel()
-    tol = float(ctx.arg("measure_tol_pct", 5.0, float)) / 100.0
-    for rep in range(reps):
-        print(f"[eval] measurement {rep + 1}/{reps}: enter 'x1 y1 x2 y2 known_um' (blank to stop)")
-        raw = C.prompt("  > ").strip()
-        if raw == "":
-            break
-        try:
-            x1, y1, x2, y2, known = (float(v) for v in raw.split())
-        except ValueError:
-            continue
-        meas_um = float(np.hypot(x2 - x1, y2 - y1)) * upp
-        ok = known > 0 and abs(meas_um - known) <= tol * known
-        rw.add(workflow="measurement", rep=rep, success=int(ok), status="measured",
-               reason="" if ok else f"measured {meas_um:.2f} vs known {known:.2f} um")
-
-
-def _run_gallery(ctx, rw) -> None:
-    print("[eval] gallery: exercise the gallery with a large capture set in the UI.")
-    res = C.prompt("  enter 'pass' or 'fail: reason' (blank to skip): ").strip()
-    if res == "":
-        return
-    ok = res.lower().startswith("pass")
-    rw.add(workflow="gallery", rep=0, success=int(ok), status="operator",
-           reason="" if ok else res)
-
-
 def run(ctx) -> Path | None:
     if not C.wait_for_frames(ctx):
         print("[eval] workflow_reliability: no camera frames available, aborting.")
         return None
 
     reps = int(ctx.arg("reps", 10, int))
-    which = str(ctx.arg("workflows", "autofocus,focus_stacking,tile_scanning,measurement,gallery"))
-    selected = {w.strip() for w in which.split(",") if w.strip()}
-    rw = ResultWriter("workflow_reliability")
+    which = str(ctx.arg("workflows", "autofocus,focus_stacking,tile_scanning"))
+    selected = {w.strip() for w in which.split(",") if w.strip() in WORKFLOWS}
+    rw = ResultWriter("workflow_reliability", default_fields=ctx.result_metadata())
 
     if "autofocus" in selected:
         _run_autofocus(ctx, rw, reps, offset=int(ctx.arg("af_z_offset", 80, int)))
@@ -131,12 +106,8 @@ def run(ctx) -> Path | None:
         _run_focus_stack(ctx, rw, reps)
     if "tile_scanning" in selected:
         _run_tile_scan(ctx, rw, reps)
-    if "measurement" in selected:
-        _run_measurement(ctx, rw, reps)
-    if "gallery" in selected:
-        _run_gallery(ctx, rw)
 
-    rw.summarize(["workflow"], ["success"])
+    rw.summarize(["workflow"], ["success", "duration_s"])
     path = rw.save(ctx.out_dir)
     print(f"[eval] workflow_reliability -> {path}")
     return path
