@@ -38,7 +38,7 @@ def _run_autofocus(ctx, rw, reps: int, offset: int) -> None:
         status, payload = run_async(
             ctx.invoker, af.start_autofocus,
             success_signals=[af.finished], failure_signals=[af.failed],
-            timeout_s=float(ctx.arg("af_timeout_s", 60, int)),
+            timeout_s=float(ctx.arg("af_timeout_s", 300, int)),
         )
         duration_s = time.monotonic() - started_at
         ok = status == "success"
