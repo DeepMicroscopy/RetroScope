@@ -159,6 +159,28 @@ Run QML lint checks:
 .venv/bin/pyside6-qmllint -I retroscope/qml $(find retroscope/qml -name '*.qml')
 ```
 
+## Evaluation
+
+The evaluations run inside the main application so they use the real camera pipeline, motion
+services, calibration state, and workflow services. Results are written as CSV files to
+`evaluation_output/`, with per-trial rows followed by summary rows. Needs a textured specimen and a safe stage position to run properly. The active objective needs to be selected and calibrated before running measurements.
+
+Available evaluation types:
+
+- `motion_accuracy`: compares commanded X/Y movement with measured image displacement and backlash residuals.
+- `stage_scale`: measures repeated stage-scale estimates in micrometres per motor step.
+- `calibration_repeat`: repeats stage-scale and backlash checks for the active objective.
+- `workflow_reliability`: runs autofocus, focus stacking, and tile scanning through the app services.
+
+Example runs:
+
+```bash
+python app.py --eval motion_accuracy --eval-arg axes=xy --eval-arg steps=100,200 --eval-arg reps=10
+python app.py --eval stage_scale --eval-arg steps=100 --eval-arg reps=10
+python app.py --eval calibration_repeat --eval-arg stage_steps=200 --eval-arg reps=10
+python app.py --eval workflow_reliability --eval-arg reps=10 --eval-arg workflows=autofocus,focus_stacking,tile_scanning
+```
+
 ## REST API
 
 By default, the API is enabled and listens on port `8765`:
@@ -222,6 +244,7 @@ ToDo: Add all references
 
 The following generative AI tools were used in this thesis: 
 
+- GitHub Copilot in VS Code was used for inline code-completion suggestions during implementation.
 - ChatGPT (OpenAI) & Claude (Anthropic) used to support brainstorming, quick research, and the generation of selected parts of the code (e.g. unit tests). AI-assisted scripts and functions are marked in the source code via comments.
 - DeepL write & Claude (Anthropic) were used in language editing and grammatical proof-reading.
 
