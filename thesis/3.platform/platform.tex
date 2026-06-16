@@ -1,7 +1,36 @@
 \subsection{Shared Physical Control Interfaces of Microscopes}
 
+The platform concept starts from a simple observation: many microscopes expose comparable physical controls even when their internal mechanics differs. A human operator commonly interacts with a microscope through focus knobs, XY-stage knobs, objective selection, illumination controls, and an observation or camera path. These interfaces are designed for manual work, but they also provide a relatively stable abstraction for a retrofit system. Instead of redesigning the optical path, the retrofit can attach to the same controls that the operator would normally use.
+
+\input{figures/fig_shared_interface}
+
+This observation is important because it changes the design goal from building a universal mechanical replacement to building an adaptable mechanical interface. The retrofit does not need to know the internal details of the stage or focus drive. It needs to know where the user-facing controls are, how they rotate, how much torque is required, how much slack exists, and how motor motion maps to optical motion. These properties can be measured or calibrated for a particular microscope body.
+
+Figure~\ref{fig:shared-interface} illustrates this shared layout across microscopes from several manufacturers and price classes, from low-cost educational instruments such as the Labtron LBM-A14 to a research-grade ZEISS Axioscope 5. Despite large differences in price, optics, and internal construction, each instrument presents the same operator-facing controls. It is precisely this commonality that makes a parameter-driven retrofit feasible, because the platform can target a recurring control layout rather than a single microscope model.
+
 \subsection{Driving Existing Knobs Instead of Replacing Microscope Mechanics}
+
+Driving existing microscope controls instead of replacing the microscope mechanics reduces invasiveness and preserves the optical instrument as the core of the system. The XY stage remains the microscope's own stage, and the focus axis remains the microscope's own focus mechanism. Motors and adapters are added externally to rotate the controls that would otherwise be rotated by hand.
+
+The advantage of this approach is reversibility and compatibility. It avoids machining or redesigning the internal stage and focus mechanism. It also keeps the retrofit concept understandable: a motor turns the same knob that the user would turn. The disadvantage is that the retrofit inherits all imperfections of the original mechanical path and adds new imperfections from the adapter. Backlash, 3d-print flex, friction, and looseness in the existing controls all become part of the motion system.
+
+This trade-off defines the platform. Is not a precision stage bolted onto a microscope. It is an embedded control layer attached to manual controls. The platform must therefore rely on calibration and software compensation to make the resulting motion useful.
 
 \subsection{Platform Overview}
 
+RetroScope consists of four tightly connected subsystems. The mechanical subsystem provides adapters, motor mounts, gear couplings, brackets, supports, and enclosure parts. The embedded electronics subsystem connects the Raspberry Pi, touchscreen, motors, joystick, rotary encoder, buttons, camera capture device, and custom PCB. The software subsystem implements hardware drivers, services, domain logic, and the QML user interface. The calibration and workflow subsystem turns the mechanical and electronic platform into a usable microscope application.
+
+The system is operated primarily through a touchscreen interface. The QML interface contains views for live imaging, gallery browsing, measurement, automation, and settings. Physical controls remain important: a joystick controls XY motion, a rotary encoder controls focus, buttons trigger assigned actions, and an endstop protects the focus axis. Camera input provides a live preview and a frame-analysis stream for histogram, focus scoring, calibration support, and objective-change detection.
+
+The platform supports snapshots, calibrated measurement, autofocus, focus stacking, tile scanning, gallery management, and REST-based access to captures and selected actions. Focus stacking and tile scanning workflows are not independent features added after the fact. They require calibrated objective data, motor control, and camera capture to work together and evaluate the platform as a whole. These workflows are therefore important demonstrations of the platform's capabilities and design.
+
 \subsection{Open-Source Platform Artifacts}
+
+RetroScope is intended as an open platform rather than a single prototype. The repository contains the Python/PySide/QML application, test suite, deployment scripts, README documentation, REST API demo notebook, KiCad~\cite{kicad} PCB files, Gerber outputs, and the parametric Autodesk Fusion~\cite{autodeskFusion} model. This collection is important because a retrofit platform cannot be reproduced from software alone. The physical adapter, electronics, and calibration process are part of the artifact.
+
+The open-source release also supports extension. The software architecture is split into drivers, services, domain modules, bridge classes, and QML views. The hardware release includes PCB and CAD artifacts. The documentation describes setup, operation, and current limitations. Together, these artifacts allow the work to be inspected, modified, and adapted to other microscope bodies.
+
+Figure~\ref{fig:platform-overview} summarises how these subsystems stack on top of the unmodified
+microscope. The retrofit adds mechanical, electronic, software, and calibration/workflow subsystems on top of the  vintage microscope, driving its existing focus and stage controls rather than replacing the optical instrument.
+
+\input{figures/fig_platform_overview}

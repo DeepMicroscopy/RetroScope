@@ -1,9 +1,39 @@
 \subsection{Answering the Research Questions}
 
+RQ1 asked whether a retrofit platform can add motorized control and digital imaging to vintage microscopes while remaining adaptable to different mechanical designs through parametric modelling. The prototype shows that this is feasible at the level of a working artifact. It adds motorized XY and Z movement, digital camera preview, calibration workflows, and automated capture workflows to the Nikon Optiphot 66 used during development. Adaptability is supported by the parametric Fusion model and by a mechanical strategy based on common microscope control interfaces, and it is demonstrated virtually. Editing the model parameters regenerates the adapter geometry for different body dimensions. Because only one suitable vintage instrument was available, this evidence is design-level rather than physical. The answer is therefore positive as a design principle, demonstrated virtually through parametric variation, while a broad empirical claim would still require adapting and building the platform on additional physical microscope bodies.
+
+RQ2 asked whether a low-cost prototype can provide sufficiently consistent scale, motion, and positioning behavior for automated microscopy. The prototype demonstrates that low-cost open-loop hardware can be made usable, but only when its limitations are treated as part of the system design. The implemented system provides calibrated stage scales, separate X/Y/Z backlash values, soft limits, blocking movement for capture workflows, and a per-axis slack model for backlash behavior. The evaluation confirms that 4x stage-scale measurements are repeatable, especially for 200-step moves, and that hysteresis compensation substantially improves the X axis in the 200-step condition. However, without closed-loop position feedback, the system tracks commanded position rather than measured stage position. The evidence therefore supports practical consistency for prototype workflows, while precision claims must remain bounded by the measured variability and by the open-loop nature of the hardware.
+
+RQ3 asked to what extent image-based calibration can enable automated workflows such as autofocus, focus stacking, and tile scanning. The implemented calibration system provides objective profiles, pixel scale, stage scale, backlash values, and derived scaling across objectives. These calibrated quantities allow the software to translate image observations and workflow settings into motor commands, overlap planning, focus ranges, and measurement units. In the workflow evaluation, autofocus, focus stacking, and tile scanning each completed 10/10 runs for the 4x, 20x, 40x, and 63x profiles. The answer is that image-based calibration is a necessary layer for these workflows, but reliability also depends on motion compensation, blocking logic, and careful performance management.
+
 \subsection{Trade-Offs of the Retrofit Approach}
+
+The main advantage of retrofitting is reuse. A vintage microscope can gain digital imaging and automation without replacing the optical instrument. The platform can remain affordable, inspectable, and adaptable. It can also be built around open-source artifacts, which supports modification and learning.
+
+The main disadvantage is inherited uncertainty. The retrofit must work through existing controls, printed adapters, and low-cost motors. The software does not control a precision stage directly. It controls a chain of mechanics that includes slack, friction, flex, and calibration uncertainty. This makes the system more sensitive to physical assembly and calibration than an integrated commercial platform.
+
+This trade-off is acceptable for the stated goal of the thesis. RetroScope is not presented as a replacement for high-end motorized microscopes. It is presented as an open platform that extends older microscopes lifetime with useful digital and automated capabilities.
 
 \subsection{Low-Cost Hardware Versus Precision}
 
+Low-cost hardware expands accessibility but reduces precision margins. The 28BYJ motors, printed gears, and open-loop control are affordable and easy to reproduce, but they create backlash and motion variability. The Raspberry Pi provides enough computation for the application, but performance-sensitive paths such as frame analysis and gallery rendering had to be optimized.
+
+The prototype shows that these limitations can be managed, but not ignored. The final system separates live preview from frame analysis, uses native capture for high-resolution imaging, adds blocking moves for capture workflows, and tracks backlash slack. These changes are all consequences of using constrained hardware.
+
 \subsection{Software Compensation Versus Mechanical Limits}
 
-\subsection{Limitations and Threats to Validity}
+Software compensation is powerful when the mechanical error is predictable. Backlash is partly predictable because direction changes consume slack before physical movement occurs. The hysteresis-band model captures this deterministic behavior better than treating backlash as random noise. Similarly, stage-scale calibration can correct systematic differences between X and Y movement.
+
+Software compensation is less effective when the mechanical state changes unpredictably. Printed parts can flex, screws can loosen, the stage can be moved by hand, friction can change after lubrication, and a motor can miss steps. Without direct feedback, the software cannot observe all of these events. This is why the platform invalidates backlash history after certain events and why calibration remains central.
+
+The practical lesson is that mechanical and software design must be co-developed. The adapter should reduce backlash and flex as much as possible, while the software compensates what remains. Neither side is sufficient alone.
+
+\subsection{Limitations}
+
+The main limitation is that the prototype has been built and evaluated on a single physical microscope body, the Nikon Optiphot 66, because no second suitable vintage instrument was available and a second physical build was out of scope. This limits empirical claims about general mechanical adaptability. The parametric model supports adaptation and this is demonstrated virtually through parameter variation, but a stronger evaluation would build the platform on additional physical microscopes with different focus and stage geometries.
+
+A second limitation is the lack of closed-loop position feedback. The platform tracks commanded motor position, not measured sample position. This affects motion accuracy, backlash compensation, and repeatability. The system can be useful without encoders, but accuracy claims must remain bounded by the open-loop nature of the design.
+
+A third limitation is the scope of the quantitative evaluation data. The current datasets cover 4x stage-scale, 4x motion behavior, 4x calibration repeatability, and workflow reliability for 4x, 20x, 40x, and 63x. They do not include other objective profiles, closed-loop position measurements, or physical validation on a second microscope body.
+
+Finally, the thesis is partly based on a evolving software artifact. This creates a risk that described behavior may drift from the final repository state. The evaluation was run on a specific commit: 13ada32.

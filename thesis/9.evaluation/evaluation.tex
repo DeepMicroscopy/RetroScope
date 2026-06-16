@@ -1,15 +1,190 @@
 \subsection{Evaluation Setup}
 
+The evaluation examines RetroScope as an integrated retrofit platform rather than as isolated components. The measured prototype consists of the printed mechanical adapter, Raspberry Pi-based embedded electronics, custom PCB, Sangaboard-controlled stepper motors, camera capture path, QML interface, calibration workflow, motion controller, and automated workflows. The physical target microscope is the Nikon Optiphot 66 used throughout development.
+
+The evaluation data covers four experiment types: stage-scale repeatability, motion accuracy, calibration repeatability, and workflow reliability. The stage-scale, motion-accuracy, and reported calibration-repeatability measurements were performed on the 4x objective. Workflow reliability was measured for the 4x, 20x, 40x, and 63x profiles. Figure~\ref{fig:eval-evidence-map} summarizes how the available evidence maps to the research questions.
+
+\input{figures/fig_eval_evidence_map}
+
+\begin{table}[H]
+    \centering
+    \caption[Evaluation setup]{Evaluation setup and available measurement scope.}
+    \label{tab:setup}
+    \begin{tabular}{@{}l L{8.2cm}@{}}
+        \toprule
+        \textbf{Item} & \textbf{Value} \\
+        \midrule
+        Microscope & Nikon Optiphot 66 vintage microscope \\
+        Camera / capture & Nikon DSLR camera via Elgato Cam Link (UVC) \\
+        Software stack & Python/PySide6/QML, OpenCV, tifffile \\
+        Motion / stage-scale dataset & 4x objective, 100 and 200 step X/Y moves \\
+        Calibration-repeat dataset & 4x objective profile \\
+        Workflow dataset & 4x, 20x, 40x, and 63x objective profiles \\
+        Dataset date & 2026-06-10 \\
+        Software commit & 13ada32 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 \subsection{Parametric Adapter Adaptability}
+
+The parametric adapter design provides design-level evidence for adaptability. The Fusion archive contains a model with explicit parameters for microscope feet positions, focus-axis geometry, Z-assembly dimensions, and XY-assembly offsets.
+
+This supports the claim that the adapters are not a static design for a specific microscope. The design process exposed dimensions as adjustable parameters. Because only one suitable vintage instrument was available, and building a second physical prototype was out of scope for time and cost reasons, adaptability is evaluated virtually: the parametric Fusion model is edited to represent a different body dimension, and the adapter geometry regenerates accordingly without rebuilding the assembly. Figure~\ref{fig:virtual-adapt} shows such virtual variants. This is design-level rather than physical evidence, a second physical body validation remains future work.
+
+\input{figures/fig_virtual_adapt}
+
+\begin{table}[H]
+    \centering
+    \caption[Adapter adaptability parameters]{Adapter adaptability: parameter values for the Nikon Optiphot 66 development body versus a
+    virtual variant (right column read off an adapted CAD model, not a physical microscope).}
+    \label{tab:adaptability}
+    \begin{tabular}{@{}l c c@{}}
+        \toprule
+        \textbf{Parameter} & \textbf{Nikon Optiphot 66} & \textbf{Virtual variant} \\
+        \midrule
+        \texttt{connector\_hole\_front\_x/y} & 10 / 10\,mm & 30 / 20\,mm \\
+        \texttt{connector\_hole\_back\_x/y}  & 14.5 / 25.5\,mm & 30 / 15\,mm \\
+        \texttt{connector\_hole\_front/back\_radius} & 13 / 18\,mm & 32 / 8\,mm \\
+        \texttt{focus\_axis\_z} / \texttt{focus\_axis\_radius} & 137 / 17\,mm & 147 / 7\,mm \\
+        \texttt{z\_assembly\_height} & 137\,mm & 147\,mm \\
+        \texttt{z\_assembly\_x/z\_offset} & 0 / 0\,mm & 60 / 42\,mm \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Hardware Cost and Reproducibility}
 
+The prototype uses accessible components: Raspberry Pi, DSI display, Elgato Cam Link, Sangaboard, 28BYJ stepper motors, joystick, ADS1115, rotary encoder, buttons, endstop, and printed parts. The priced bill of materials in Appendix~\ref{app:bom} gives a total component cost of approximately 419,47~\euro, excl. microscope and camera. This value includes the purchased input devices, custom PCB manufacturing, wiring and connectors, and estimated print material, but it does not represent a universal retail price because supplier prices and availability vary. The largest cost drivers are the Raspberry Pi, DSI touchscreen, and HDMI capture adapter. The actual motion parts are comparatively inexpensive. The KiCad project, Gerber files, Fusion export, and parametric printed parts therefore support reproducibility. The hardware can be rebuilt from the repository artifacts.
+
+\subsection{Stage-Scale Repeatability}
+
+Stage-scale repeatability measures how consistently a motor step maps to specimen-plane movement.
+The stage-scale evaluation results contains ten valid repetitions with a 4x objective. The results are reported
+in Table~\ref{tab:stagescale} and visualized in Figure~\ref{fig:eval-stage-scale}.
+
+\input{figures/fig_eval_stage_scale}
+
+\begin{table}[H]
+    \centering
+    \caption[4x stage-scale repeatability]{4x stage-scale repeatability. Values are mean $\pm$ standard deviation across valid
+    trials.}
+    \label{tab:stagescale}
+    \begin{tabular}{@{}l c c c@{}}
+        \toprule
+        \textbf{Axis} & \textbf{Commanded steps} & \textbf{Valid trials} &
+        \textbf{Stage scale ($\mu$m/step)} \\
+        \midrule
+        X & 100 & 10 & $2.183 \pm 0.095$ \\
+        X & 200 & 10 & $2.223 \pm 0.058$ \\
+        Y & 100 & 10 & $3.410 \pm 0.238$ \\
+        Y & 200 & 10 & $3.136 \pm 0.066$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The 200-step trials are the most stable subset: X varies by approximately
+$0.058\,\mu$m/step and Y by approximately $0.066\,\mu$m/step. The 100-step Y measurement has a
+higher spread, which is expected because smaller commanded displacements make image-measurement
+noise and mechanical slack more visible. The measured X and Y scales differ substantially, so the
+separate per-axis stage-scale calibration is justified.
+
 \subsection{Motion Accuracy and Backlash Compensation}
+
+Motion accuracy was evaluated with X/Y moves at 100 and 200 motor steps on a 4x objective. The comparison includes
+uncompensated movement, a sign-based compensation mode, and the hysteresis-band
+compensation model. The mean forward error compares measured optical displacement with the commanded
+physical displacement. The reversal residual measures the remaining image offset after commanding a
+return move. Table~\ref{tab:motion} and Figure~\ref{fig:eval-motion} summarize the valid trial
+rows.
+
+\input{figures/fig_eval_motion}
+
+The strongest motion result is the 4x X-axis 200-step condition. In that case, the hysteresis model reduces the mean forward error from $-204.3\,\mu$m without compensation to
+$11.4\,\mu$m, while the reversal residual remains lower than the sign-compensated condition. The Y-axis data is less clean: hysteresis reduces the 200-step forward error compared with the other modes, but the residual remains higher than in the uncompensated return measurement, and the 100-step condition overshoots. This matches the mechanical observations from development, where the Y drive showed more flex and backlash, because the 3d printed gears has a longer distance between motor and the knob. The distance is a results of the space constraints and stacked knob design of the target microscope. The data supports the need for compensation, but it also shows that software compensation does not fully remove mechanical limitations.
+
+Another observation is that the 100-step conditions have higher spread and more overshoot than the 200-step conditions, reason for that is that the configured backlash is higher than the commanded 100-step displacement.
+
+\begin{table}[H]
+    \centering
+    \caption[4x motion accuracy and reversal residuals]{Motion accuracy and reversal residuals on a 4x objective. Values are mean $\pm$ standard deviation in micrometers.}
+    \label{tab:motion}
+    \begin{adjustbox}{max width=\linewidth}
+    \begin{tabular}{l c l c c c}
+        \toprule
+        \textbf{Axis} & \textbf{Steps} & \textbf{Mode} & \textbf{Valid trials} &
+        \textbf{Forward error ($\mu$m)} & \textbf{Reversal residual ($\mu$m)} \\
+        \midrule
+        X & 100 & none       & 10 & $-165.4 \pm 68.7$ & $40.0 \pm 78.7$ \\
+        X & 100 & sign       & 10 & $-61.7 \pm 102.2$ & $119.2 \pm 109.6$ \\
+        X & 100 & hysteresis & 10 & $63.2 \pm 56.0$ & $41.5 \pm 45.1$ \\
+        X & 200 & none       & 10 & $-204.3 \pm 10.8$ & $0.9 \pm 0.7$ \\
+        X & 200 & sign       & 10 & $-30.4 \pm 58.5$ & $44.8 \pm 55.5$ \\
+        X & 200 & hysteresis & 10 & $11.4 \pm 2.9$ & $0.3 \pm 0.2$ \\
+        Y & 100 & none       & 10 & $-264.7 \pm 33.6$ & $48.4 \pm 104.5$ \\
+        Y & 100 & sign       & 10 & $-186.9 \pm 74.7$ & $229.4 \pm 96.1$ \\
+        Y & 100 & hysteresis & 10 & $165.5 \pm 64.0$ & $51.6 \pm 49.4$ \\
+        Y & 200 & none       & 10 & $-260.1 \pm 18.5$ & $2.1 \pm 2.8$ \\
+        Y & 200 & sign       & 10 & $-60.6 \pm 83.0$ & $90.4 \pm 107.4$ \\
+        Y & 200 & hysteresis & 10 & $-35.8 \pm 16.4$ & $52.6 \pm 1.7$ \\
+        \bottomrule
+    \end{tabular}
+    \end{adjustbox}
+\end{table}
 
 \subsection{Calibration Consistency}
 
+Calibration consistency was evaluated by repeating stage-scale and backlash-residual measurements for the 4x objective profile. The results are listed in Table~\ref{tab:calib-repeat} and shown in Figure~\ref{fig:eval-calibration}.
+
+\input{figures/fig_eval_calibration}
+
+\begin{table}[H]
+    \centering
+    \caption[4x calibration repeatability]{Calibration repeatability for the 4x objective profile. Values are mean $\pm$
+    standard deviation. Stage-scale rows are reported in $\mu$m/step and backlash rows as residual
+    displacement in $\mu$m.}
+    \label{tab:calib-repeat}
+    \begin{tabular}{@{}l l c c@{}}
+        \toprule
+        \textbf{Objective} & \textbf{Quantity} & \textbf{Valid trials} & \textbf{Value} \\
+        \midrule
+        4x  & Stage scale X & 10 & $2.232 \pm 0.070$ \\
+        4x  & Stage scale Y & 10 & $3.148 \pm 0.110$ \\
+        4x  & Backlash residual X & 10 & $2.150 \pm 1.385$ \\
+        4x  & Backlash residual Y & 10 & $1.611 \pm 1.464$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The 4x stage-scale repeatability is consistent with the dedicated stage-scale experiment and shows that the base objective can be calibrated with a stable pixel-to-motion relationship under the tested conditions. The X-axis stage-scale estimate has a smaller spread than the Y-axis estimate, while both backlash-residual rows remain more variable than the stage-scale rows. This is expected because the backlash check combines the calibrated image scale with a direction reversal, so it is more sensitive to remaining mechanical slack, gear compliance, and image-registration uncertainty.
+
 \subsection{Automated Workflow Reliability}
 
-\subsection{REST API Functionality and Remote Access}
+Workflow reliability was evaluated by running autofocus, focus stacking, and tile scanning ten times for each available objective profile. All 120 workflow trials completed successfully. Autofocus duration was recorded by the evaluation. Focus-stacking and tile-scanning durations were not recorded, so they are reported only as success counts. Table~\ref{tab:workflow} and Figure~\ref{fig:eval-workflow} summarize the results.
+
+\input{figures/fig_eval_workflow}
+
+\begin{table}[H]
+    \centering
+    \caption[Workflow reliability summary]{Workflow reliability. Autofocus duration is reported as mean $\pm$ standard deviation. Focus stacking and tile scanning are reported as success counts out of 10 trials.}
+    \label{tab:workflow}
+    \begin{tabular}{@{}l c c c c@{}}
+        \toprule
+        \textbf{Objective} & \textbf{Autofocus} & \textbf{Focus stacking} &
+        \textbf{Tile scanning} & \textbf{Autofocus duration (s)} \\
+        \midrule
+        4x  & 10/10 & 10/10 & 10/10 & $59.84 \pm 0.49$ \\
+        20x & 10/10 & 10/10 & 10/10 & $17.59 \pm 0.31$ \\
+        40x & 10/10 & 10/10 & 10/10 & $14.66 \pm 0.17$ \\
+        63x & 10/10 & 10/10 & 10/10 & $14.21 \pm 0.07$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+These workflow results are a quantitative evidence that show that the calibrated prototype can repeatedly complete the three user-facing automated workflows under the tested conditions. The longer 4x autofocus duration is consistent with the larger configured autofocus search range for the lower-magnification objective. The evaluation does not quantify focus-stack quality, tile alignment quality, or workflow duration for stacking and scanning.
 
 \subsection{Summary of Evaluation Results}
+
+The measured results support three conclusions. First, the stage-scale data confirms that the 4x X and Y axes require separate calibration and that 200-step measurements are more stable than 100-step measurements. Second, the motion-accuracy data shows that backlash compensation can substantially improve low-cost open-loop motion, especially X at 200 steps, but it also exposes remaining mechanical variability on Y. Third, the workflow reliability data shows repeatable successful execution of autofocus, focus stacking, and tile scanning across the tested objective profiles.
+
+The evaluation therefore supports RetroScope as a working low-cost retrofit prototype, not as a precision instrument. The main remaining evidence gaps are physical validation on additional microscope bodies, workflow quality metrics motion, and stage-scale/calibration/motion-accuracy measurements with other objectives profiles.

@@ -1,9 +1,43 @@
 \subsection{Motivation}
 
+Optical microscopes are durable scientific instruments. Their mechanical frames, objective turrets, stages, and focusing mechanisms can remain usable for decades, while the surrounding laboratory work has changed considerably. Modern microscopy is increasingly shaped by digital image capture, automated workflows, and calibrated measurements. A working analog microscope can therefore still provide valuable optical performance while being separated from the software and automation practices that are common in current digital imaging.
+
+Replacing such instruments with fully integrated motorized microscopes is often expensive and can be difficult to justify in teaching, small laboratories, and hobbyist contexts. A retrofit approach could offer a different path: Instead of discarding the existing optical instrument, the physical controls of the microscope could be motorized and digitized. This would be possible because many microscopes expose similar user-facing control interfaces, such as fine and coarse focus knobs and XY-stage knobs. These interfaces are intended for human operation, but they can also be used as attachment points for a motorized retrofit.
+
+The central motivation of this thesis is to investigate whether a low-cost embedded system can turn a vintage microscope into a programmable digital imaging platform without replacing the microscope's internal mechanics. The work is not intended to compete with high-end commercial automation platforms in precision or completeness. Instead, it explores the space between purely manual microscopy and fully integrated commercial systems. By preserving and extending existing microscopes, a retrofit approach can reduce waste while making digital microscopy more accessible.
+
 \subsection{Problem Statement}
+
+Retrofitting a microscope is a multidisciplinary problem. A useful platform must solve mechanical, electronic, software, and calibration challenges at the same time. Mechanically, a retrofit must connect motors to knobs that were designed for human hands, not for standardized actuators. The design must tolerate different microscope bodies and limited mounting space. Electronically, the platform must connect motors, user controls, sensors, display hardware, and camera input in a reproducible way. In software, the system must combine real-time manual control, camera preview, image processing, automation workflows, and a usable touchscreen interface.
+
+The most difficult aspect is that low-cost retrofit hardware does not automatically provide reliable measurement. Inexpensive geared stepper can move the microscope stage and focus axis, but gear reduction, backlash, missed motion assumptions, and axis asymmetry causes the motor position differ from the optical position. A stage that moves by motor steps is therefore not yet a calibrated measurement device. The retrofit must estimate or calibrate the relationship between image pixels, physical distance, and motor steps, and it must compensate mechanical slack sufficiently for workflows such as focus stacking and tile scanning.
+
+\clearpage
 
 \subsection{Research Questions}
 
+The work is guided by three research questions:
+
+\begin{enumerate}
+    \item Can a retrofit platform add motorized control and digital imaging to vintage microscopes while remaining adaptable to different mechanical designs through parametric modelling?
+    \item Can a low-cost prototype provide sufficiently consistent scale, motion, and positioning behavior for automated microscopy?
+    \item To what extent can image-based calibration enable automated workflows such as autofocus, focus stacking, and tile scanning?
+\end{enumerate}
+
+These questions frame "RetroScope" as an artifact-based contribution in Applied Computer Science. The thesis evaluates the design and behavior of a working prototype rather than proposing a new microscopy "standard".
+
 \subsection{Contributions}
 
+The thesis makes four main contributions:
+
+First, it presents a parametric mechanical retrofit concept for coupling motors to existing microscope controls. The design uses 3D-printed adapters, motor mounts, gear elements, and brackets to drive the existing focus and XY-stage mechanisms instead of replacing them. The Fusion model is parameterized so that geometric dimensions such as knob locations, feet positions, and assembly offsets can be adapted to other microscope bodies.
+
+Second, it presents a low-cost embedded hardware and software platform. The prototype combines a Raspberry Pi, touchscreen interface, camera input, stepper motors, custom PCB, and modular Python/PySide/QML application. The software separates drivers, services, domain logic, and QML views, allowing individual subsystems to be developed and tested independently.
+
+Third, it develops a motion-control and backlash-compensation approach for low-cost open-loop mechanics. The system tracks per-axis backlash slack and applies compensation for automated moves and joystick movement.
+
+Fourth, it implements an image-based calibration and workflow layer. Objective profiles, pixel-scale calibration, stage-scale calibration, backlash calibration, focus calibration, soft limits, and autofocus are integrated into the platform. These workflows demonstrate how the mechanical and software platform can be used as a calibrated microscope system.
+
 \subsection{Thesis Structure}
+
+The remainder of the thesis is structured as follows: It first reviews related work in digital microscopy, motorized stages, parametric fabrication, calibration, and open-source scientific hardware, then introduces the retrofit platform concept. The parametric mechanical adapter, the embedded hardware and software architecture, and the motion-control and backlash-compensation approach are described, followed by how the prototype has been evaluated. The thesis closes by discussing trade-offs, limitations, answering the research questions, and outlining future work.

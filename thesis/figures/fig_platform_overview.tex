@@ -1,0 +1,28 @@
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        font=\small,
+        layer/.style={draw, rounded corners, align=center, text width=0.84\linewidth,
+                      minimum height=1.05cm, fill=gray!8},
+        node distance=4mm,
+    ]
+        \node[layer] (work) {\textbf{Calibration \& Workflow}\\
+            pixel-, stage- and backlash calibration, objective profiles,\\
+            autofocus, focus stacking, tile scanning, gallery, REST API};
+        \node[layer, below=of work] (sw) {\textbf{Software (Python / PySide6 / QML)}\\
+            drivers, services, domain, QML bridges, touch interface};
+        \node[layer, below=of sw] (elec) {\textbf{Embedded electronics}\\
+            Raspberry\,Pi\,4, touchscreen, Sangaboard, 28BYJ-48 motors, custom PCB, ...};
+        \node[layer, below=of elec] (mech) {\textbf{Mechanical adapter (parametric, 3D-printed)}\\
+            motor mounts, gear couplings, brackets, enclosure};
+        \node[draw, rounded corners, below=of mech, text width=0.6\linewidth, align=center,
+              fill=black!5, minimum height=0.9cm] (scope)
+            {\textbf{Vintage microscope}\\ focus knob, XY-stage knobs, objectives, optical path};
+        \draw[-{Latex}] (work) -- (sw);
+        \draw[-{Latex}] (sw) -- (elec);
+        \draw[-{Latex}] (elec) -- (mech);
+        \draw[-{Latex}] (mech) -- (scope);
+    \end{tikzpicture}
+    \caption[RetroScope platform layers]{The RetroScope platform layers.}
+    \label{fig:platform-overview}
+\end{figure}

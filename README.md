@@ -85,7 +85,7 @@ The following parts were used for the prototype:
 - Endstop
 - 4x Buttons
 - Various cables
-- ABS (& PLA) filament/s for 3D printed parts
+- ABS (& PETG) filament/s for 3D printed parts
 - Optional Custom PCB
 
 ## Installation
@@ -197,6 +197,7 @@ Endpoint                                  | Description
 `GET /api/v1/captures`                    | List gallery captures.
 `GET /api/v1/captures/{id}/download`      | Download the original capture file.
 `POST /api/v1/actions/autofocus`          | Start autofocus.
+`POST /api/v1/actions/capture`            | Start capture.
 
 ## Demo Notebook
 
@@ -244,8 +245,8 @@ ToDo: Add all references
 
 The following generative AI tools were used in this thesis: 
 
-- GitHub Copilot in VS Code was used for inline code-completion suggestions during implementation.
+- GitHub Copilot in VS Code was used for inline code-completion suggestions during implementation and writing.
 - ChatGPT (OpenAI) & Claude (Anthropic) used to support brainstorming, quick research, and the generation of selected parts of the code (e.g. unit tests). AI-assisted scripts and functions are marked in the source code via comments.
-- DeepL write & Claude (Anthropic) were used in language editing and grammatical proof-reading.
+- DeepL write (DeepL SE))were used in language editing and grammatical proof-reading.
 
 All AI-generated material was critically reviewed, edited, and verified by the author. No generative AI system was used to produce original scientific results, experimental data, proofs, or final implementations of algorithms. The author assumes full responsibility for the content, correctness, and originality of this thesis.

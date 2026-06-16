@@ -1,15 +1,138 @@
-\subsection{Bill of Materials and Cost Breakdown}
-\subsection{Custom PCB Schematic and Gerber Reference}
-\subsection{GPIO, I2C, UART, and Power Wiring}
-\subsection{Parametric Fusion Model Parameters}
+\subsection{Bill of Materials and Cost Breakdown}\label{app:bom}
+
+Table~\ref{tab:components} lists the components and their role. The priced breakdown below records the component cost of the built prototype, prices vary by supplier and date. Not included are tools and equipment (3D printer, soldering station, etc.), microscope and camera.
+
+\begin{table}[H]
+    \centering
+    \caption[Priced bill of materials]{Priced bill of materials.}
+    \label{tab:bom-priced}
+    \begin{tabular}{@{}L{5.8cm} c c c@{}}
+        \toprule
+        \textbf{Item} & \textbf{Qty} & \textbf{Unit price} & \textbf{Supplier} \\
+        \midrule
+        Raspberry Pi 4 Model B (4\,GB) & 1 & 105,90 \euro & Amazon \\
+        7inch DSI Capacitive Touch Display & 1 & 76,99 \euro & Amazon \\
+        Elgato Cam Link 4K & 1 & 99,99 \euro & Amazon \\
+        Sangaboard v5 & 1 & 32,44 \euro & TauLab LTD \\
+        28BYJ-48 motor & 3 & 2,79 \euro & Amazon \\
+        Joystick with 10k potentiometers & 1 & 26,68 \euro & Amazon \\
+        ADS1115 & 1 & 4,33 \euro & Amazon \\
+        Incremental Rotary Encoder & 1 & 15,98 \euro & Amazon \\
+        INA219 & 2 & 2,989 \euro & Amazon \\
+        Ball bearing & 1 & 9,29 \euro & Amazon \\
+        End stop & 1 & 0,649 \euro & Amazon \\
+        Logic Level Converter (BSS138) & 1 & 0,749 \euro & Amazon \\
+        Custom PCB (manufacturing) & 1 & 3,83 \euro & JLCPCB \\
+        Filament (PETG) & 1 & 2,30 \euro \hspace{0.01cm} (Spool: 11,50 \euro) & Bambu Store \\
+        Filament (ABS-GF) & 1 & 15,99 \euro \hspace{0.01cm} (Spool: 31,99 \euro) & Bambu Store \\
+        Wires, Buttons, Connectors, etc. & 1 & \(\approx\) 10 \euro & (Diverse) \\
+        \midrule
+        \textbf{Total system cost} & & \(\approx\) 419,47 \euro & \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Custom PCB Schematic and Gerber Reference}\label{app:pcb}
+
+The KiCad project is contained in the repository under \texttt{cad/pcb/}. The relevant files are the schematic (\texttt{Retroscope.kicad\_sch}), the board layout (\texttt{Retroscope.kicad\_pcb}), the project and symbol files (\texttt{Retroscope.kicad\_pro}, \texttt{Retroscope.kicad\_sym}), the 3D model export (\texttt{Retroscope.step}), the manufacturing Gerbers, and the drill files (\texttt{-PTH-drl.gbr}, \texttt{-NPTH-drl.gbr}). The board carries the joystick/ADS1115 path, two INA219 current-sense modules, the BSS138 logic-level shifter, endstop/button connectors, and 5\,V/3.3\,V power rails with a common ground. The board was manufactured through JLCPCB.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{images/pcb_schematic.png}
+    \caption[Custom PCB schematic]{Custom PCB schematic exported from KiCad.}
+    \label{fig:pcb-schematic}
+\end{figure}
+
+\subsection{GPIO, I\textsuperscript{2}C, UART, and Power Wiring}\label{app:wiring}
+
+The pin and address assignments are summarised in Table~\ref{tab:wiring}. The Sangaboard uses the Raspberry Pi UART on GPIO~14/15, which requires Bluetooth to be disabled so that the full UART is available. Additional Sangaboard control and step-signalling lines use GPIO~4, 8, 11, 23, 24, and 25. The rotary encoder is connected through GPIO~17 and 27 and passes through a 5\,V\ to 3.3\,V logic-level shifter to protect the Raspberry Pi inputs. The Z endstop uses GPIO~16, and the four user buttons use GPIO~6, 13, 19, and 26.
+
+The I\textsuperscript{2}C bus on GPIO~2/3 is shared by the ADS1115 joystick ADC at address 0x48, two INA219 current-sense modules at 0x40 and 0x41, and the touchscreen controller/backlight at 0x38 and 0x45. All modules share common 5\,V, 3.3\,V, and ground rails. Figure~\ref{fig:fritzing} shows the corresponding Fritzing breadboard wiring overview. It includes the complete prototype wiring context, including the Raspberry Pi, motor controller, input devices, sensors, and power rails, rather than only the connectors on the custom PCB.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{images/fritzing.png}
+    \caption[Fritzing wiring overview]{Fritzing breadboard wiring overview of the full RetroScope prototype, including the Raspberry Pi, Sangaboard, input devices, sensors, and shared power rails.}
+    \label{fig:fritzing}
+\end{figure}
+
+\subsection{Parametric Fusion Model Parameters}\label{app:fusion}
+
+The parametric model is exported as \texttt{cad/ParametricModel.f3z}. The parameters in Table~\ref{tab:fusion} control the microscope-specific geometry: \texttt{connection\_hole} parameters set feet positions and radii, the \texttt{z\_assembly} parameters set the focus sub-assembly height and offsets, and the \texttt{xy\_assembly} offsets shift the XY sub-assembly. Adapting the platform to another microscope is intended to proceed by changing these parameters rather than rebuilding the assembly.
+
 \subsection{3D-Printing and Assembly Notes}
-\subsection{Calibration Protocol}
-\subsection{Backlash and Stage-Scale Measurement Data}
-\subsection{REST API Endpoint Reference}
-\subsection{Configuration Examples}
-\subsection{Test Protocols and Raw Evaluation Data}
-\subsection{User Interface Screenshots}
-\subsection{Installation and Deployment Guide}
-\subsection{List of Released Open-Source Artifacts}
-\subsection{Declaration: Use of Generative AI}
-\subsection{Declaration on Examinations}
+
+Prototype parts were printed in PETG for rapid iteration and ABS-GF for stiffer, load-heavy parts. Heat-set threaded inserts were used where repeated assembly or stronger threads were required. Exact slicing settings (nozzle, layer height, infill, perimeters) are recorded in Table~\ref{tab:print}.
+
+\subsection{Backlash and Stage-Scale Measurement Data}\label{app:measure}
+
+The measurement protocols and result tables are defined in Section~\ref{sec:calibration} (Table~\ref{tab:stagescale}) and Section~\ref{sec:evaluation} (Table~\ref{tab:motion}). The raw repeated-measurement data was recorded to the \texttt{thesis/evaluation\_output} directory in the repository.
+
+\subsection{REST API Endpoint Reference}\label{app:api}
+
+The API is served by FastAPI/Uvicorn on port~8765 by default, with Swagger UI at \texttt{/docs} and the OpenAPI document at \texttt{/openapi.json}. Table~\ref{tab:api} lists the endpoints.
+
+\subsection{Configuration Examples}\label{app:config}
+
+The default configuration is stored as JSON in the repository \texttt{retroscope/config/default\_config.json}. Listing~\ref{lst:config} shows a representative snippet of
+an objective profile and the motor and autofocus groups.
+
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize, frame=single, caption={Snippet of the default configuration.}, label={lst:config}]
+"objectives": {
+    "4x":  { 
+        "numerical_aperture": 0.1, 
+        "um_per_pixel": 3.6727,
+        "backlash_x": 100, 
+        "backlash_y": 200,
+        "backlash_z": 20,
+        "dof_steps": 803, 
+        "focus_stack_step": 402,
+        "autofocus_range_steps": 8030 
+    }
+},
+"motor": {
+    "stage_um_per_step_x": 2.2648,
+    "stage_um_per_step_y": 3.2720,
+    "sangaboard_step_time_us": 1000,
+    "sangaboard_ramp_time_us": 25000
+},
+"autofocus": {
+    "settle_ms": 150,
+    "move_start_ms": 400,
+    "coarse_positions": 11,
+    "fine_positions": 13,
+    "min_confidence": 70.0
+}
+\end{lstlisting}
+
+
+\subsection{User Interface Screenshots}\label{app:ui}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{images/ui_gallery.png}
+    \caption[Gallery view]{Gallery view with capture grid view.}
+    \label{fig:ui-gallery}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{images/ui_tilescan.png}
+    \caption[Tile-scan workflow view]{Tile-scan workflow view with scan pattern preview.}
+    \label{fig:ui-calibration}
+\end{figure}
+
+\subsection{Installation and Deployment Guide}\label{app:deploy}
+
+The application is a Python/PySide6 project. A typical installation starts by cloning the repository, creating a virtual environment, and installing the Python requirements. On a desktop system the application can be started in mock mode with \texttt{python app.py --mock}. This allows UI, gallery, calibration, and workflow development without the physical microscope. The first launch may take a
+little longer because Python creates its bytecode caches.
+
+For Raspberry Pi deployment, the hardware interfaces must be prepared before the application is used: I\textsuperscript{2}C must be enabled for the ADS1115, INA219 modules, and touchscreen controller, and the full PL011 UART must be available for Sangaboard communication. In the prototype this means disabling Bluetooth so that GPIO~14/15 can be used as the stable UART interface. The physical wiring is described in Table~\ref{tab:wiring} and Figure~\ref{fig:fritzing}.
+
+After the Python environment and hardware configuration are in place, the Raspberry Pi setup script is run once with sudo privileges using \texttt{sudo bash deploy/setup.sh}. The script links the repository into the expected application path if necessary, installs and enables the \texttt{retroscope.service} systemd service, adds the shutdown permission used by the UI, and applies the custom boot splash configuration. A reboot is required after this setup.
+
+The service starts \texttt{deploy/start.sh \--\--scale 1.5}. This launcher activates an available virtual environment, uses a lock file to avoid multiple application instances, and restarts the application only when the application exits with the dedicated restart code. When running on the Raspberry Pi desktop without the service, the application can also be started manually under Wayland with the appropriate \texttt{WAYLAND\_DISPLAY} and \texttt{XDG\_RUNTIME\_DIR} environment variables. The running application provides the touchscreen UI locally and the REST API on port~8765 for remote capture access and selected actions.
+
+\subsection{List of Released Open-Source Artifacts}\label{app:artifacts}
+
+The released project artifacts are available in the public GitHub repository \url{https://github.com/marvincarstensen/RetroScope} \texttt{TODO: REPLACE AFTER MOVING}. The repository contains the Python/PySide6/QML application, default configuration, deployment scripts, REST API implementation, demonstration Jupyter notebook, KiCad PCB project, the parametric Fusion model export (\texttt{ParametricModel.f3z}), and project documentation.

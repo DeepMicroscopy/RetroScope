@@ -1,11 +1,123 @@
 \subsection{Mechanical Retrofit Challenge}
 
+The mechanical design problem is constrained by the existing microscope. The retrofit must attach to a microscope body that was not designed for external motors, must align with existing knobs and axes, and must avoid interfering with normal optical operation. It must also be printable and adjustable enough to be built without specialized workshop equipment. These constraints make the mechanical adapter one of the main contributions of the platform.
+
+The prototype development began by understanding the geometry of the development microscope, a Nikon Optiphot 66 (a vintage microscope from the 1980s). It was 3D scanned and measured to determine the locations of the focus axis, XY stage, and mounting points. It also needed maintenance such as replacement of lubricants and regreasing of the XY handle to ensure smooth manual operation.
+
+The retrofit has to balance attachment strength, reversibility, printability, and usability. Parts must be rigid enough to avoid flex during motion, but must also be easy to print and assemble. Knob adapters must transfer torque without damaging the microscope. Motor mounts must keep the gears stable. The user interface enclosure must contain display, electronics, and manual controls while still fitting next to the microscope.
+
 \subsection{Fusion Parametric Model}
+
+The mechanical design is captured in a parametric Autodesk Fusion model. The exported model in the repository is stored as a Fusion archive and includes several custom parameters that control important geometry. Examples include connector-hole positions and connector-hole radii for the microscope feet, focus-axis height, focus-axis radius, Z-assembly height, Z-assembly offsets, and XY-assembly offsets.
+
+The purpose of these parameters is to separate design intent from microscope-specific dimensions. If another microscope has a different focus-axis height or different mounting geometry, the model should be adjusted by changing parameters instead of rebuilding the assembly manually. This makes the model adaptable rather than specifically designed for the Nikon Optiphot 66.
+
+\begin{table}[H]
+    \centering
+    \caption[Fusion model parameters]{Example parameters of the parametric Fusion model and their physical meaning.}
+    \label{tab:fusion}
+    \begin{tabular}{@{}l c L{6.2cm}@{}}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} & \textbf{Meaning} \\
+        \midrule
+        \texttt{connector\_hole\_front\_x/y} & 10\,mm /10\,mm & X/Y position of the front hole for the microscope feet \\
+        \texttt{connector\_hole\_back\_x/y}  & 14.5\,mm /25.5\,mm & X/Y position of the rear hole for the microscope feet \\
+        \texttt{connector\_hole\_front/back\_radius} & 13\,mm & Front/Rear hole radius for the feet \\
+        \texttt{focus\_axis\_z}      & 137\,mm & Height of the focus axis \\
+        \texttt{focus\_axis\_radius} & 17\,mm  & Focus-knob coupling radius \\
+        \texttt{z\_assembly\_height} & 137\,mm & Height of the Z (focus) sub-assembly \\
+        \texttt{z\_assembly\_x\_offset} / \texttt{z\_offset} & 0\,mm & Z sub-assembly position offsets \\
+        \texttt{xy\_assembly\_offset\_x/y/z} & 0\,mm & XY sub-assembly position offsets \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Focus and XY-Stage Adapter Design}
 
-\subsection{Motor Mounts, Gears, Brackets, and Supports}
+The retrofit drives both the focus mechanism and the XY stage through the existing controls. For the XY stage, the adapter must couple motors to the stage handle while preserving the relationship between X and Y knobs. For the focus axis, the adapter must move the focus reliably while also respecting the risk of crashing an objective into the stage or sample.
+
+The XY-stage drive required a dedicated compact gearbox rather than a simple direct motor-to-knob connection. Generally, the X and Y stage controls are implemented as two differently sized knobs stacked on top of each other. This geometry had to be preserved because it is a common manual-control arrangement and because replacing the complete stage drive would reduce compatibility with other microscope bodies. The adapter therefore places printed gears on top of the existing knobs and uses an external gear train to interface these gears with the motors. Because the available space around the knob stack was limited, the motors and gear supports had to be located below the knobs rather than beside them at the same height.
+
+The selected XY-stage gear relation uses a 12-tooth motor gear driving a 24-tooth knob gear, resulting in a 1:2 reduction at the microscope control. A 12:12 relation was also considered because a 1:1 interface could reduce backlash introduced by the printed gears. However, the 12:24 relation doubles the available output torque and the effective motor-step resolution at the stage knob. The final adapter therefore keeps the 1:2 ratio as a trade-off: compared with a 1:1 relation, it can increase the backlash contribution of the gear path, but it improves torque margin and motion granularity for the low-cost motor drive.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/xy_stage_gears.png}
+        \caption{The exposed gearbox of the XY-stage adapter.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/xy_stage_knobs.png}
+        \caption{The full enclosure and protruding knobs of the XY-stage adapter.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/z_adapter.png}
+        \caption{The focus adapter for the Z-axis.}
+    \end{subfigure}
+    \caption[XY-stage and Z-axis adapters]{Renders of the XY-stage and Z-axis adapters.}
+    \label{fig:xy-z-adapters}
+\end{figure}
+
+For a rigid connection between the printed gears and the original knob, a set screw can pass through the printed gear into the original knob so that both are locked together. For less invasive installation, the same geometry can also be used as a press fit when the available friction is sufficient for the expected torque. In addition to the motor gears, the gearbox includes manual drive gears connected to new external knobs protruding from the XY-stage assembly. These knobs allow the stage to be turned by hand when the motors are unenergized and also provide a visible indication of motion during motorized operation.
+
+The Z-axis adapter directly connects the motor shaft to the microscope's fine-focus axle. For this connection, the original fine-focus knob was removed and replaced by a printed shaft adapter that locks the motor shaft and fine-focus axle together with a set screw. Because the fine-focus axle is mechanically coupled to the microscope's focus mechanism, driving it moves the complete Z axis within the physical travel limits of the microscope. The coarse-focus knobs therefore remain untouched, which preserves the original coarse adjustment and reduces the invasiveness of the retrofit.
+
+This direct fine-focus coupling also means that larger Z movements require comparatively long motor runs, because the fine-focus mechanism is designed for small manual adjustments. The printed Z adapter is connected to the surrounding structure by a cable-guiding arm, as shown in Figure~\ref{fig:xy-z-adapters}c. This arm is part of the parametric model and extends dynamically from the models parameters, allowing the focus adapter geometry to follow the configured microscope dimensions.
+
+The enclosure became part of the mechanical design. The main body holds the Raspberry Pi, motor controller, joystick base, PCB, and wiring. The display casing holds the touchscreen. Additional buttons and the focus knob are placed so that the operator can use the system as a microscope control station rather than only as an automated backend. The z-axis adapter is directly mounted to the enclosure, routing the cables and providing a stable connection to the focus mechanism. The XY-stage adapter is only connected by wires, because it is connected to the micrscope stage, which is moving during operation and therefore cannot be rigidly attached to the enclosure.
 
 \subsection{3D-Printing and Material Considerations}
 
+The prototype uses 3D-printed parts, from PETG and ABS-GF filaments. Printing allowed rapid iteration, but it also introduced tolerances, friction differences, and flex. Threaded inserts were used where repeated assembly or stronger threads were required. Some printed features were adjusted for usability, such as grip indentations on the focus handle and a thinner display bezel to improve access to the touchscreen edges.
+
+Material choice is a trade-off. PETG is easy to print and useful for prototypes, but it may not provide sufficient stiffness or heat resistance for all parts. ABS and glass-fiber-reinforced materials can improve mechanical properties, but they increase printing difficulty. For a retrofit platform, the "best" material also depends on the available printer, the microscope geometry, and the expected mechanical loads.
+
+\begin{table}[H]
+    \centering
+    \caption[3D-printing configuration]{3D-printing configuration for the prototype parts.}
+    \label{tab:print}
+    \begin{tabular}{@{}l L{7.8cm}@{}}
+        \toprule
+        \textbf{Setting} & \textbf{Value} \\
+        \midrule
+        Materials       & PETG (Gears, Buttons, ...) and ABS-GF (Enclosure parts) \\
+        Nozzle diameter & 0.4 mm \\
+        Layer height    & 0.20 mm \\
+        Infill          & 30\% \\
+        Perimeters / walls & 2 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/adapter/body_only_square.png}
+        \caption{Enclosure with touchscreen and controls.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/adapter/adapter_only_square.png}
+        \caption{Parametric adapter assemblies.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/adapter/full_square.png}
+        \caption{Adapters fitted to the enclosure.}
+    \end{subfigure}
+    \caption[Parametric mechanical adapter render]{Render of the parametric mechanical adapter from the Fusion model: enclosure only,
+    retrofit assemblies, and fitted full configuration.}
+    \label{fig:adapter-render}
+\end{figure}
+
 \subsection{Adaptability and Mechanical Limitations}
+
+The mechanical adapter supports adaptability through parameterization, but it does not remove the need for physical validation. A new microscope body still requires measuring control locations, checking available mounting points, verifying travel limits, printing test parts, and calibrating motion. The platform therefore provides a reusable design strategy rather than a guarantee that one printed part fits every microscope.
+
+The most important mechanical limitations are backlash, flex, friction, print tolerances, and the absence of direct position feedback. These limitations directly shaped later software design. The calibration process measures pixel scale, stage scale, and backlash. The motion engine tracks slack and compensates for it.
+
+In this sense, the mechanical adapter and the software are not separate contributions. The mechanical design makes motorization possible, and the software makes the imperfect mechanics usable enough for e.g. automated imaging workflows.

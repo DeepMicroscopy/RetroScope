@@ -1,13 +1,39 @@
 \subsection{Motion-Control Pipeline}
 
+The motion-control pipeline translates user or workflow inputs into motor commands while enforcing safety and compensation logic. Motion requests can originate from e.g. the touch interface, joystick, rotary encoder, autofocus routine, focus stacker, or tile scanner. These requests are routed through the motion controller rather than being sent directly to the motor driver.
+
+The motion controller maintains the current logical position in motor steps, applies endstop and soft-limit checks, converts calibrated image distances into stage steps where needed, and plans backlash compensation. It then sends relative moves to the Sangaboard driver. Some moves are fire-and-forget for responsive manual control, while other moves are blocking because an workflow must wait until physical motion is complete before capturing an image.
+
+This structure is necessary because the same motor axes are shared by manual and automated behavior. A focus move from the encoder, an autofocus sweep, and a focus-stack step all operate on the Z axis, but they have different timing requirements. Similarly, joystick movement should feel responsive, while tile scanning requires predictable stage positions.
+
 \subsection{Manual Motion Through Touch UI, Joystick, and Encoder}
 
-\subsection{Low-Cost Geared Stepper Behavior}
+Manual XY motion is controlled primarily through the joystick. The joystick provides two analog axes through the ADS1115 ADC. The software applies deadzone, sensitivity, optional axis swapping/inversion. The requested speed is interpreted in image-space terms through the active objective profile and stage calibration, so that the joystick behavior relates to the visible field of view rather than only to raw motor steps. The system accumulates joystick movement and dispatches motor commands at a fixed interval, reducing the high-rate stream of tiny relative moves that caused jitter.
+
+Focus movement is controlled through a rotary encoder. During depth-of-field calibration, the encoder uses a fixed fine Z step so that the operator can make controlled adjustments. The calibrated death-of-field steps are then stored in the objective profile. During operation, the encoder uses the step size from the active objective profile so that the manual focus behavior is consistent between objectives regardless of there magnifications. The system also exposes manual touch controls and tap-to-move behavior in the live view, where image-pixel offsets are converted into stage steps using the active objective scale and calibrated stage scale.
+
+Blocking moves are used when the software must know that motion has completed. Autofocus, focus stacking, tile scanning, stage calibration, and backlash measurement all depend on a stable image after movement. If a capture is taken while the motor is still moving or while commands overlap, the resulting image can be blurred or spatially inconsistent.
 
 \subsection{Stage Scale and Axis Asymmetry}
 
+In a motorized retrofit, one motor step is not automatically equal to a known physical distance at the sample. The mapping depends on the motor, gear ratio, microscope stage mechanism, adapter geometry, and axis-specific friction or play. The platform therefore stores separate stage-scale values for X and Y in micrometers per motor step.
+
+Axis asymmetry is expected. The configuration stores separate X and Y stage scales and separate X and Y backlash values. Tile-scan planning uses these calibrated stage scales independently, because a single stage conversion would place tiles too far apart or too close together on at least one axis.
+
 \subsection{Software Backlash Compensation Model}
 
-\subsection{Blocking Moves and Motion Diagnostics}
+The 28BYJ-48 geared stepper motor was selected because it is inexpensive and accessible, but its internal gear reduction is central to the motion behavior of the prototype. The 1:64 internal reduction causes high resistance to manual rotation and backlash in the gear train. The motor's low cost therefore comes with mechanical disadvantages that must be addressed at the system level. 
+
+Backlash compensation is implemented as a per-axis slack model. Each axis has a configured backlash width and a current slack estimate. When motion occurs in one direction, the model updates the slack state. When a compensated move is requested, the motor command includes both the desired movement and the required slack take-up so that the physical stage movement is closer to the requested displacement.
+
+This differs from a simple direction-sign model that was also implemented during development. In a sign model, a static compensation amount is added whenever the direction changes. The final approach tracks the slack inside a hysteresis band, illustrated in Figure~\ref{fig:backlash-band}. This is more appropriate because backlash is not random measurement noise. It is deterministic, caused by the mechanical drive path. Without an independent position sensor to measure the actual stage position, the software must rely on its internal model of the slack state to plan compensation. The hysteresis-band model allows the software to maintain a more accurate estimate of the current slack state over time, which is necessary for consistent compensation.
+
+Backlash compensation applies to automated moves and also to joystick movement. When joystick direction changes, the slack amount is taken up first as part of the motor command. This makes manual movement more consistent with the compensation state used by automation. A setting can disable joystick backlash compensation for debugging or user preference.
+
+\input{figures/fig_backlash_band}
 
 \subsection{Limits of Open-Loop Motion Control}
+
+The platform remains open-loop. It estimates position from motor commands rather than measuring the actual sample position continuously. This limits the conclusions that can be drawn about accuracy. The software can compensate deterministic backlash according to its model, but it cannot detect all missed steps, mechanical flex, sample drift, or manual disturbance. The stage can also be moved by hand, which invalidates the backlash history and requires resetting or recalibrating the state.
+
+The thesis therefore evaluates RetroScope as a practical low-cost retrofit, not as a closed-loop precision stage. The relevant question is whether calibration and compensation make the system usable for workflows such as focus stacking, tile scanning, and measurement within prototype constraints. For stronger accuracy claims, future versions would need encoders, optical feedback, or direct stage-position sensing.

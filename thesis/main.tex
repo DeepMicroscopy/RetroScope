@@ -13,8 +13,9 @@
 \usepackage{tikz}
 \usepackage{float}
 \usepackage{hyperref}
-\usepackage{acronym}
-\usepackage{glossaries}
+\usepackage[nohyperlinks]{acronym}
+\usepackage[nonumberlist]{glossaries}
+\usepackage{array}
 \usepackage{tabularx}
 \usepackage{amssymb}
 \usepackage[style=ieee,autocite=footnote,giveninits=false,backend=biber]{biblatex}
@@ -24,10 +25,17 @@
 \usepackage{pgfplotstable}
 \usepackage{csvsimple}
 \usepackage{caption}
+\usepackage{pdfpages}
 \pgfplotsset{compat=1.18} % not sure whether this duplicates the versioning with the usepackage above; check if problems arise
 \usepackage[english]{babel}
 \usepackage{adjustbox}  % in the preamble
+\usepackage{booktabs}
+\usepackage[pass]{geometry} % keep template/default layout until margins are set after the title page
+\usepackage{xcolor}
+\usepackage{eurosym}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.geometric}
 \addbibresource{Literatur.bib}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \input{glossary}
 
 
@@ -35,16 +43,19 @@
 % \setcounter{secnumdepth}{4}
 
 \linespread{1.3} % increases the line spacing to 1.5
+\emergencystretch=3em % avoid overfull lines from long \texttt{} file names / URLs
 \begin{document}
 \pagenumbering{gobble} % suppresses page numbering
 \input{titlepage}
-\newpage
-\input{deckblatt}
 
-\newpage
-\input{eigenstaendigkeits}
+\clearpage
+\newgeometry{margin=2.5cm} % reduced page margins for the thesis body
+\phantomsection
+%\addcontentsline{toc}{section}{Abstract}
+\section*{Abstract}
+\input{abstract}
 
-\newpage
+\clearpage
 \tableofcontents
 \thispagestyle{empty}
 
@@ -52,39 +63,39 @@
 
 \newpage
 \pagenumbering{arabic} % starts numbering from 1 here
-\section{Introduction}
+\section{Introduction}\label{sec:introduction}
 \input{1.introduction/introduction}
 
 \newpage
-\section{Background and Related Work}
+\section{Background and Related Work}\label{sec:relatedwork}
 \input{2.relatedWork/relatedWork}
 
 \newpage
-\section{Retrofit Platform Concept}
+\section{Retrofit Platform Concept}\label{sec:platform}
 \input{3.platform/platform}
 
 \newpage
-\section{Parametric Mechanical Adapter Design}
+\section{Parametric Mechanical Adapter Design}\label{sec:mechanical}
 \input{4.mechanical_adapter/mechanical_adapter}
 
 \newpage
-\section{Embedded System Architecture}
+\section{Embedded System Architecture}\label{sec:embedded}
 \input{5.embedded_system/embedded_system}
 
 \newpage
-\section{Motion Control and Backlash Compensation}
+\section{Motion Control and Backlash Compensation}\label{sec:motion}
 \input{6.motion/motion}
 
 \newpage
-\section{Calibration Process}
+\section{Calibration Process}\label{sec:calibration}
 \input{7.calibration/calibration}
 
 \newpage
-\section{Automated Microscopy Workflows}
+\section{Automated Microscopy Workflows}\label{sec:workflows}
 \input{8.workflows/workflows}
 
 \newpage
-\section{Evaluation}
+\section{Evaluation}\label{sec:evaluation}
 \input{9.evaluation/evaluation}
 
 \newpage
@@ -101,11 +112,16 @@
 \section{Appendix}
 \input{appendix/appendix}
 
-% \input{acronyms}
 \newpage
-\section*{Glossary}
+\phantomsection
 \addcontentsline{toc}{section}{Glossary}
-\printglossary[title=, toctitle=]
+\glsaddall
+\printglossary[title={Glossary}, toctitle={Glossary}, nonumberlist]
+
+\newpage
+\section*{List of Abbreviations}
+\addcontentsline{toc}{section}{List of Abbreviations}
+\input{acronyms}
 
 \newpage
 \section*{List of Figures}
@@ -125,5 +141,29 @@
 % \nocite{*}
 
 \printbibliography[title=References, heading=bibintoc]
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{Declaration: Use of Generative AI}
+\section*{Declaration: Use of Generative AI}
+
+The following generative AI tools were used in this thesis:
+
+\begin{itemize}
+  \item GitHub Copilot in VS Code was used for inline code-completion suggestions during implementation and writing.
+  \item ChatGPT (OpenAI) \& Claude (Anthropic) used to support brainstorming, quick research, and the generation of selected parts of the code (e.g. unit tests). AI-assisted scripts and functions are marked in the source code via comments.
+  \item DeepL write (DeepL SE) were used in language editing and grammatical proof-reading.
+\end{itemize}
+
+All AI-generated material was critically reviewed, edited, and verified by the author. No generative AI system was used to produce original scientific results, experimental data, proofs, or final implementations of algorithms. The author assumes full responsibility for the content, correctness, and originality of this thesis.
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{Declaration on examinations}
+\includepdf[
+    pages=-,
+    pagecommand={},
+    offset=0 -1cm
+]{Eigenstandigkeitserklarung_zur_prufung_NEU_flattened.pdf}
 
 \end{document}

@@ -1,11 +1,143 @@
 \subsection{Calibrated Live View and Measurement}
 
+The live view is the central user-facing workflow. It combines the camera preview with overlays (scale bar and grid), objective selection, focus controls, histogram display, and backlash visualization.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.67\linewidth]{images/ui_live_view.png}
+    \caption[Live-view interface]{The live-view interface: camera preview with scale bar, crosshair and grid overlays,
+    objective selection, histogram, focus-quality badge, and touch controls.}
+    \label{fig:ui-live}
+\end{figure}
+
+Measurement tools depend on objective calibration. The measurement view allows distances, rectangles, and angles to be placed in image coordinates and displayed in calibrated units. This requires a valid micrometers-per-pixel value for the active objective. The measurement workflow therefore demonstrates the connection between objective profiles, image calibration, live camera display, and UI interaction.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.67\linewidth]{images/ui_measurements.png}
+    \caption[Measurement interface]{The measurement interface: distance, rectangle, and angle tools that display calibrated values based on the active objective.}
+    \label{fig:ui-measure}
+\end{figure}
+
 \subsection{Autofocus}
+
+The autofocus workflow moves the Z axis through a configured search range and evaluates focus scores from the camera stream. The current position is the center of the search range, because the user usually begins near an approximate focus position. Then the workflow performs a coarse sweep up half the search range, then all the way down, followed by a fine sweep around the best coarse position. The workflow uses parabolic interpolation to refine the best position from the discrete samples. The autofocus service uses configured presets and parameters, including settle time, move-start delay, coarse and fine positions, samples per position, and minimum confidence. When minimum confidence is not met, the workflow returns to the start position.
+
+The focus metric uses image sharpness cues derived from the luma/grayscale image. The implementation is guided by known autofocus approaches in microscopy \cite{pech2000diatom,sun2004autofocusing}, but it is adapted to the practical constraints of the camera path. The workflow validates that the camera analysis stream, Z motion, objective configuration, and UI state can work together. Figure~\ref{fig:autofocus-sweep} sketches the two-stage coarse/fine sweep and the parabolic peak refinement.
+
+\input{figures/fig_autofocus_sweep}
 
 \subsection{Focus Stacking}
 
+Focus stacking captures a sequence of images at different Z positions and combines them into a result with increased apparent depth of field. In RetroScope, focus stacking uses calibrated Z motion and objective-specific step settings. It captures native-resolution frames so that all planes have consistent dimensions and sufficient detail.
+
+The final image uses OME-TIFF. It can store both the blended result and the individual frames as separate planes with coordinates. This is important because it preserves the raw acquisition data rather than only the processed stack result. External tools can inspect the original planes if needed.
+
+The focus-stacking workflow is a useful validation case because it stresses several platform components at once: Z movement, blocking moves, camera capture, focus-related objective settings, metadata, and gallery display.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.46\linewidth}
+        \vspace{0pt}
+        \centering
+        \begin{tabular}[t]{@{}cc@{}}
+            \includegraphics[width=0.46\linewidth]{images/focus_stacking/focus_stack_plane_01_square.png} &
+            \includegraphics[width=0.46\linewidth]{images/focus_stacking/focus_stack_plane_05_square.png} \\
+            {\scriptsize Plane 1} & {\scriptsize Plane 5} \\[3pt]
+            \includegraphics[width=0.46\linewidth]{images/focus_stacking/focus_stack_plane_08_square.png} &
+            \includegraphics[width=0.46\linewidth]{images/focus_stacking/focus_stack_plane_12_square.png} \\
+            {\scriptsize Plane 8} & {\scriptsize Plane 12}
+        \end{tabular}
+        \caption{Selected source planes from a 12-plane focus stack example.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.515\linewidth}
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{images/focus_stacking/focus_stack_blended_square.png}
+        \caption{Blended all-in-focus result.}
+    \end{subfigure}
+    \caption[Focus-stacking example]{Example focus-stacking result: four selected Z planes (left) and the blended
+    all-in-focus image (right) produced by the focus-stacking workflow.}
+    \label{fig:focus-stack}
+\end{figure}
+
 \subsection{Tile Scanning and Stitching}
+
+Tile scanning captures a grid of adjacent fields of views and stores them either as a stitched panorama or as a grid mosaic. The tile planner uses image dimensions, objective pixel scale, overlap, and calibrated stage scales to compute motor-step spacing. If stage scale is wrong, tile spacing becomes visibly wrong. If backlash is not compensated, direction changes can create irregular overlap and make stitching less reliable.
+
+The prototype supports different scan patterns: raster and serpentine. Raster became the default pattern because it avoids horizontal direction reversal on every row. Serpentine scanning is faster, but direction changes hurts the backlash compensation. The choice of raster scanning therefore reflects the mechanical limitations of the retrofit.
+
+The implementation distinguishes between stitched panoramas and grid mosaics. A stitched panorama attempts image alignment and blending. A grid mosaic places full captured tiles into their grid cells while preserving overlap. The mosaic option is useful because it is deterministic and does not hide mechanical errors through image-registration behavior. The stitched option is closer to the expected user-facing result when the images contain enough texture and overlap for successful alignment. General tiled microscopy stitching is a well-established problem \cite{preibisch2009globally}.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/tile_stiching/tile_scan_stitched_panorama.png}
+        \caption{Stitched panorama.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/tile_stiching/tile_scan_grid_mosaic.png}
+        \caption{Deterministic grid mosaic.}
+    \end{subfigure}
+    \caption[Tile-scan output examples]{Example tile-scan (20\% overlap) outputs from the same 3\,$\times$\,3 scan geometry: a stitched
+    panorama and a grid mosaic that preserves the full tile layout and overlap.}
+    \label{fig:tile-scan}
+\end{figure}
 
 \subsection{Gallery, Metadata, and Data Export}
 
+The gallery workflow stores and displays snapshots, videos, focus stacks, and scans. It supports grid and list views, detail display, tags, metadata, thumbnails, and capture downloads through the REST API. Performance with a larger gallery was improved by generating thumbnails, instantiating only visible cells, and initializing detail content asynchronously.
+
+Image metadata is part of the workflow. Captures include objective, position, dimensions, capture time, format, tags, and workflow-specific metadata. For images, OME-TIFF provides a metadata-rich storage format that can be opened in external microscopy tools. For external scripting, the REST API exposes capture summaries and download URLs, and the demo jupyter notebook shows a simple analysis workflow based on downloaded images.
+
+\subsection{REST API for Remote Control and Capture Access}
+
+RetroScope includes a FastAPI-based REST API that starts as part of the main application. It runs in a background Uvicorn thread while the Qt/QML interface remains the primary local user interface. The API is enabled by default on port 8765, provides Swagger UI at \texttt{/docs}, and exposes the OpenAPI document at \texttt{/openapi.json}. This allows a second computer on the same network to inspect the available endpoints, download captured data, or start selected actions without interacting with the touchscreen.
+
+The current API intentionally exposes high-level application actions rather than low-level motor commands. Clients can check whether the API is alive, list gallery captures, download original capture files, trigger a still capture, and start autofocus. Capture listing supports filtering by type, sorting, limit, and offset. Downloads use an API-safe capture identifier derived from the stored capture path instead of exposing raw file paths directly.
+
+Hardware-affecting actions are routed through the application service layer and marshalled back to the Qt thread, so remote requests use the same internal services as the local UI. The API is therefore a small remote-access surface for capture and workflow automation, not a separate motion-control
+protocol. It can be extended with additional endpoints for more control and data access as needed.
+
+\begin{table}[H]
+    \centering
+    \caption[REST API endpoints]{REST API endpoints for remote access and external scripting.}
+    \label{tab:api}
+    \begin{tabular}{@{}l l L{6.8cm}@{}}
+        \toprule
+        \textbf{Method} & \textbf{Endpoint} & \textbf{Purpose} \\
+        \midrule
+        GET  & \texttt{/api/v1/health} & API health check \\
+        GET  & \texttt{/api/v1/captures} & List gallery captures with filtering, sorting, limit, and offset \\
+        GET  & \texttt{/api/v1/captures/\{id\}/download} & Download an original capture \\
+        POST & \texttt{/api/v1/actions/autofocus} & Start autofocus \\
+        POST & \texttt{/api/v1/actions/capture} & Trigger a still capture \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The repository also contains a Jupyter notebook that demonstrates connecting to the API, listing captures, selecting a snapshot, downloading the original image, decoding it, and processing it with OpenCV. This notebook illustrates how RetroScope can act both as a local capturing interface and as a network-accessible data source for external analysis.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/rest_api.png}
+        \caption{Swagger UI for the REST API.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/rest_notebook.png}
+        \caption{Jupyter notebook demonstrating API usage.}
+    \end{subfigure}
+    \caption[REST API and notebook screenshots]{Screenshots of the Swagger UI for the REST API and Jupyter notebook demonstrating API usage.}
+    \label{fig:rest}
+\end{figure}
+
 \subsection{Role of the Workflows in Validating the Platform}
+
+The workflows are not presented as independent research contributions. Autofocus, focus stacking, tile scanning, gallery management, and measurement are standards of digital microscopy functionality. Their role in this thesis is to validate the retrofit concept. Each workflow requires a different combination of mechanics, electronics, camera handling, calibration, and motion control.
+
+If the platform can support these workflows with low-cost hardware and parametric mechanical adapters, then the core claim of the thesis is strengthened. Conversely, workflow failures identify where the retrofit approach reaches its limits. For example, tile scanning reveals stage-scale and backlash problems, autofocus reveals focus-score and frame-analysis timing problems, gallery performance reveals memory limitations on the Raspberry Pi, and video capture reveals bandwidth and pixel-format constraints.

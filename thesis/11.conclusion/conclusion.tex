@@ -1,5 +1,15 @@
 \subsection{Summary}
 
-\subsection{Contributions}
+This thesis presented RetroScope, an open retrofit platform for motorizing and digitizing vintage microscopes. The work started from the observation that many microscopes share user-facing control interfaces such as focus knobs, and XY-stage knobs. RetroScope uses these interfaces instead of replacing the microscope's internal mechanics. A parametric mechanical adapter, low-cost embedded electronics, modular software stack, and image-based calibration process are combined into a working prototype.
+
+The prototype demonstrates motorized XY and Z control, live digital imaging, objective profiles, calibrated measurement, autofocus, focus stacking, tile scanning, and REST-based remote access. The workflows are enabled by calibration and motion compensation rather than by high-end mechanical hardware. This is the central result of the thesis: a low-cost retrofit can become useful when mechanical adaptation, embedded control, software architecture, and calibration are designed together.
 
 \subsection{Future Work}
+
+Future work should begin with extending the quantitative validation. The current evaluation already covers 4x stage scale, 4x motion accuracy, 4x calibration repeatability, and workflow reliability across several objective profiles. The next step is to add higher-magnification calibration, motion, and stage-scale datasets, objective quality metrics for focus stacks and tile scans, and a comparison of alternative higher-performance, higher-cost component choices. The parametric adapter's adaptability is demonstrated virtually in this thesis through parameter variation on the Nikon Optiphot 66 model. Building the platform on additional physical microscope bodies would turn this into empirical evidence and further strengthen the adaptability claim.
+
+The mechanical design could be improved through stiffer materials, metal inserts or machined parts in high-load areas, and better gear support. The motion system could be improved through closed-loop feedback, for example with motor encoders, stage encoders, optical tracking, or other position sensors.
+
+The software could be extended with richer REST endpoints, remote live-view streaming, additional capture formats, and more robust stitching.
+
+RetroScope therefore remains both a working prototype and a platform for further development. Its main value is not that it removes all limitations of low-cost retrofit hardware, but that it shows a coherent path for giving vintage microscopes a longer lifetime with programmable and digital capabilities.

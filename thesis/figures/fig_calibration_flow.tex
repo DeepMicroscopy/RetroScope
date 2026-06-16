@@ -1,0 +1,24 @@
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[font=\footnotesize, >=Latex, node distance=4mm,
+        cstep/.style={draw, rounded corners, align=center, text width=0.72\linewidth,
+                     minimum height=0.8cm, fill=gray!8}]
+        \node[cstep] (px)   {\textbf{Pixel-scale calibration} (base objective (e.g. 4x), calibration slide)\\
+                             calculates $\mu$m/pixel};
+        \node[cstep, below=of px]   (derive) {\textbf{Derive other objectives}\\
+                             scale by magnification ($M$) and numerical aperture ($NA$)};
+        \node[cstep, below=of derive] (stage) {\textbf{Stage-scale calibration} (X and Y separately)\\
+                             calculates $\mu$m/step per axis};
+        \node[cstep, below=of stage] (back) {\textbf{Backlash calibration} (per axis, image comparison)\\
+                              calculates backlash steps per axis};
+        \node[cstep, below=of back] (focus) {\textbf{Depth-of-field (focus stacking)}\\
+                             step spacing, search range};
+        \draw[-{Latex}] (px)--(derive); \draw[-{Latex}] (derive)--(stage);
+        \draw[-{Latex}] (stage)--(back); \draw[-{Latex}] (back)--(focus);
+    \end{tikzpicture}
+    \caption[Calibration workflow]{Calibration workflow. A base objective is calibrated against a slide, remaining objectives
+    are derived from magnification and numerical aperture, and the stage scale, backlash, focus
+    parameters, and soft limits are measured and stored in the configuration for reuse by the
+    automated workflows.}
+    \label{fig:calibration-flow}
+\end{figure}

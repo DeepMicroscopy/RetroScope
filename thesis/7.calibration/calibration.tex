@@ -1,17 +1,130 @@
-\subsection{Purpose of Calibration in the Retrofit Platform}
+\subsection{Purpose of Calibration}
+
+Calibration turns the motorized retrofit from a movable camera system into a measurement-capable microscope platform. Without calibration, the software can move motors and display images, but it cannot reliably express distances in micrometers, plan tile overlap, or compensate backlash.
+
+The calibration process must address several mappings. Image pixels must be mapped to physical distance at the sample. Motor steps must be mapped to physical stage movement. Focus movement must be related to depth-of-field and autofocus range. Backlash must be measured so that direction changes can be compensated. Soft limits must be configured so that automated moves do not drive the stage or focus axis into unsafe regions.
 
 \subsection{Calibration Wizard Workflow}
 
+RetroScope implements calibration as guided workflows rather than as raw configuration editing. This design is important because the calibration values are meaningful only when measured in the correct order and under controlled conditions.
+
+The calibration wizards are part of the usability contribution. They allow the user to calibrate the microscope through the same application that will later use the calibration values. This reduces the risk that calibration data is recorded externally and then transferred incorrectly. Values are stored in the configuration system and are immediately available to motion control, measurement, autofocus, focus stacking, and tile scanning. Figure~\ref{fig:calibration-flow} shows the order in which the calibrations are performed and how they feed the workflows.
+
+\input{figures/fig_calibration_flow}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/calibration_slide_1.jpg}
+        \caption{Calibration Slide inserted into the microscope for pixel-scale calibration.}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/calibration_slide_2.jpg}
+        \caption{Calibration wizard measuring pixel scale by marking reference points on the calibration slide.}
+    \end{subfigure}
+    \caption[Pixel-scale calibration workflow]{Calibration process in action: the user inserts a calibration slide and marks reference points to measure pixel scale.The resulting values are stored in the configuration and used by the software.}
+    \label{fig:calibration}
+\end{figure}
+
 \subsection{Objective Profiles and Pixel Scale Calibration}
+
+Objective profiles store magnification, numerical aperture, backlash values, micrometers per pixel, depth-of-field steps, focus-stack step, and autofocus range. The active objective determines the scale bar, measurement conversion, motion speed, focus-stack spacing, and tile-scan planning.
+
+Pixel-scale calibration measures how many micrometers in the specimen plane correspond to one image pixel for a given objective and camera configuration. This is usually performed using a calibration slide. Once calibrated, distances in the measurement view can be reported in physical units, and tile scans can compute the physical size of the camera field of view.
+
+The default configuration currently stores calibrated micrometers-per-pixel values for several objectives using the Nikon Optiphot 66 microscope and a Nikon DSLR camera.
+
+\begin{table}[H]
+    \centering
+    \caption[Objective profile calibration values]{Objective profiles in the default configuration: numerical aperture (NA), pixel scale,
+    depth-of-field steps, focus-stack step, autofocus search range, and per-axis backlash. The pixel scales for the higher-magnification objectives are derived from the base objective rather than measured directly.}
+    \label{tab:objectives}
+    \begin{tabular}{@{}l c c c c c c@{}}
+        \toprule
+        \textbf{Obj.} & \textbf{NA} & \textbf{$\mu$m/px} & \textbf{DoF} & \textbf{Stack} &
+        \textbf{AF range} & \textbf{Backlash X/Y/Z} \\
+         & & & \textbf{(steps)} & \textbf{(steps)} & \textbf{(steps)} & \textbf{(steps)} \\
+        \midrule
+        4x   & 0.10 & 3.673 & 803 & 402 & 8030 & 100/200/20 \\
+        20x  & 0.40 & 0.735 & 128 & 64  & 1280 & 100/200/20 \\
+        40x  & 0.65 & 0.367 & 50  & 25  & 500  & 100/200/20 \\
+        63x  & 1.40 & 0.233 & 19  & 10  & 200  & 100/200/20 \\
+        100x & 1.25 & 0.147 & 5   & 3   & 200  & 100/200/20 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Scaling Calibration Across Objectives}
 
+During development, direct calibration on high-magnification objectives was found to be difficult. The calibration was reworked so that one base objective can be calibrated and other objective scales can be derived from magnification. The relationship used for pixel scale is:
+
+\[
+    s_{\mathrm{target}} = s_{\mathrm{base}} \cdot \frac{M_{\mathrm{base}}}{M_{\mathrm{target}}},
+\]
+
+where \(s\) is the micrometers-per-pixel scale and \(M\) is magnification. For example, if a 4x objective has a scale of \(2.0\,\mu\mathrm{m/px}\), a 10x objective is estimated as \(2.0 \cdot 4 / 10 = 0.8\,\mu\mathrm{m/px}\).
+
+Depth-of-field related steps are scaled from the optical dependence of axial depth of field on numerical aperture. A microscope objective's total depth of field can be approximated as the sum of a diffraction term and a detector/magnification term \cite{nikonDepthField}:
+
+\[
+    d_{\mathrm{tot}} =
+    \frac{\lambda \cdot n}{NA^2} + \frac{n }{M \cdot NA} e,
+\]
+
+where \(\lambda\) is the illumination wavelength, \(n\) is the refractive index of the medium between specimen and objective, \(NA\) is numerical aperture, \(M\) is objective magnification, and \(e\) is the smallest resolvable distance at the detector. The first term shows the inverse-square dependence on numerical aperture. RetroScope uses this as a practical calibration approximation: the base objective is measured directly, and the motor-step counts for focus-stack spacing, depth-of-field stepping, and autofocus range are derived by scaling the calibrated base value with the relative inverse-square NA ratio:
+
+\[
+    d_{\mathrm{target}} = d_{\mathrm{base}} \cdot
+    \left(\frac{NA_{\mathrm{base}}}{NA_{\mathrm{target}}}\right)^2.
+\]
+
+Here \(d\) denotes a motor-step count derived from the calibrated base objective rather than an optical distance in micrometers.
+
+This approach makes calibration practical across several objectives, but it also introduces assumptions. Magnification and numerical aperture give useful scaling, but they do not account for all optical and mechanical differences. Direct measurement remains preferable where high accuracy is required.
+
 \subsection{Stage Scale Calibration for X and Y}
+
+Stage-scale calibration measures how far the sample moves per motor step in X and Y. This is different from pixel-scale calibration. Pixel scale maps the image to the specimen plane, while stage scale maps motor commands to physical movement. Both are required for tile scans because the tile planner must know how many motor steps move the field of view by a desired physical overlap.
+
+The system stores X and Y stage scales separately because the axes can differ mechanically. The stage scale is measured per axis with the following procedure: a textured reference region is captured, the axis is commanded a known number of motor steps in a fixed direction, a second frame is captured, and the image displacement is measured. The scale follows directly from the pixel displacement and the calibrated pixel scale,
+\[
+    \mathrm{stage\ scale} \;=\; \frac{\Delta_{\mathrm{px}}\cdot s}{N_{\mathrm{steps}}}
+    \quad\left[\frac{\mu\mathrm{m}}{\mathrm{step}}\right],
+\]
+where $\Delta_{\mathrm{px}}$ is the measured displacement, $s$ the pixel scale, and $N_{\mathrm{steps}}$ the commanded steps. To assess repeatability the measurement is repeated several times per axis and reported in Table~\ref{tab:stagescale-protocol}.
+
+\begin{table}[H]
+    \centering
+    \caption[Measured 4x stage-scale repeatability]{Measured 4x stage-scale repeatability from the evaluation. Values are mean
+    $\pm$ standard deviation across 10 valid trials.}
+    \label{tab:stagescale-protocol}
+    \begin{tabular}{@{}l c c c c@{}}
+        \toprule
+        \textbf{Axis} & \textbf{Commanded steps} & \textbf{Valid trials} &
+        \textbf{Measured px} & \textbf{$\mu$m/step} \\
+        \midrule
+        X & 100 & 10 & $59.44 \pm 2.59$ & $2.183 \pm 0.095$ \\
+        X & 200 & 10 & $121.05 \pm 3.13$ & $2.223 \pm 0.058$ \\
+        Y & 100 & 10 & $92.84 \pm 6.48$ & $3.410 \pm 0.238$ \\
+        Y & 200 & 10 & $170.76 \pm 3.62$ & $3.136 \pm 0.066$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Backlash Calibration}
 
-\subsection{Focus, Depth-of-Field, and Autofocus Calibration}
+Backlash calibration measures the lost motion that occurs when an axis changes direction. The backlash values are stored per axis and applied through the motion controller's slack model. The calibration process uses image comparison: the user captures a reference crop, moves the axis, reverses direction, and measures the image offset after motion. This connects mechanical slack to visible image displacement.
 
-\subsection{Soft Limits, Configuration Storage, and Reproducibility}
+Backlash existed on all axes, including the Z axis. The Z motor is coupled directly to the fine-focus axis, while X and Y are driven through the printed gearbox and knob interface. Therefore, no additional gearbox backlash is introduced on Z, and the configured Z backlash is smaller than the X and Y values. The value for the Z backlash gets input manually in addition to the measured X and Y backlash.
+
+\subsection{Soft Limits}
+
+Soft limits protect the microscope during manual and automated movement. They are especially important for tile scanning and focus stacking, where the software can issue many moves without direct human attention. The endstop provides a physical safety signal for Z movement, while configured soft limits constrain the XY stage range in software.
+
+During calibration, the user first homes the stage at the top-left corner and then moves to the opposite bottom-right corner. The controller normalizes these two positions into an allowed XY rectangle and saves it in the configuration. Manual moves, joystick movement, live-view tap movement, and automation targets are checked against this rectangle before they are accepted and tile scans are preflighted before capturing starts. Because these limits rely on the controller's open-loop step position, they must be recalibrated if the stage is moved by hand, steps are missed, or the mechanical setup changes.
 
 \subsection{Calibration Limitations}
+
+The calibration process does not eliminate the limitations of the retrofit hardware. It assumes that the mechanical system remains stable after calibration. If printed parts flex differently over time, gears loosen, the stage is moved by hand, the camera resolution changes, or the objective/camera path changes, calibration values may become invalid. The derived scaling between objectives is also an approximation.

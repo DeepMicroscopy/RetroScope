@@ -1,0 +1,23 @@
+\begin{figure}[H]
+    \centering
+    \newcommand{\adaptplain}[1]{%
+        \begin{minipage}[t]{0.32\linewidth}\centering
+            \includegraphics[width=\linewidth]{images/virtual_adapt/#1}
+        \end{minipage}}
+    \newcommand{\adaptcell}[2]{%
+        \begin{subfigure}[t]{0.32\linewidth}\centering
+            \includegraphics[width=\linewidth]{images/virtual_adapt/#1}
+            \caption{#2}
+        \end{subfigure}}
+    \adaptplain{variant1.png}\hfill
+    \adaptcell{variant7.png}{Baseline (Nikon Optiphot 66)}\hfill
+    \adaptplain{variant8.png}
+
+    \vspace{8pt}
+    \adaptplain{variant2.png}\hfill
+    \adaptcell{variant5.png}{Virtual variant}\hfill
+    \adaptplain{variant6.png}
+
+    \caption[Virtual parametric adaptability]{Virtual demonstration of parametric adaptability. Editing the Fusion model parameters regenerates the adapter and enclosure geometry, including the Z-axis position and mounting-plate geometry for the microscope feet, for different body dimensions and configurations without rebuilding the assembly. All views are produced from the parametric model only. No second physical microscope was evaluated.}
+    \label{fig:virtual-adapt}
+\end{figure}

@@ -1,0 +1,20 @@
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[font=\footnotesize, >=Latex]
+        \draw[thick] (-4,0) -- (4,0);
+        \draw[thick] (-4,-0.15) -- (-4,0.15) node[above] {$-b/2$};
+        \draw[thick] ( 4,-0.15) -- ( 4,0.15) node[above] {$+b/2$};
+        \draw[thick] ( 0,-0.12) -- ( 0,0.12) node[above] {$0$};
+        \fill[blue!60!black] (1.2,0) circle (2.5pt) node[below=3pt] {current slack $s$};
+        \node[align=center, anchor=north, text width=0.55\linewidth] at (0,-1.15) {%
+            A compensated move by $\Delta$ adds a pre-move that takes up the band:\\[4pt]
+            $\mathrm{commanded} \Delta \;=\; \Delta + \big(\operatorname{sign}(\Delta)\cdot\tfrac{b}{2} - s\big);
+             \qquad s \;=\; \operatorname{sign}(\Delta)\cdot\tfrac{b}{2}.$};
+    \end{tikzpicture}
+    \caption[Hysteresis-band backlash model]{Hysteresis-band backlash model. Each axis tracks a slack estimate $s$ within the backlash
+    band $[-b/2,\,+b/2]$. A move continuing in the same direction needs no compensation. A direction
+    reversal must first traverse the band, so the motor command adds the slack before the
+    requested displacement $\Delta$. For example, with $b=100$ a first $+1000$ move commands $+1050$
+    (slack: +50). A following $-500$ move commands $-600$ (slack: -50), because it needs to move through the whole band first.}
+    \label{fig:backlash-band}
+\end{figure}

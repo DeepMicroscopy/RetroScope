@@ -1,19 +1,51 @@
 \subsection{Vintage Microscope Interfaces and Retrofitting}
 
+Many upright and inverted microscopes share a set of physical interfaces that are matching across manufacturers and generations. Focus is typically controlled through coarse and fine knobs, the sample is positioned through an XY stage or slide holder, illumination is adjusted separately, and image capture can often be added through an adapter or dedicated port. These interfaces are important for retrofitting because they provide mechanical access points that do not require modification of the optical path or the internal microscope frame.
+
+A retrofit strategy differs from the design of a purpose-built automated microscope. Instead of constructing the optical and motion system as a single integrated device, it accepts the existing microscope as a constraint. The retrofit must therefore be mechanically reversible where possible and work with user-facing controls that were not designed for automation. This is both a limitation and an opportunity. It limits absolute precision and integration, but it also makes it possible to reuse optical instruments that would otherwise go to waste.
+
+The OpenFlexure Microscope demonstrates that open-source hardware can support automated microscopy with low-cost components and 3D-printed structures \cite{collins2020openflexure}. RetroScope follows a related open-hardware motivation, but the design problem is different: it does not replace the microscope body with a printed microscope. Instead, it attaches an embedded system to an existing microscope and attempts to preserve the microscope as the optical core of the system.
+
 \subsection{Digital Imaging in Microscopy}
+
+Digital microscopy depends not only on acquiring images, but also on preserving enough metadata for later interpretation. The Open Microscopy Environment (OME) data model was developed to represent microscope image data and associated metadata in a structured way \cite{goldberg2005ome}. OME-TIFF combines TIFF image storage with OME metadata and is widely used as an interoperable format for biological imaging workflows \cite{omeTiffDocs}.
+
+This matters for a retrofit platform because images captured from a motorized microscope are not isolated pictures. Their value depends on objective magnification, stage position, Z position, capture time, etc. A snapshot, focus stack, and tile scan should therefore be stored with metadata. RetroScope uses OME-TIFF for image captures and stores workflow-specific metadata so that captured data can be inspected in external tools such as Fiji, napari, and QuPath. Fiji is an established open-source tool in biological image analysis \cite{schindelin2012fiji}, making interoperability with such ecosystems important for a practical microscope platform.
 
 \subsection{Motorized Microscope Stages and Focus Control}
 
+Motorized microscope stages and focus drives enable repeatable acquisition workflows that are impractical or tedious by hand. Commercial microscope systems often integrate closed-loop stages, encoders, vendor-specific control software, and precise motor drivers. Open software projects such as Micro-Manager provide a general control layer for microscope hardware and devices \cite{microManager2007,edelstein2014advanced}. Pycro-Manager extends this idea toward Python-controlled and reproducible microscope automation \cite{pinkard2021pycromanager}.
+
+RetroScope operates at a different hardware level. The platform does not assume a commercial motorized stage. Instead, it must create motorized behavior by driving manual knobs. This makes the motion-control less precise because the system is separated from the actual sample position by the microscope mechanics, adapter gears, printed parts, and low-cost stepper motors. The benefit is that the approach can be applied to microscopes that were not designed for motorized control.
+
 \subsection{Parametric CAD and Digital Fabrication}
+
+Digital fabrication is central to RetroScope because it allows project-specific mechanical parts to be produced without industrial tooling. A parametric CAD model is particularly useful for retrofit work because the same design can be reused while dimensions are changed for another microscope body. In this thesis, parametric design is not only a convenience for modeling. It is part of the platform claim: if microscope control interfaces are structurally similar but geometrically different, then a retrofit adapter should expose the relevant geometric differences as editable parameters.
+
+The main fabrication method used in this work is 3D printing. Making it possible to produce adapters, motor mounts, gears, brackets, and enclosure parts on accessible hardware, which directly supports the low-cost and reproducibility goals of the retrofit and allows a changed parameter to be reprinted without specialized tooling. The same accessibility underlies other open-hardware microscopes, like OpenFlexure, where printed structures replace machined parts \cite{collins2020openflexure}.
 
 \subsection{Stepper Motors, Gear Reduction, and Backlash}
 
+Low-cost geared stepper motors are attractive for retrofit systems because they are inexpensive, compact, and easy to drive. However, the gear train introduces backlash and makes manual movement difficult when the motor is energized. Comparing a 28BYJ-48 geared stepper motor with a direct-drive stepper identifies a key trade-off: the geared motor provides torque and resolution at low cost, but the internal gear reduction produces gear lock and mechanical slack. Backlash is especially problematic for image acquisition workflows. If a stage changes direction before capture, part of the commanded motor motion can be consumed by slack rather than actual displacement.
+
 \subsection{Calibration in Digital Microscopy}
+
+Calibration links image coordinates, optical magnification, and physical dimensions. Pixel-scale calibration makes measurements meaningful in units such as micrometers rather than pixels. Stage-scale calibration is additionally required for a motorized retrofit because motor steps must be converted into physical XY movement. Objective-specific parameters are also needed because magnification and numerical aperture affect field of view, depth of field, focus-stack spacing, and autofocus range.
+
+An image-based calibration is needed to make open-loop hardware usable for workflows. On high-magnification objectives image-based calibration is difficult because the field of view is small and sensitive to even small movements. Therefore, the calibration process must be designed to be robust to the limitations of the hardware.
 
 \subsection{Automated Microscopy Workflows}
 
+Automated workflows such as autofocus, focus stacking, tile scanning, and calibrated measurement are common reasons for motorizing a microscope. Autofocus estimates an optimal Z position using an image sharpness measure. Comparative studies have evaluated different focus measures in brightfield microscopy \cite{pech2000diatom}, and algorithm choice is known to depend on sample, imaging modality, and computational constraints \cite{sun2004autofocusing}. Focus stacking combines multiple Z planes to increase apparent depth of field. Tile scanning captures adjacent fields of view and combines or stores them as larger mosaics. Image-stitching methods can optimize alignment into an seamless capture \cite{preibisch2009globally}.
+
+In this thesis these workflows are treated as validation of the platform rather than new algorithmic contributions. The question is not whether a new autofocus or stitching algorithm has been invented. The question is whether the retrofit mechanics, calibration, and embedded software are good enough to support these workflows on a vintage microscope.
+
 \subsection{Existing Microscope Automation Systems}
 
-\subsection{Open-Source Scientific Hardware}
+Existing automation systems can be grouped roughly into commercial integrated platforms, open software controllers, and open hardware microscopes. Commercial systems provide high integration and precision, but they are expensive and often vendor-specific. Open software systems such as Micro-Manager and Pycro-Manager make microscope control more flexible and reproducible when compatible hardware is available \cite{edelstein2014advanced,pinkard2021pycromanager}. Open hardware platforms such as OpenFlexure show how low-cost motorized microscopy can be built from accessible components \cite{collins2020openflexure}.
+
+This thesis occupies a complementary position. It is not a general hardware-control layer for commercial microscope devices, and it is not a full microscope built from scratch. It is a retrofit platform for existing microscopes whose optical and mechanical core remains in place. This makes adaptability to existing physical interfaces the central design concern.
 
 \subsection{Research Gap}
+
+The related work shows approaches for microscope control, microscopy image metadata, open-source image analysis, and low-cost motorized microscopes. The gap addressed by this thesis is the combination of these ideas in a retrofit platform for existing vintage microscopes. The platform must bridge human-facing microscope mechanics and software-controlled acquisition while remaining low-cost and adaptable. The contribution therefore lies in the integration of parametric mechanical adaptation, embedded hardware, open-loop motion compensation, and image-based calibration into one working retrofit artifact.

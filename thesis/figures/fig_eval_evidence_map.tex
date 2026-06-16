@@ -1,0 +1,24 @@
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        font=\small,
+        box/.style={draw, rounded corners, align=center, text width=0.28\linewidth, minimum height=1.1cm, fill=gray!8},
+        data/.style={draw, rounded corners, align=center, text width=0.24\linewidth, minimum height=0.9cm, fill=blue!7},
+        >=Latex,
+        node distance=7mm and 8mm,
+    ]
+        \node[box] (rq1) {RQ1\\Parametric retrofit adaptability};
+        \node[box, right=of rq1] (rq2) {RQ2\\Low-cost scale and motion};
+        \node[box, right=of rq2] (rq3) {RQ3\\Calibration-enabled workflows};
+        \node[data, below=of rq1] (cad) {CAD parameter variants\\Mechanical artifact};
+        \node[data, below=of rq2] (motion) {Stage scale\\Motion accuracy\\Calibration repeat};
+        \node[data, below=of rq3] (workflow) {Autofocus\\Focus stacking\\Tile scanning};
+        \draw[-{Latex}] (cad) -- (rq1);
+        \draw[-{Latex}] (motion) -- (rq2);
+        \draw[-{Latex}] (motion) -- (rq3);
+        \draw[-{Latex}] (workflow) -- (rq3);
+    \end{tikzpicture}
+    \caption[Evaluation evidence map]{Evaluation evidence map. The physical measurements mainly support RQ2 and RQ3, while RQ1 is supported by the mechanical artifact and virtual parametric adaptation rather than by a second physical microscope build.}
+    \label{fig:eval-evidence-map}
+\end{figure}

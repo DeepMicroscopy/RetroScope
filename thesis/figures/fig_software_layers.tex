@@ -1,0 +1,30 @@
+\begin{figure}[H]
+    \centering
+    \begin{adjustbox}{max width=\linewidth}
+    \begin{tikzpicture}[font=\footnotesize,
+        box/.style={draw, rounded corners, align=center, minimum height=1.15cm,
+                    text width=6.0cm, fill=gray!8},
+        api/.style={box, text width=2.85cm, fill=blue!6},
+        node distance=6mm]
+        \node[box] (ui) {\textbf{QML UI}\\ live, gallery, automation, settings};
+        \node[box, below=of ui] (br) {\textbf{Bridges}\\ Qt properties, signals, slots};
+        \node[box, below=of br] (svc) {\textbf{Services}\\ motion, camera, autofocus, focus stacker, tile scanner};
+        \node[api, right=8mm of svc] (api) {\textbf{REST API}\\ FastAPI / Uvicorn};
+        \node[box, below=of svc] (dom) {\textbf{Domain}\\ focus metrics, stitch, scan planning, calibration};
+        \node[box, below=of dom] (drv) {\textbf{Drivers}\\ serial, V4L2, I\textsuperscript{2}C, gpiod};
+        \node[box, below=of drv] (hw) {\textbf{Hardware}\\ Sangaboard, camera, ADS1115, encoder, GPIO};
+
+        \draw[-{Latex}] (ui)--(br);
+        \draw[-{Latex}] (br)--(svc);
+        \draw[-{Latex}] (api.west)--(svc.east);
+        \draw[-{Latex}] (svc)--(dom);
+        \draw[-{Latex}] (dom)--(drv);
+        \draw[-{Latex}] (drv)--(hw);
+    \end{tikzpicture}
+    \end{adjustbox}
+    \caption[Layered software architecture]{Layered software architecture. Hardware access is isolated in drivers. Services implement
+    application behaviour. Domain modules hold pure calculations. Bridge classes expose
+    state and commands to the QML touch interface and a FastAPI service offers remote access to the
+    same services.}
+    \label{fig:software-layers}
+\end{figure}
