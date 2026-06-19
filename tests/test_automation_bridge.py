@@ -1,4 +1,7 @@
-"""Tests for automation bridge task labels and completion details."""
+"""Tests for automation bridge task labels and completion details.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 

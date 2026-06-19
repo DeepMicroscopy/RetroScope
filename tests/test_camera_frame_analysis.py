@@ -1,4 +1,7 @@
-"""Tests for camera frame analysis, focus scores and analysis gating."""
+"""Tests for camera frame analysis, focus scores and analysis gating.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 

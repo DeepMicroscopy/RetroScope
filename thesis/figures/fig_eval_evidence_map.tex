@@ -3,13 +3,13 @@
     \centering
     \begin{tikzpicture}[
         font=\small,
-        box/.style={draw, rounded corners, align=center, text width=0.28\linewidth, minimum height=1.1cm, fill=gray!8},
+        box/.style={draw, rounded corners, align=center, text width=0.29\linewidth, minimum height=1.1cm, fill=gray!8},
         data/.style={draw, rounded corners, align=center, text width=0.24\linewidth, minimum height=0.9cm, fill=blue!7},
         >=Latex,
         node distance=7mm and 8mm,
     ]
         \node[box] (rq1) {RQ1\\Parametric retrofit adaptability};
-        \node[box, right=of rq1] (rq2) {RQ2\\Low-cost scale and motion};
+        \node[box, right=of rq1] (rq2) {RQ2\\Low-cost motion and positioning};
         \node[box, right=of rq2] (rq3) {RQ3\\Calibration-enabled workflows};
         \node[data, below=of rq1] (cad) {CAD parameter variants\\Mechanical artifact};
         \node[data, below=of rq2] (motion) {Stage scale\\Motion accuracy\\Calibration repeat};

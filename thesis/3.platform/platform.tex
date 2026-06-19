@@ -24,11 +24,20 @@ The system is operated primarily through a touchscreen interface. The QML interf
 
 The platform supports snapshots, calibrated measurement, autofocus, focus stacking, tile scanning, gallery management, and REST-based access to captures and selected actions. Focus stacking and tile scanning workflows are not independent features added after the fact. They require calibrated objective data, motor control, and camera capture to work together and evaluate the platform as a whole. These workflows are therefore important demonstrations of the platform's capabilities and design.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/explode_notes.png}
+    \caption[Exploded view of retrofit components]{Exploded render of the RetroScope prototype. The view separates the printed enclosure, joystick and encoder assembly, Raspberry Pi and Sangaboard electronics, custom PCB, feet mounting bracket, focus adapter, Z endstop bracket, XY-stage adapter, and camera adapter.}
+    \label{fig:explode-diagram}
+\end{figure}
+
 \subsection{Open-Source Platform Artifacts}
 
 RetroScope is intended as an open platform rather than a single prototype. The repository contains the Python/PySide/QML application, test suite, deployment scripts, README documentation, REST API demo notebook, KiCad~\cite{kicad} PCB files, Gerber outputs, and the parametric Autodesk Fusion~\cite{autodeskFusion} model. This collection is important because a retrofit platform cannot be reproduced from software alone. The physical adapter, electronics, and calibration process are part of the artifact.
 
 The open-source release also supports extension. The software architecture is split into drivers, services, domain modules, bridge classes, and QML views. The hardware release includes PCB and CAD artifacts. The documentation describes setup, operation, and current limitations. Together, these artifacts allow the work to be inspected, modified, and adapted to other microscope bodies.
+
+\newpage
 
 Figure~\ref{fig:platform-overview} summarises how these subsystems stack on top of the unmodified
 microscope. The retrofit adds mechanical, electronic, software, and calibration/workflow subsystems on top of the  vintage microscope, driving its existing focus and stage controls rather than replacing the optical instrument.

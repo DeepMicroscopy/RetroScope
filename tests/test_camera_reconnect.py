@@ -1,4 +1,7 @@
-"""Tests for camera reconnect."""
+"""Tests for camera reconnect.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 

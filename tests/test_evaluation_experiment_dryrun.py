@@ -1,4 +1,7 @@
-"""Evaluation: Dry-run of the motion/stage experiments against a 'fake rig'."""
+"""Evaluation: Dry-run of the motion/stage experiments against a 'fake rig'.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 

@@ -4,7 +4,7 @@ Optical microscopes are durable scientific instruments. Their mechanical frames,
 
 Replacing such instruments with fully integrated motorized microscopes is often expensive and can be difficult to justify in teaching, small laboratories, and hobbyist contexts. A retrofit approach could offer a different path: Instead of discarding the existing optical instrument, the physical controls of the microscope could be motorized and digitized. This would be possible because many microscopes expose similar user-facing control interfaces, such as fine and coarse focus knobs and XY-stage knobs. These interfaces are intended for human operation, but they can also be used as attachment points for a motorized retrofit.
 
-The central motivation of this thesis is to investigate whether a low-cost embedded system can turn a vintage microscope into a programmable digital imaging platform without replacing the microscope's internal mechanics. The work is not intended to compete with high-end commercial automation platforms in precision or completeness. Instead, it explores the space between purely manual microscopy and fully integrated commercial systems. By preserving and extending existing microscopes, a retrofit approach can reduce waste while making digital microscopy more accessible.
+The central motivation of this thesis is to investigate whether a low-cost embedded system can turn a vintage microscope into a programmable digital imaging platform without replacing the microscope's internal mechanics. The work is not intended to compete with high-end commercial automation platforms in precision or completeness. Instead, it explores the space between purely manual microscopy and fully integrated commercial systems. Open-source scientific hardware has been proposed as a way to reduce the cost of research equipment and make instrumentation more reproducible \cite{pearce2012openhardware}. By preserving and extending existing microscopes, a retrofit approach can reduce waste while making digital microscopy more accessible.
 
 \subsection{Problem Statement}
 
@@ -18,11 +18,14 @@ The most difficult aspect is that low-cost retrofit hardware does not automatica
 
 The work is guided by three research questions:
 
-\begin{enumerate}
-    \item Can a retrofit platform add motorized control and digital imaging to vintage microscopes while remaining adaptable to different mechanical designs through parametric modelling?
-    \item Can a low-cost prototype provide sufficiently consistent scale, motion, and positioning behavior for automated microscopy?
-    \item To what extent can image-based calibration enable automated workflows such as autofocus, focus stacking, and tile scanning?
-\end{enumerate}
+\begin{description}
+    \item \textbf{RQ1: Parametric retrofit adaptability}\\
+    Can a retrofit platform add motorized control and digital imaging to vintage microscopes while remaining adaptable to different mechanical designs through parametric modelling?
+    \item \textbf{RQ2: Low-cost motion and positioning}\\
+    Can a low-cost prototype provide sufficiently consistent motion, and positioning behavior for automated microscopy?
+    \item \textbf{RQ3: Calibration-enabled workflows}\\
+    To what extent can image-based calibration enable automated workflows such as autofocus, focus stacking, and tile scanning?
+\end{description}
 
 These questions frame "RetroScope" as an artifact-based contribution in Applied Computer Science. The thesis evaluates the design and behavior of a working prototype rather than proposing a new microscopy "standard".
 

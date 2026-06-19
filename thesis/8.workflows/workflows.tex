@@ -63,7 +63,9 @@ The focus-stacking workflow is a useful validation case because it stresses seve
 
 \subsection{Tile Scanning and Stitching}
 
-Tile scanning captures a grid of adjacent fields of views and stores them either as a stitched panorama or as a grid mosaic. The tile planner uses image dimensions, objective pixel scale, overlap, and calibrated stage scales to compute motor-step spacing. If stage scale is wrong, tile spacing becomes visibly wrong. If backlash is not compensated, direction changes can create irregular overlap and make stitching less reliable.
+Tile scanning captures a grid of adjacent fields of view and stores them either as a stitched panorama or as a grid mosaic. The tile planner uses image dimensions, objective pixel scale, overlap, and calibrated stage scales to compute motor-step spacing. If stage scale is wrong, tile spacing becomes visibly wrong. If backlash is not compensated, direction changes can create irregular overlap and make stitching less reliable.
+
+In the prototype outputs, darker tile edges and visible seams can still be seen in some stitched and mosaic results. The most likely explanation is illumination fall-off or vignetting somewhere in the camera and optical path, but the exact cause was not isolated. Other possible contributors include uneven illumination from the microscope itself, the age and condition of the 1980s optical path, or remaining calibration differences between tiles. Since each tile can be slightly darker near the frame boundary, repeated tile edges become visible when multiple tiles are placed next to one another. Reducing this artifact would require a prior flat-field correction step, where each captured tile is normalized against a reference illumination image before stitching or mosaic assembly \cite{bowman2019flatfield}.
 
 The prototype supports different scan patterns: raster and serpentine. Raster became the default pattern because it avoids horizontal direction reversal on every row. Serpentine scanning is faster, but direction changes hurts the backlash compensation. The choice of raster scanning therefore reflects the mechanical limitations of the retrofit.
 

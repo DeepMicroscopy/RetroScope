@@ -1,6 +1,8 @@
 """Verify joystick pan speed derives correctly from axis + objective calibration.
 
 Formula: motor_steps_per_sec = max_pan_speed_px_per_sec * um_per_pixel / stage_um_per_step_axis * command_boost.
+
+Note: Partially AI-generated
 """
 
 from __future__ import annotations

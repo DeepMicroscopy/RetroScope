@@ -1,4 +1,7 @@
-"""Test the gallery store and bridge logic."""
+"""Test the gallery store and bridge logic.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 

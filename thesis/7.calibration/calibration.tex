@@ -88,7 +88,7 @@ This approach makes calibration practical across several objectives, but it also
 
 Stage-scale calibration measures how far the sample moves per motor step in X and Y. This is different from pixel-scale calibration. Pixel scale maps the image to the specimen plane, while stage scale maps motor commands to physical movement. Both are required for tile scans because the tile planner must know how many motor steps move the field of view by a desired physical overlap.
 
-The system stores X and Y stage scales separately because the axes can differ mechanically. The stage scale is measured per axis with the following procedure: a textured reference region is captured, the axis is commanded a known number of motor steps in a fixed direction, a second frame is captured, and the image displacement is measured. The scale follows directly from the pixel displacement and the calibrated pixel scale,
+The system stores X and Y stage scales separately because the axes can differ mechanically. The stage scale is measured per axis with the following procedure: a textured reference region is captured, the axis is commanded a known number of motor steps in a fixed direction, a second frame is captured, and the image displacement is measured. Image-registration methods such as phase correlation are established tools for estimating translational displacement between images \cite{guizar2008subpixel}. The scale follows directly from the pixel displacement and the calibrated pixel scale,
 \[
     \mathrm{stage\ scale} \;=\; \frac{\Delta_{\mathrm{px}}\cdot s}{N_{\mathrm{steps}}}
     \quad\left[\frac{\mu\mathrm{m}}{\mathrm{step}}\right],

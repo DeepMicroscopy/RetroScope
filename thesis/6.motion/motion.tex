@@ -1,8 +1,8 @@
 \subsection{Motion-Control Pipeline}
 
-The motion-control pipeline translates user or workflow inputs into motor commands while enforcing safety and compensation logic. Motion requests can originate from e.g. the touch interface, joystick, rotary encoder, autofocus routine, focus stacker, or tile scanner. These requests are routed through the motion controller rather than being sent directly to the motor driver.
+The motion-control pipeline translates user or workflow inputs into motor commands while enforcing safety and compensation logic. Motion requests can originate from, e.g., the touch interface, joystick, rotary encoder, autofocus routine, focus stacker, or tile scanner. These requests are routed through the motion controller rather than being sent directly to the motor driver.
 
-The motion controller maintains the current logical position in motor steps, applies endstop and soft-limit checks, converts calibrated image distances into stage steps where needed, and plans backlash compensation. It then sends relative moves to the Sangaboard driver. Some moves are fire-and-forget for responsive manual control, while other moves are blocking because an workflow must wait until physical motion is complete before capturing an image.
+The motion controller maintains the current logical position in motor steps, applies endstop and soft-limit checks, converts calibrated image distances into stage steps where needed, and plans backlash compensation. It then sends relative moves to the Sangaboard driver, which ultimately controls the stepper motor. Some moves are fire-and-forget for responsive manual control, while other moves are blocking because an workflow must wait until physical motion is complete before capturing an image.
 
 This structure is necessary because the same motor axes are shared by manual and automated behavior. A focus move from the encoder, an autofocus sweep, and a focus-stack step all operate on the Z axis, but they have different timing requirements. Similarly, joystick movement should feel responsive, while tile scanning requires predictable stage positions.
 
@@ -22,15 +22,30 @@ Axis asymmetry is expected. The configuration stores separate X and Y stage scal
 
 \subsection{Software Backlash Compensation Model}
 
-The 28BYJ-48 geared stepper motor was selected because it is inexpensive and accessible, but its internal gear reduction is central to the motion behavior of the prototype. The 1:64 internal reduction causes high resistance to manual rotation and backlash in the gear train. The motor's low cost therefore comes with mechanical disadvantages that must be addressed at the system level. 
+The 28BYJ-48 geared stepper motor was selected because it is inexpensive and accessible, but its internal gear reduction is central to the motion behavior of the prototype. Stepper motors are commonly used for open-loop positioning, but their actual positional reliability depends on load, missed steps, drive electronics, and mechanical transmission \cite{acarnley2002stepping}. The 1:64 internal reduction causes high resistance to manual rotation and backlash in the gear train. The motor's low cost therefore comes with mechanical disadvantages that must be addressed at the system level.
 
-Backlash compensation is implemented as a per-axis slack model. Each axis has a configured backlash width and a current slack estimate. When motion occurs in one direction, the model updates the slack state. When a compensated move is requested, the motor command includes both the desired movement and the required slack take-up so that the physical stage movement is closer to the requested displacement.
+Backlash compensation is implemented as a per-axis hysteresis model. For each axis $i$, the controller stores a configured backlash width $b_i$ in motor steps and an estimated slack state $s_i$ with
+\[
+    -\frac{b_i}{2} \leq s_i \leq \frac{b_i}{2}
+\]
+The slack state represents where the drive train is currently located inside the backlash band. A value near $+b_i/2$ means that the axis is loaded in the positive direction, while a value near $-b_i/2$ means that it is loaded in the negative direction. When a compensated movement $d_i$ is requested, the controller computes a single motor command that contains both the requested displacement and the slack take-up:
+\[
+    p_i = \operatorname{sign}(d_i)\frac{b_i}{2} - s_i,
+    \qquad
+    m_i = d_i + p_i
+\]
+Here, $p_i$ is the additional motor movement required to get the mechanism into the requested direction and $m_i$ is the actual motor-step command. After the command has been accepted, the slack estimate is set to the edge of the band in the new direction. If the axis was already loaded in the same direction, $p_i$ is zero or small. If the direction reverses from one edge of the band to the other, $p_i$ becomes approximately the full backlash width. If raw movement is requested, for example during calibration or when joystick compensation is disabled, the motor command remains $m_i=d_i$, but the internal slack estimate is still updated and clamped inside the band.
 
-This differs from a simple direction-sign model that was also implemented during development. In a sign model, a static compensation amount is added whenever the direction changes. The final approach tracks the slack inside a hysteresis band, illustrated in Figure~\ref{fig:backlash-band}. This is more appropriate because backlash is not random measurement noise. It is deterministic, caused by the mechanical drive path. Without an independent position sensor to measure the actual stage position, the software must rely on its internal model of the slack state to plan compensation. The hysteresis-band model allows the software to maintain a more accurate estimate of the current slack state over time, which is necessary for consistent compensation.
+\input{figures/fig_backlash_band}
+
+This differs from a simple direction-sign model that was also implemented and evaluated during development. In a sign model, a static compensation amount is added only when the direction changes. The final approach tracks the slack inside a hysteresis band, illustrated in Figure~\ref{fig:backlash-band}, and therefore also handles partial movements within the band. This is more appropriate because backlash is not random measurement noise. It is deterministic, caused by the mechanical drive path. Without an independent position sensor to measure the actual stage position, the software must rely on its internal model of the slack state to plan compensation. The hysteresis-band model allows the software to maintain a more accurate estimate of the current slack state over time, which is necessary for consistent compensation.
 
 Backlash compensation applies to automated moves and also to joystick movement. When joystick direction changes, the slack amount is taken up first as part of the motor command. This makes manual movement more consistent with the compensation state used by automation. A setting can disable joystick backlash compensation for debugging or user preference.
 
-\input{figures/fig_backlash_band}
+The backlash widths are determined during the objective-calibration workflow. The operator selects an axis, records a reference camera crop, and then jogs the axis in the opposite direction in known motor-step increments. The image-correlation measurement reports when the specimen image starts to move again after the reversal. The accumulated reverse steps can then be accepted as the backlash value for that axis and are written to the objective profiles. X and Y can be checked optically in this way because their backlash produces lateral image displacement. Z backlash is also represented by the same model, but it cannot be measured reliably with the same lateral image-correlation method and is therefore configured from the observed focus-drive behavior.
+
+The model was evaluated as part of the motion-accuracy experiment in Section~\ref{sec:evaluation}. That experiment compares uncompensated movement, the earlier sign-based model, and the hysteresis-band model using forward displacement error and reversal residuals.
+
 
 \subsection{Limits of Open-Loop Motion Control}
 

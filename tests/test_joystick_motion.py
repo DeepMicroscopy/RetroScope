@@ -1,4 +1,7 @@
-"""Test the joystick motion smoothing and command dispatch logic."""
+"""Test the joystick motion smoothing and command dispatch logic.
+
+Note: Partially AI-generated
+"""
 
 from __future__ import annotations
 
