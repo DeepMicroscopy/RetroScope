@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1781883131.72835 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1781883132.86169 0
-  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1781883130.26014 22511 62259ff1d819b974f2b4d232893c0ee5 ""
+["pdflatex"] 1781887300.07448 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1781887301.23682 0
+  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1781887299.81405 24410 e35a6fb9df34463720b255b1244f9e62 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -48,7 +48,6 @@
   "/usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def" 1716410060 29785 9f93ab201fe5dd053afcc6c1bcf7d266 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg" 1279039959 678 4792914a8f45be57bb98413425e4c7af ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/oberdiek/aliascnt.sty" 1575152444 2652 813491e2bc95c1dafbb39cd7c54b380b ""
-  "/usr/local/texlive/2025/texmf-dist/tex/latex/tools/array.sty" 1730496337 14552 27664839421e418b87f56fa4c6f66b1a ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/tools/multicol.sty" 1730496337 32879 f4cfa2226c995da5b04a89ee47abf182 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/tools/verbatim.sty" 1717359999 7532 d2e1111e17bfebb1607d8ffa779705ec ""
   "/usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf" 1739380943 42148 61becc7c670cd061bb319c643c27fdd4 ""
@@ -60,8 +59,8 @@
   "figures/platform_render.png" 1781859120.09355 715526 21660cb26f24eede3a7191e1fdc59918 ""
   "figures/tile_scan_stitched.png" 1781859120.43037 1512656 20e2452c3b476cb22befb42c1a54da6b ""
   "llncs.cls" 1781854927.61089 43402 5fb5a2dc40571aa40f3d199c00cbb986 ""
-  "paper.aux" 1781883132.75335 3887 d5d9def9496936c643db925962e4bc9e "pdflatex"
-  "paper.tex" 1781883130.26014 22511 62259ff1d819b974f2b4d232893c0ee5 ""
+  "paper.aux" 1781887301.17207 3887 fd888b70b3ea8b2f36266524d13962bc "pdflatex"
+  "paper.tex" 1781887299.81405 24410 e35a6fb9df34463720b255b1244f9e62 ""
   (generated)
   "paper.aux"
   "paper.log"

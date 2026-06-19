@@ -1,42 +1,62 @@
-% This is a modified version of Springer's LNCS template suitable for anonymized MICCAI 2026 main conference submissions.
+% This is a modified version of Springer's LNCS template suitable for anonymized MICCAI 2025 main conference submissions. 
 % Original file: samplepaper.tex, a sample chapter demonstrating the LLNCS macro package for Springer Computer Science proceedings; Version 2.21 of 2022/01/12
 
 \documentclass[runningheads]{llncs}
-
+%
 \usepackage[T1]{fontenc}
+% T1 fonts will be used to generate the final print and online PDFs,
+% so please use T1 fonts in your manuscript whenever possible.
+% Other font encodings may result in incorrect characters.
+%
 \usepackage{graphicx,verbatim}
-\usepackage{array}
-
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following two lines
+% to display URLs in blue roman font according to Springer's eBook style:
+%\usepackage{color}
+%\renewcommand\UrlFont{\color{blue}\rmfamily}
+%\urlstyle{rm}
+%
 \begin{document}
 
 \title{RetroScope: An Open Platform for Motorizing and Digitizing Vintage Microscopes}
 \titlerunning{RetroScope}
-
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
 \begin{comment}  %% Removed for anonymized MICCAI submission
 \author{First Author\inst{1}\orcidID{0000-1111-2222-3333} \and
 Second Author\inst{2,3}\orcidID{1111-2222-3333-4444} \and
 Third Author\inst{3}\orcidID{2222--3333-4444-5555}}
+%
 \authorrunning{F. Author et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
 \institute{Princeton University, Princeton NJ 08544, USA \and
 Springer Heidelberg, Tiergartenstr. 17, 69121 Heidelberg, Germany
 \email{lncs@springer.com}\\
 \url{http://www.springer.com/gp/computer-science/lncs} \and
 ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 \email{\{abc,lncs\}@uni-heidelberg.de}}
+
 \end{comment}
 
 \author{Anonymized Authors}  %% Added for anonymized MICCAI submission
 \authorrunning{Anonymized Author et al.}
 \institute{Anonymized Affiliations \\
     \email{email@anonymized.com}}
-
-\maketitle
-
+  
+\maketitle              % typeset the header of the contribution
+%
 \begin{abstract}
 Many optical microscopes remain mechanically and optically useful for decades, even when they no longer
 match the digital and automated workflows expected in modern laboratories or teaching environments. Replacing such instruments can be expensive and wasteful. This paper presents RetroScope, an open retrofit platform that motorizes and digitizes a vintage optical microscope while preserving the existing microscope body. The platform contributes a parameterized mechanical adapter strategy for coupling low-cost motors to existing focus and XY-stage controls, an embedded Raspberry Pi-based hardware and software stack, image-based calibration for pixel scale, stage scale, and backlash, and workflow-level validation through autofocus, focus stacking, and tile scanning. Rather than proposing new autofocus or stitching algorithms, these workflows are used to test whether the mechanical, electronic, calibration, and software layers work together as a usable microscopy platform. A prototype was evaluated on a vintage upright microscope using test microscopy material and no human or patient data. On the 4x objective, repeated stage-scale calibration produced 200-step standard deviations of 0.058 and 0.066 $\mu$m/step for X and Y. A hysteresis backlash model reduced the 200-step X forward error from $-204.3\pm10.8$ $\mu$m without compensation to $11.4\pm2.9$ $\mu$m. These results support RetroScope as a resource-conscious, extensible prototype for accessible microscope automation, while also showing the limits of low-cost open-loop mechanics.
 
 \keywords{Low-resource digital pathology \and Microscope automation \and Open hardware \and Image-based calibration}
+% Authors must provide keywords and are not allowed to remove this Keyword section.
+
 \end{abstract}
 
 \section{Introduction}
@@ -188,9 +208,20 @@ The results support RetroScope as a working low-cost retrofit prototype for acce
 
 The evaluation also bounds the claims. RetroScope is not a precision stage and does not replace a clinical whole-slide scanner. It controls a chain of existing microscope mechanics, printed gears, low-cost steppers, and open-loop estimates. Backlash compensation can improve predictable lost motion, but it cannot remove flex, missed steps, manual disturbances, or optical artifacts. Quantitative motion evaluation was done for a 4x objective, while workflow reliability was tested across four objective profiles. Physical adaptation was demonstrated on one microscope body and virtually through the parametric model.
 
+Several limitations therefore remain. The prototype was physically validated on a single microscope body, so the parametric model demonstrates adaptability as a design principle but not yet as a broad empirical claim across microscope families. The system also tracks commanded motor position rather than measured sample position, which means that calibration can become invalid after manual stage movement, loosened printed parts, changed friction, or missed steps. Finally, the workflow evaluation measured successful completion rather than diagnostic image quality, focus-stack quality, or tile-alignment accuracy. These gaps are important because low-resource deployment depends not only on whether a scan can be completed, but also on whether the resulting data is stable enough for the intended use.
+
 Nevertheless, the prototype demonstrates that vintage microscopes can be extended into programmable digital imaging systems without discarding the original optical instrument. Autofocus, focus stacking, and tile scanning serve as integrated validation tasks showing that calibration and compensation are sufficient for repeated automated operation under the tested conditions. Future work should add closed-loop sensing, physical validation on additional microscope bodies, flat-field correction for tile scans, and more detailed workflow quality metrics.
 
-\begin{thebibliography}{18}
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+% \bibliographystyle{splncs04}
+% \bibliography{mybibliography}
+%
+\begin{thebibliography}{8}
 \bibitem{pearce2012openhardware}
 Pearce, J.M.: Building research equipment with free, open-source hardware. Science \textbf{337}(6100), 1303--1304 (2012). \doi{10.1126/science.1228183}
 

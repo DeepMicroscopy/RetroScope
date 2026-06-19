@@ -35,8 +35,6 @@ INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/pdftex.def
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/pdftex.def
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/tools/verbatim.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/tools/verbatim.sty
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/tools/array.sty
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/tools/array.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT ./paper.aux
