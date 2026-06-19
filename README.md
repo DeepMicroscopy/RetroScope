@@ -247,6 +247,6 @@ The following generative AI tools were used in this thesis:
 
 - GitHub Copilot in VS Code was used for inline code-completion suggestions during implementation and writing.
 - ChatGPT (OpenAI) & Claude (Anthropic) used to support brainstorming, quick research, and the generation of selected parts of the code (e.g. unit tests). AI-assisted scripts and functions are marked in the source code via comments.
-- DeepL write (DeepL SE))were used in language editing and grammatical proof-reading.
+- DeepL write (DeepL SE) were used in language editing and grammatical proof-reading.
 
 All AI-generated material was critically reviewed, edited, and verified by the author. No generative AI system was used to produce original scientific results, experimental data, proofs, or final implementations of algorithms. The author assumes full responsibility for the content, correctness, and originality of this thesis.
