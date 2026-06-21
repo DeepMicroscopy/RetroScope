@@ -52,7 +52,7 @@ ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 %
 \begin{abstract}
 Many optical microscopes remain mechanically and optically useful for decades, even when they no longer
-match the digital and automated workflows expected in modern laboratories or teaching environments. Replacing such instruments can be expensive and wasteful. This paper presents RetroScope, an open retrofit platform that motorizes and digitizes a vintage optical microscope while preserving the existing microscope body. The platform contributes a parameterized mechanical adapter strategy for coupling low-cost motors to existing focus and XY-stage controls, an embedded Raspberry Pi-based hardware and software stack, image-based calibration for pixel scale, stage scale, and backlash, and workflow-level validation through autofocus, focus stacking, and tile scanning. Rather than proposing new autofocus or stitching algorithms, these workflows are used to test whether the mechanical, electronic, calibration, and software layers work together as a usable microscopy platform. A prototype was evaluated on a vintage upright microscope using test microscopy material and no human or patient data. On the 4x objective, repeated stage-scale calibration produced 200-step standard deviations of 0.058 and 0.066 $\mu$m/step for X and Y. A hysteresis backlash model reduced the 200-step X forward error from $-204.3\pm10.8$ $\mu$m without compensation to $11.4\pm2.9$ $\mu$m. These results support RetroScope as a resource-conscious, extensible prototype for accessible microscope automation, while also showing the limits of low-cost open-loop mechanics.
+match the digital and automated workflows expected in modern laboratories or teaching environments. Replacing such instruments can be expensive and wasteful. This paper presents RetroScope, an open retrofit platform that motorizes and digitizes vintage optical microscopes while preserving the existing microscope body. The platform contributes a parameterized mechanical adapter strategy for coupling low-cost motors to existing focus and XY-stage controls, an embedded Raspberry Pi-based hardware and software stack, image-based calibration for pixel scale, stage scale, and backlash compensation. Workflow-level validation was done through autofocus, focus stacking, and tile scanning. Rather than proposing new autofocus or stitching algorithms, these workflows are used to test whether the mechanical, electronic, calibration, and software layers work together as a usable microscopy platform. A prototype was evaluated on a vintage upright microscope using test microscopy material and no human or patient data. On the 4x objective, repeated stage-scale calibration produced 200-step standard deviations of 0.058 and 0.066 $\mu$m/step for X and Y. A hysteresis backlash model reduced the 200-step X forward error from $204.3\pm10.8$ $\mu$m without compensation to $11.4\pm2.9$ $\mu$m. These results support RetroScope as a resource-conscious, extensible prototype for accessible microscope automation, while also showing the limits of low-cost open-loop mechanics.
 
 \keywords{Low-resource digital pathology \and Microscope automation \and Open hardware \and Image-based calibration}
 % Authors must provide keywords and are not allowed to remove this Keyword section.
@@ -61,7 +61,7 @@ match the digital and automated workflows expected in modern laboratories or tea
 
 \section{Introduction}
 
-Computational pathology relies on digitized microscope images that can be stored, inspected, shared, and processed. Whole-slide scanners and integrated motorized microscopes provide this capability in many modern workflows, but their cost and hardware assumptions can limit access in teaching, small laboratories, and low-resource environments. At the same time, many older optical microscopes remain mechanically and optically useful. Their limitation is often not the lenses or frame, but the absence of motorized control, digital capture, calibrated measurement, and programmable acquisition.
+Computational pathology relies on digitized microscope images that can be stored, inspected, shared, and processed. Whole-slide scanners and integrated motorized microscopes provide this capability in many modern workflows, but their cost and hardware assumptions can limit access in teaching, small laboratories, and low-resource environments. At the same time, many older optical microscopes remain mechanically and optically useful. Their limitation is often not the lenses or frame, but the absence of motorized control, digital capture, calibrated measurement, and programmable capturing.
 
 Retrofit automation is therefore an attractive middle ground. Instead of replacing the microscope, a retrofit can attach motors and electronics to the manual controls that already exist. This is especially relevant for histology and pathology-adjacent education or exploratory work, where access to slide digitization can be more important than the absolute throughput of a commercial whole-slide scanner. The approach also connects to open scientific hardware, where shared designs and low-cost components can improve accessibility and reproducibility \cite{pearce2012openhardware,baden2015openlabware}.
 
@@ -72,16 +72,15 @@ This paper presents RetroScope, an open platform for motorizing and digitizing v
     \item A parameterized adapter for focus knobs, XY-stage knobs, camera ports, and mounting points.
     \item A low-cost embedded hardware and software stack for live imaging, manual control, capture management, and automation.
     \item Image-based calibration and a hysteresis backlash-compensation model for making open-loop motion useful.
-    \item Workflow validation through autofocus, focus stacking, and tile scanning across multiple objective profiles.
 \end{enumerate}
 The implementation and design artifacts are available at: \\
 \textit{https://github.com/DeepMicroscopy/RetroScope}.
 
 \section{Related Work}
 
-Open and low-cost microscopy platforms have shown that scientific imaging hardware can be made more accessible. Foldscope demonstrates extreme-cost optical access through simplified fabrication \cite{cybulski2014foldscope}, while the OpenFlexure Microscope demonstrates low-cost robotic microscopy using 3D-printed structures and open hardware \cite{collins2020openflexure}. Open labware and 3D-printable optics work similarly argues that shared mechanical designs can reduce barriers to scientific instrumentation \cite{baden2015openlabware,zhang2013opensourceoptics}.
+Open and low-cost microscopy platforms have shown that scientific imaging hardware can be made more accessible. Foldscope demonstrates low-cost optical access through simplified fabrication \cite{cybulski2014foldscope}, while the OpenFlexure Microscope demonstrates low-cost robotic microscopy using 3D-printed structures and open hardware \cite{collins2020openflexure}. Open labware and 3D-printable optics research similarly show how shared mechanical designs can lower barriers to building scientific instruments \cite{baden2015openlabware,zhang2013opensourceoptics}.
 
-RetroScope differs from full open-hardware microscope designs because it keeps the existing microscope as the optical and mechanical core. The design problem is therefore adaptation rather than replacement. Commercial microscope control systems and open software controllers such as Micro-Manager and Pycro-Manager enable flexible acquisition when compatible motorized hardware is available \cite{edelstein2014advanced,pinkard2021pycromanager}. A retrofit must instead create motorized behavior through manual controls, with lower precision and stronger dependence on calibration.
+RetroScope differs from full open-hardware microscope designs because it keeps the existing microscope as the optical and mechanical core. The design problem is therefore adaptation rather than replacement. Commercial microscope control systems and open software controllers such as Micro-Manager and Pycro-Manager enable flexible capturing when compatible motorized hardware is available \cite{edelstein2014advanced,pinkard2021pycromanager}. A retrofit must instead create motorized behavior through manual controls, with stronger dependence on calibration.
 
 Digital microscopy also requires metadata and interoperability. The Open Microscopy Environment data model and OME-TIFF format support structured biological image metadata \cite{goldberg2005ome,linkert2010metadata}. This is important for microscopy capture because objective magnification, pixel scale, stage position, focus position, and workflow type affect the meaning of the images. Finally, autofocus and tiled acquisition are well-studied microscopy workflows \cite{pech2000diatom,sun2004autofocusing,preibisch2009globally}. In RetroScope they are used as validation tasks for the platform rather than as novel algorithms.
 
@@ -98,9 +97,9 @@ Many upright microscopes expose similar operator-facing interfaces: fine and coa
     \label{fig:explode-diagram}
 \end{figure}
 
-This distinction matters for universal adaptation. A single fixed printed part cannot fit various microscope bodies, because knob diameters, axis spacing, mounting points, and optical ports vary. RetroScope therefore makes the interface configurable: the parametric model exposes focus-axis height, focus-axis radius, adapter offsets, and mounting-hole geometry as editable parameters. The same platform concept can then be regenerated for a different body dimension.
+This distinction matters for universal adaptation. A single fixed printed part cannot fit various microscope bodies, because knob diameters, axis spacing, mounting points, and optical ports vary between different models and manufacturers. RetroScope therefore makes the interface configurable: the parametric model exposes focus-axis height, focus-axis radius, adapter offsets, and mounting-hole geometry as editable parameters. The same platform concept can then be regenerated for different body dimensions.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \begin{tabular}{@{}cc@{}}
 \includegraphics[width=0.5\textwidth]{figures/ui_live_view.png} &
@@ -116,7 +115,7 @@ This distinction matters for universal adaptation. A single fixed printed part c
 
 The prototype was built around a vintage upright microscope (Nikon Optiphot 66). The focus axis is driven by directly coupling a motor to the fine-focus axle through a printed shaft adapter. The coarse focus remains untouched. The XY stage uses a compact printed gearbox because the X and Y knobs are stacked and have different diameters. Printed gears are placed on top of the existing knobs. Motor gears and auxiliary manual knobs interface with them. The selected 12:24 tooth relation provides a 1:2 reduction, increasing torque and effective step resolution at the cost of additional gear backlash.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \begin{tabular}{cc}
 \includegraphics[width=0.5\textwidth]{figures/platform_render.png} &
@@ -130,29 +129,31 @@ The prototype was built around a vintage upright microscope (Nikon Optiphot 66).
 
 The embedded platform combines a Raspberry Pi, touchscreen, camera capture device, Sangaboard stepper controller \cite{collins2020openflexure}, low-cost 28BYJ-48 stepper motors, joystick, rotary encoder, endstop, and a custom PCB. The application is implemented in Python with PySide6/QML. It separates hardware drivers, services, domain logic, and QML bridges. The operator can use a live-view interface, joystick controls, gallery, calibration wizards, automation workflows, and a REST API for capture access and selected actions like autofocus.
 
+\newpage
+
 \subsection{Calibration and Motion Compensation}
 
 Calibration turns motorized motion into microscope-relevant motion. RetroScope stores objective profiles with pixel scale, stage scale, numerical aperture, focus parameters, and backlash values. Pixel-scale calibration maps image pixels to specimen-plane micrometers. Stage-scale calibration maps motor steps to X/Y displacement. These two mappings are required for measurement and tile planning because image overlap must be translated into motor steps.
 
 The system remains open-loop: it estimates position from motor commands, not from measured stage encoders. This makes backlash compensation central. Low-cost geared steppers are attractive for accessible hardware but introduce mechanical slack and other open-loop limitations \cite{acarnley2002stepping}. RetroScope uses a per-axis hysteresis model. For axis $i$, a configured backlash width $b_i$ and slack estimate $s_i$ are maintained with
 \[
-    -b_i/2 \leq s_i \leq b_i/2
+    -\frac{b_i}{2} \leq s_i \leq \frac{b_i}{2}
 \]
 For a compensated requested move $d_i$, the controller computes the slack take-up
 \[
-    p_i = \mathrm{sign}(d_i)b_i/2 - s_i
+    p_i = \mathrm{sign}(d_i)\frac{b_i}{2} - s_i
 \]
 and sends a single motor command
 \[
     m_i = d_i + p_i
 \]
-After the command is accepted, the slack estimate is set to the band edge in the commanded direction. Raw moves can still update the slack estimate without applying compensation. X/Y backlash parameters are obtained through a calibration workflow that compares camera crops before and after direction reversal using image displacement measurement. Phase-correlation style registration is a standard basis for such subpixel displacement measurements \cite{guizar2008subpixel}.
+After the command is accepted, the slack estimate is set to the band edge in the commanded direction. Raw moves can still update the slack estimate without applying compensation. X/Y backlash parameters are obtained through a calibration workflow that compares camera crops before and after direction reversal using image displacement measurement. Phase-correlation style registration is a standard for such subpixel displacement measurements \cite{guizar2008subpixel}.
 
 \section{Workflow Validation}
 
 RetroScope implements autofocus, focus stacking, and tile scanning. These are not claimed as new algorithms. Instead, they are validation workflows because each one exercises multiple layers of the platform.
 
-Autofocus moves the Z axis through a configured search range, evaluates image sharpness from the camera stream, and refines the final focus position based on the highest-scoring samples. It validates Z motion, focus scoring, objective-specific parameters, and blocking movement. Focus stacking captures a sequence of Z planes and produces a blended result while preserving source images and metadata. It validates calibrated Z stepping, metadata, and gallery storage. Tile scanning captures adjacent fields of views as either a stitched panorama or a deterministic grid mosaic. It validates pixel scale, stage scale, backlash handling, capture timing, and scan planning. Dark tile seams remain visible in some outputs, likely due to illumination fall-off, vignetting, or other optical-path effects. Reducing this would require flat-field correction \cite{bowman2019flatfield}.
+Autofocus moves the Z axis through a configured search range, evaluates image sharpness from the camera stream, and refines the final focus position based on the highest-scoring samples. It validates Z motion, focus scoring, and objective-specific parameters. Focus stacking captures a sequence of Z planes and produces a blended result while preserving source images and metadata. It validates calibrated Z stepping, metadata, and gallery storage. Tile scanning captures adjacent fields of views as either a stitched panorama or a deterministic grid mosaic. It validates pixel scale, stage scale, backlash handling, capture timing, and scan planning. Dark tile seams remain visible in some outputs, likely due to illumination fall-off, vignetting, or other optical-path effects. Reducing this would require flat-field correction \cite{bowman2019flatfield}.
 
 \begin{figure}[h]
 \centering
@@ -171,7 +172,7 @@ Autofocus moves the Z axis through a configured search range, evaluates image sh
 
 The evaluation used the complete prototype: printed adapters, embedded electronics, custom PCB, Sangaboard-controlled motors, motion controller, calibration workflows, and automated workflows. No human data, patient data, or private clinical dataset was used. Experiments used calibration and test microscopy material to evaluate the platform behavior, not clinical diagnostic performance.
 
-Four experiments were considered. Stage-scale repeatability measured how consistently motor steps mapped to specimen-plane movement. Motion accuracy compared uncompensated motion, an sign-based compensation mode, and the hysteresis model. Calibration repeatability repeated selected calibration measurements. Workflow reliability ran autofocus, focus stacking, and tile scanning ten times for each available objective profile.
+Four experiments were considered. Stage-scale repeatability measured how consistently motor steps mapped to specimen-plane movement. Motion accuracy compared uncompensated motion, an sign-based compensation mode, and the hysteresis model. Calibration repeatability was assessed by repeating selected calibration measurements. Workflow reliability ran autofocus, focus stacking, and tile scanning ten times for each available objective profile.
 
 \subsection{Motion and Calibration Results}
 
@@ -227,7 +228,7 @@ Objective & Autofocus & Focus stack & Tile scan & AF duration (s) \\
 
 \section{Discussion and Conclusion}
 
-The results support RetroScope as a working low-cost retrofit prototype for accessible microscope automation. The platform successfully combines a parameterized mechanical adapter, embedded control hardware, modular software, image-based calibration, and workflow automation. For low-resource computational pathology, RetroScope is intended as an enabling platform rather than a diagnostic system: it helps existing microscopes become part of digital and automated workflows without requiring full instrument replacement.
+The results support RetroScope as a working low-cost retrofit prototype for accessible microscope automation. The platform successfully combines a parameterized mechanical adapter, embedded control hardware, modular software, image-based calibration, and workflow automation. For low-resource computational pathology, RetroScope is intended as an enabling platform: it helps existing microscopes become part of digital and automated workflows without requiring full instrument replacement.
 
 The evaluation also bounds the claims. RetroScope is not a precision stage and does not replace a clinical whole-slide scanner. It controls a chain of existing microscope mechanics, printed gears, low-cost steppers, and open-loop estimates. Backlash compensation can improve predictable lost motion, but it cannot remove flex, missed steps, manual disturbances, or optical artifacts. Quantitative motion evaluation was done for a 4x objective, while workflow reliability was tested across four objective profiles. Physical adaptation was demonstrated on one microscope body and virtually through the parametric model.
 
