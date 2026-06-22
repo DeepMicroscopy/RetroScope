@@ -237,9 +237,7 @@ gpiod (only on Pi)      | 2.4.2
 ## Additional Sources
 
 - Font Awesome by Dave Gandy (https://fontawesome.com/)
-- LateX Template, Logo & CI (DeepMicroscopy) by Nils Porsche (@XYZ)
-
-ToDo: Add all references
+- LateX Template, Logo & CI (DeepMicroscopy) by Nils Porsche
 
 ## Declaration: Use of Generative AI
 
