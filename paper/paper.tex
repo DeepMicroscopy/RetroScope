@@ -161,24 +161,14 @@ Autofocus moves the Z axis through a configured search range, evaluates image sh
 {\small (a) The live-view interface.} &
 {\small (b) Stitched tile scan.}
 \end{tabular}
-\caption{Two examples of the RetroScope's interface: The live view provides camera preview, objective state, and motion controls, while the measurement view shows how, after calibration, images can be inspected with distance, area, and angle tools.}
+\caption{RetroScope interface and workflow output. The live view provides camera preview, objective state, and motion controls, while the stitched tile scan illustrates how calibrated XY motion and image capture are combined to validate automated capturing.}
 \label{fig:ui-interfaces-stitch}
 \end{figure}
 
-\begin{figure}[h]
-\centering
-\begin{tabular}{ccc}
-\includegraphics[width=0.364\textwidth]{figures/focus_stack_blended.png} &
-\includegraphics[width=0.636\textwidth]{figures/tile_scan_stitched.png} \\
-{\small (a) Focus-stack blend.} & {\small (b) Stitched tile scan.}
-\end{tabular}
-\caption{Workflow examples used to validate the integrated platform. The examples demonstrate coordinated Z motion and capture for focus stacking, and calibrated XY motion and capture for tile scanning.}
-\label{fig:workflows}
-\end{figure}
 
 \section{Evaluation}
 
-We evaluated the RetroScope framework by building a digitized microscope on top of a Nikon Optiphot 66 microscope body. While the parametrized framework allows for attachment to any kind of microscope geometry, the prototype allows for measurement of precision of the mechanical components.
+The RetroScope framework was evaluated by building a digitized microscope on top of a Nikon Optiphot 66 microscope body. While the parametrized framework allows for attachment to any kind of microscope geometry, the prototype allows for measurement of precision of the mechanical components.
 
 The evaluation used the complete prototype: printed adapters, embedded electronics, custom PCB, Sangaboard-controlled motors, motion controller, calibration workflows, and automated workflows. Experiments used calibration slides and exemplary formalin fixed paraffin embedded tissue, stained with hematoxylin and eosin standard dye to evaluate the platform behavior, not clinical diagnostic performance.
 
@@ -186,7 +176,7 @@ Four experiments were conducted: Stage-scale repeatability measured how consiste
 
 \subsection{Motion and Calibration Results}
 
-Table~\ref{tab:motion} summarizes the results achieved using a 4$\times$ objective lens (Nikon XX YY, N/A: ZZ) and using a Nikon ZZZ digital camera, connected by a Elgato Camlink 4k HDMI video grabber with 1280$\times$720px image resolution (?). Stage-scale estimates differed between axes, confirming that separate X/Y calibration is required. In the 200-step condition, stage-scale standard deviations were 0.058 $\mu$m/step for X and 0.066 $\mu$m/step for Y. Motion results show the strongest improvement for X at 200 steps: the hysteresis model reduced mean forward error from $-204.3$ $\mu$m without compensation to $11.4$ $\mu$m. The Y axis improved less cleanly and retained a larger reversal residual, because the 3d printed gears on the Y axis has a longer distance between motor and the knob, causing addtional flex by bending plastic. The 100-step conditions were less stable because the commanded displacement was close to or below the configured backlash width.
+Table~\ref{tab:motion} summarizes the results achieved using a 4$\times$ objective lens (Nikon XX YY, N/A: ZZ) and using a Nikon ZZZ digital camera, connected by a ELGATO Cam Link 4K HDMI video grabber with 1280$\times$720px image resolution, limited by the cameras output. Stage-scale estimates differed between axes, confirming that separate X/Y calibration is required. In the 200-step condition, stage-scale standard deviations were 0.058 $\mu$m/step for X and 0.066 $\mu$m/step for Y. Motion results show the strongest improvement for X at 200 steps: the hysteresis model reduced mean forward error from $-204.3$ $\mu$m without compensation to $11.4$ $\mu$m. The Y axis improved less cleanly and retained a larger reversal residual, because the 3d printed gears on the Y axis has a longer distance between motor and the knob, causing addtional flex by bending plastic. The 100-step conditions were less stable because the commanded displacement was close to or below the configured backlash width.
 
 \begin{table}[h]
 \caption{Selected 4x motion and calibration results. Values are mean $\pm$ standard deviation across ten valid trials.}

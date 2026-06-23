@@ -94,15 +94,6 @@ INPUT ./figures/tile_scan_stitched.png
 INPUT ./figures/tile_scan_stitched.png
 INPUT ./figures/tile_scan_stitched.png
 INPUT ./figures/tile_scan_stitched.png
-INPUT ./figures/focus_stack_blended.png
-INPUT ./figures/focus_stack_blended.png
-INPUT ./figures/focus_stack_blended.png
-INPUT ./figures/focus_stack_blended.png
-INPUT ./figures/focus_stack_blended.png
-INPUT ./figures/tile_scan_stitched.png
-INPUT ./figures/tile_scan_stitched.png
-INPUT ./figures/tile_scan_stitched.png
-INPUT ./figures/tile_scan_stitched.png
 INPUT paper.aux
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb
