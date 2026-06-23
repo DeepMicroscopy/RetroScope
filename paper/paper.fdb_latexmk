@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1782061994.82195 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782061995.80566 0
-  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782061994.59717 25564 eed3bc41c28366991bac9d4d091beae9 ""
+["pdflatex"] 1782234699.68031 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782234700.57704 0
+  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782234698.39241 26565 fb0dd69ee10d64dffeeca9067025c58b ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -62,10 +62,9 @@
   "figures/platform_render.png" 1781859120.09355 715526 21660cb26f24eede3a7191e1fdc59918 ""
   "figures/tile_scan_stitched.png" 1781859120.43037 1512656 20e2452c3b476cb22befb42c1a54da6b ""
   "figures/ui_live_view.png" 1781889576.39268 627069 794410bd6c8ccbfb60d9297b9292f71d ""
-  "figures/ui_measurements.png" 1781889576.39583 638348 ac81166ec7eb95f653130e048ebc2893 ""
   "llncs.cls" 1781854927.61089 43402 5fb5a2dc40571aa40f3d199c00cbb986 ""
-  "paper.aux" 1782061995.72768 4478 96b1404d2f49c08a6e266c549559f971 "pdflatex"
-  "paper.tex" 1782061994.59717 25564 eed3bc41c28366991bac9d4d091beae9 ""
+  "paper.aux" 1782234700.51402 4382 a14163b0024f03c648f638aeef68d2c1 "pdflatex"
+  "paper.tex" 1782234698.39241 26565 fb0dd69ee10d64dffeeca9067025c58b ""
   (generated)
   "paper.aux"
   "paper.log"
