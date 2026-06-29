@@ -6,9 +6,9 @@
 
 ---
 
-**An Open Platform for Motorizing and Digitizing Vintage Microscopes**
+**An Open Framework for Motorizing and Digitizing Vintage Microscopes**
 
-RetroScope is an open-source platform for older analog microscopes. It combines software, digital imaging, motorized stage and focus control, calibration workflows, and adaptable mechanical parts so that existing microscopes can be upgraded instead of replaced.
+RetroScope is an open-source framework for older analog microscopes. It combines software, digital imaging, motorized stage and focus control, calibration workflows, and adaptable mechanical parts so that existing microscopes can be upgraded instead of replaced.
 
 <p align="center">
   <img src="retroscope/qml/icons/IMG_1884.jpeg" alt="RetroScope" width="49%">
@@ -19,7 +19,7 @@ The project was developed as part of the master's thesis **"Retrofitting a Vinta
 
 ## Overview
 
-RetroScope is not just a single application. It is intended as a complete retrofit platform:
+RetroScope is not just a single application. It is intended as a complete retrofit framework:
 
 - **Control software**: Python/PySide6 backend with a QML touchscreen interface.
 - **Embedded system**: Raspberry Pi-based embedded system with mock/development support for desktop.

@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1782409358.42088 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782409359.20922 0
-  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782409182.61195 25299 b6ffa0ac564f41bb06e3c8984016c198 ""
+["pdflatex"] 1782739774.8975 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782739775.41882 0
+  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782739773.907 25287 e14ebc7e7c391ebb21254b45b7dc1ae1 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -56,14 +56,14 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1767445032 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1767445016 3345741 040cb4d7377ddfa3c5d6665cbabbe769 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "figures/explode_notes.png" 1781889165.75133 287116 1fc1b44e230d1d7bc26400d12b8e47ca ""
-  "figures/platform_prototype.png" 1781859120.05819 1715704 8961526993f748720bdb6160d21c9054 ""
+  "figures/explode_notes.png" 1782727054.50048 284037 6f7aaacc2b6e691762b268be76760745 ""
+  "figures/platform_prototype_new.png" 1782739235.04141 1407370 97e4a77f242d0a9181f1b5e884517e9a ""
   "figures/platform_render.png" 1781859120.09355 715526 21660cb26f24eede3a7191e1fdc59918 ""
-  "figures/tile_scan_stitched.png" 1781859120.43037 1512656 20e2452c3b476cb22befb42c1a54da6b ""
+  "figures/tile_scan_stitched_colorgrad_crop.png" 1782739312.14297 1719332 b8376ff824ea9c2c60eb49fa9cfa2748 ""
   "figures/ui_live_view.png" 1781889576.39268 627069 794410bd6c8ccbfb60d9297b9292f71d ""
   "llncs.cls" 1781854927.61089 43402 5fb5a2dc40571aa40f3d199c00cbb986 ""
-  "paper.aux" 1782409359.14189 3593 b90a4368c292e5e57465d2f1d529a28a "pdflatex"
-  "paper.tex" 1782409182.61195 25299 b6ffa0ac564f41bb06e3c8984016c198 ""
+  "paper.aux" 1782739775.35655 3594 baa7269ea131e8179fd3fa77a50e69ac "pdflatex"
+  "paper.tex" 1782739773.907 25287 e14ebc7e7c391ebb21254b45b7dc1ae1 ""
   (generated)
   "paper.aux"
   "paper.log"

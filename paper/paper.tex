@@ -20,7 +20,7 @@
 %
 \begin{document}
 %
-\title{RetroScope: An Open Platform for Motorizing and Digitizing Vintage Microscopes}
+\title{RetroScope: An Open Framework for Motorizing and Digitizing Vintage Microscopes}
 
 % Marvin Carstensen
 % Justin Carstensen
@@ -60,7 +60,7 @@ ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 %
 \begin{abstract}
 Many optical microscopes remain mechanically and optically useful for decades, even when they no longer
-match the digital and automated workflows expected in modern laboratories or teaching environments. Replacing such instruments can be expensive and wasteful. Yet, they are of limited use for recent, more digital, workflows. This paper presents RetroScope, an open retrofit platform that motorizes and digitizes vintage optical microscopes while preserving the existing microscope body. The platform contributes a parameterized mechanical adapter strategy for coupling low-cost motors to existing focus and XY-stage controls, an embedded Raspberry Pi-based hardware and software stack, image-based calibration for pixel scale, stage scale, and backlash compensation. Autofocus, focus stacking, and tile scanning are implemented as integration examples that exercise calibrated motion and image capture. A prototype was evaluated on a vintage upright microscope using H\&E-stained animal specimen and calibration slides. On the 4x objective, repeated stage-scale calibration produced 200-step standard deviations of 0.058 and 0.066 $\mu$m/step for X and Y. A hysteresis backlash model reduced the 200-step X forward error from $204.3\pm10.8$ $\mu$m without compensation to $11.4\pm2.9$ $\mu$m. These results support RetroScope as a resource-conscious, extensible prototype for accessible microscope automation, while also showing the limits of low-cost open-loop mechanics.
+match the digital and automated workflows expected in modern laboratories or teaching environments. Replacing such instruments can be expensive and wasteful. Yet, they are of limited use for recent, more digital, workflows. This paper presents RetroScope, an open retrofit framework that motorizes and digitizes vintage optical microscopes while preserving the existing microscope body. The platform contributes a parameterized mechanical adapter strategy for coupling low-cost motors to existing focus and XY-stage controls, an embedded Raspberry Pi-based hardware and software stack, image-based calibration for pixel scale, stage scale, and backlash compensation. Autofocus, focus stacking, and tile scanning are implemented as integration examples that exercise calibrated motion and image capture. A prototype was evaluated on a vintage upright microscope using H\&E-stained animal specimen and calibration slides. On the 4x objective, repeated stage-scale calibration produced 200-step standard deviations of 0.058 and 0.066 $\mu$m/step for X and Y. A hysteresis backlash model reduced the 200-step X forward error from $204.3\pm10.8$ $\mu$m without compensation to $11.4\pm2.9$ $\mu$m. These results support RetroScope as a resource-conscious, extensible prototype for accessible microscope automation, while also showing the limits of low-cost open-loop mechanics.
 
 \keywords{Low-resource digital pathology \and Microscope automation \and Open hardware \and Image-based calibration}
 % Authors must provide keywords and are not allowed to remove this Keyword section.
@@ -114,7 +114,7 @@ The prototype was built around a vintage upright microscope (Nikon Optiphot 66).
 \centering
 \begin{tabular}{cc}
 \includegraphics[width=0.5\textwidth]{figures/platform_render.png} &
-\includegraphics[width=0.5\textwidth]{figures/platform_prototype.png} \\
+\includegraphics[width=0.5\textwidth]{figures/platform_prototype_new.png} \\
 {\small (a) CAD render and microscope 3d scan.} &
 {\small (b) Full assembled prototype.}
 \end{tabular}
@@ -157,7 +157,7 @@ Focus stacking captures a sequence of Z planes and produces a blended result whi
 \centering
 \begin{tabular}{@{}cc@{}}
 \includegraphics[width=0.478\textwidth]{figures/ui_live_view.png} &
-\includegraphics[width=0.522\textwidth]{figures/tile_scan_stitched.png} \\
+\includegraphics[width=0.522\textwidth]{figures/tile_scan_stitched_colorgrad_crop.png} \\
 {\small (a) The live-view interface.} &
 {\small (b) Stitched tile scan.}
 \end{tabular}
@@ -172,7 +172,7 @@ The RetroScope framework was evaluated by building a digitized microscope on top
 
 The evaluation used the complete prototype: printed adapters, embedded electronics, custom PCB, Sangaboard-controlled motors, motion controller, and calibration workflows. Experiments used calibration slides and exemplary formalin fixed paraffin embedded tissue, stained with hematoxylin and eosin standard dye to evaluate the platform behavior, not clinical diagnostic performance.
 
-Three experiments were conducted. Stage-scale repeatability measured how consistently motor steps mapped to XY-stage displacement. For each trial, the stage was moved by a known number of motor steps, the resulting image shift on a slide was measured, and the displacement was converted to $\mu$m/step using the pixel scale. Motion accuracy and backlash compensation used the same image-displacement principle, but compared three movement modes: no compensation, a direction-sign compensation model, and the hysteresis-band model described above. The reported forward error is the difference between measured optical displacement and commanded calibrated displacement. The reversal residual is the remaining optical offset after a return move. Calibration repeatability repeated selected calibration measurements to test whether the same profile values could be recovered consistently.
+Three experiments were conducted: Stage-scale repeatability measured how consistently motor steps mapped to XY-stage displacement. For each trial, the stage was moved by a known number of motor steps, the resulting image shift on a slide was measured, and the displacement was converted to $\mu$m/step using the pixel scale. Motion accuracy and backlash compensation used the same image-displacement principle, but compared three movement modes: no compensation, a direction-sign compensation model, and the hysteresis-band model described above. The reported forward error is the difference between measured optical displacement and commanded calibrated displacement. The reversal residual is the remaining optical offset after a return move. Calibration repeatability repeated selected calibration measurements to test whether the same profile values could be recovered consistently.
 
 \subsection{Motion and Calibration Results}
 
@@ -210,7 +210,7 @@ The results support RetroScope as a working low-cost retrofit prototype for micr
 
 The evaluation also bounds the claims. RetroScope is not a precision stage and does not replace a clinical whole-slide scanner. It controls a chain of existing microscope mechanics, printed gears, low-cost steppers, and open-loop estimates. Backlash compensation can improve predictable lost motion, but it cannot remove flex, missed steps, manual disturbances, or optical artifacts. Quantitative motion evaluation was done for a 4$\times$ objective, and physical adaptation was demonstrated on one microscope body and virtually through the parametric model.
 
-Several limitations therefore remain. The prototype was validated on a single microscope body, so the parametric model demonstrates adaptability as a design principle but not yet as a broad empirical claim across microscope families. The system also tracks commanded motor position rather than measured sample position, which means that calibration can become invalid after manual stage movement, loosened printed parts, changed friction, or missed steps. Finally, this paper does not quantify diagnostic image quality, focus-stack quality, tile-alignment accuracy, or long-term unattended robustness. These gaps are important because low-resource deployment depends not only on whether a scan can be completed, but also on whether the resulting data is stable enough for the intended use.
+Several limitations therefore remain. The prototype was validated on a single microscope body, so the parametric model demonstrates adaptability as a design principle but not yet as a broad empirical claim across microscope families. The system also tracks commanded motor position rather than measured sample position, which means that calibration can become invalid after manual stage movement, loosened printed parts, changed friction, or missed steps. Finally, this paper does not quantify diagnostic image quality, focus-stack quality, or tile-alignment accuracy. These gaps are important because low-resource deployment depends not only on whether a scan can be completed, but also on whether the resulting data is stable enough for the intended use.
 
 Nevertheless, the prototype demonstrates that vintage microscopes can be extended into programmable digital imaging systems without discarding the original optical instrument. Autofocus, focus stacking, and tile scanning serve as integrated validation tasks showing that calibration and compensation are sufficient for repeated automated operation under the tested conditions. Future work should add closed-loop sensing, physical validation on additional microscope bodies, flat-field correction for tile scans, and more detailed workflow quality metrics.
 
