@@ -89,11 +89,11 @@ INPUT ./figures/ui_live_view.png
 INPUT ./figures/ui_live_view.png
 INPUT ./figures/ui_live_view.png
 INPUT ./figures/ui_live_view.png
-INPUT ./figures/tile_scan_stitched_colorgrad_crop.png
-INPUT ./figures/tile_scan_stitched_colorgrad_crop.png
-INPUT ./figures/tile_scan_stitched_colorgrad_crop.png
-INPUT ./figures/tile_scan_stitched_colorgrad_crop.png
-INPUT ./figures/tile_scan_stitched_colorgrad_crop.png
+INPUT ./figures/tile_scan_stitched_colorgrad_2_crop.png
+INPUT ./figures/tile_scan_stitched_colorgrad_2_crop.png
+INPUT ./figures/tile_scan_stitched_colorgrad_2_crop.png
+INPUT ./figures/tile_scan_stitched_colorgrad_2_crop.png
+INPUT ./figures/tile_scan_stitched_colorgrad_2_crop.png
 INPUT paper.aux
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb

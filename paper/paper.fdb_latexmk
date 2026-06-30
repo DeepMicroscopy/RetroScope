@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1782739774.8975 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782739775.41882 0
-  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782739773.907 25287 e14ebc7e7c391ebb21254b45b7dc1ae1 ""
+["pdflatex"] 1782827258.52771 "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" "paper.pdf" "paper" 1782827259.21141 0
+  "/Users/marvincarstensen/Repositories/Master/RetroScope/paper/paper.tex" 1782827258.31943 25307 1590ead98c9b43a9398a8025816bdf56 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -59,11 +59,11 @@
   "figures/explode_notes.png" 1782727054.50048 284037 6f7aaacc2b6e691762b268be76760745 ""
   "figures/platform_prototype_new.png" 1782739235.04141 1407370 97e4a77f242d0a9181f1b5e884517e9a ""
   "figures/platform_render.png" 1781859120.09355 715526 21660cb26f24eede3a7191e1fdc59918 ""
-  "figures/tile_scan_stitched_colorgrad_crop.png" 1782739312.14297 1719332 b8376ff824ea9c2c60eb49fa9cfa2748 ""
+  "figures/tile_scan_stitched_colorgrad_2_crop.png" 1782827013.19392 1921580 4a9ea42ed58545091fb75bfb6a70a09d ""
   "figures/ui_live_view.png" 1781889576.39268 627069 794410bd6c8ccbfb60d9297b9292f71d ""
   "llncs.cls" 1781854927.61089 43402 5fb5a2dc40571aa40f3d199c00cbb986 ""
-  "paper.aux" 1782739775.35655 3594 baa7269ea131e8179fd3fa77a50e69ac "pdflatex"
-  "paper.tex" 1782739773.907 25287 e14ebc7e7c391ebb21254b45b7dc1ae1 ""
+  "paper.aux" 1782827259.13941 3594 baa7269ea131e8179fd3fa77a50e69ac "pdflatex"
+  "paper.tex" 1782827258.31943 25307 1590ead98c9b43a9398a8025816bdf56 ""
   (generated)
   "paper.aux"
   "paper.log"
